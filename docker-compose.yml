@@ -1,0 +1,11 @@
+name: food-diary-app
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./deploy/docker/server.Dockerfile
+    environment:
+      SERVER_PORT: 8080
+    ports:
+      - "${SERVER_PORT:-8080}:8080"

@@ -1,0 +1,53 @@
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.suo
+*.user
+*.userossc
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+out/
+target/
+bin/
+obj/
+coverage/
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+
+# Java / Gradle
+.gradle/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local databases and uploads
+*.db
+*.sqlite
+uploads/
