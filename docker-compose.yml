@@ -7,5 +7,8 @@ services:
       dockerfile: ./deploy/docker/server.Dockerfile
     environment:
       SERVER_PORT: 8080
+      JWT_SECRET: change_me_in_production
     ports:
       - "${SERVER_PORT:-8080}:8080"
+    volumes:
+      - ./server/data:/app/server/data

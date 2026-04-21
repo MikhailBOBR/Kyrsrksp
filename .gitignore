@@ -50,4 +50,6 @@ temp/
 # Local databases and uploads
 *.db
 *.sqlite
+*.db-wal
+*.db-shm
 uploads/

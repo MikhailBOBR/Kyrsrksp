@@ -1,11 +1,13 @@
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 COPY client ./client
 COPY server ./server
 
 EXPOSE 8080
 
-CMD ["node", "server/src/index.js"]
+CMD ["npm", "start"]
