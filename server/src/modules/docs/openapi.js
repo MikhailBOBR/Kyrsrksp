@@ -17,7 +17,10 @@ const openApiDocument = {
     { name: "Goals" },
     { name: "Products" },
     { name: "Meals" },
-    { name: "Dashboard" }
+    { name: "Dashboard" },
+    { name: "Hydration" },
+    { name: "Templates" },
+    { name: "Exports" }
   ],
   components: {
     securitySchemes: {
@@ -137,6 +140,65 @@ const openApiDocument = {
       get: {
         tags: ["Dashboard"],
         summary: "Главный dashboard пользователя",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/hydration": {
+      get: {
+        tags: ["Hydration"],
+        summary: "Сводка по воде за день",
+        security: [{ bearerAuth: [] }]
+      },
+      post: {
+        tags: ["Hydration"],
+        summary: "Добавить запись воды",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/hydration/{id}": {
+      delete: {
+        tags: ["Hydration"],
+        summary: "Удалить запись воды",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/templates": {
+      get: {
+        tags: ["Templates"],
+        summary: "Список шаблонов приёмов пищи",
+        security: [{ bearerAuth: [] }]
+      },
+      post: {
+        tags: ["Templates"],
+        summary: "Создать шаблон приёма пищи",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/templates/from-meal/{mealId}": {
+      post: {
+        tags: ["Templates"],
+        summary: "Создать шаблон из существующего приёма пищи",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/templates/{id}/apply": {
+      post: {
+        tags: ["Templates"],
+        summary: "Применить шаблон и создать запись приёма пищи",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/templates/{id}": {
+      delete: {
+        tags: ["Templates"],
+        summary: "Удалить шаблон",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/exports/daily-report": {
+      get: {
+        tags: ["Exports"],
+        summary: "Экспорт дневного отчёта в JSON или CSV",
         security: [{ bearerAuth: [] }]
       }
     }

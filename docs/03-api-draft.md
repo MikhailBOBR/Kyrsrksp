@@ -31,7 +31,26 @@
 ## Dashboard
 
 - `GET /api/dashboard` - главная агрегированная панель пользователя.
-  Возвращает текущую дату, пользователя, цели, meals, summary, insights и weekly trend.
+  Возвращает текущую дату, пользователя, цели, meals, summary, hydration, insights, weekly trend, smart score, achievements, recommendations и шаблоны.
+
+## Hydration
+
+- `GET /api/hydration` - сводка по воде за день.
+- `POST /api/hydration` - добавить запись воды.
+- `DELETE /api/hydration/{id}` - удалить запись воды.
+
+## Templates
+
+- `GET /api/templates` - список пользовательских шаблонов приёмов пищи.
+- `POST /api/templates` - создать шаблон вручную.
+- `POST /api/templates/from-meal/{mealId}` - создать шаблон из существующей записи.
+- `POST /api/templates/{id}/apply` - создать приём пищи из шаблона.
+- `DELETE /api/templates/{id}` - удалить шаблон.
+
+## Exports
+
+- `GET /api/exports/daily-report?format=json` - выгрузка дневного отчёта в JSON.
+- `GET /api/exports/daily-report?format=csv` - выгрузка дневного отчёта в CSV.
 
 ## Docs
 

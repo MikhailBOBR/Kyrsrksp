@@ -8,6 +8,9 @@ const goalsRoutes = require("./modules/goals/goals.routes");
 const productsRoutes = require("./modules/products/products.routes");
 const mealsRoutes = require("./modules/meals/meals.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
+const hydrationRoutes = require("./modules/hydration/hydration.routes");
+const templatesRoutes = require("./modules/templates/templates.routes");
+const exportsRoutes = require("./modules/exports/exports.routes");
 const { openApiDocument } = require("./modules/docs/openapi");
 
 function createApp() {
@@ -34,6 +37,9 @@ function createApp() {
   app.use("/api/products", productsRoutes);
   app.use("/api/meals", mealsRoutes);
   app.use("/api/dashboard", dashboardRoutes);
+  app.use("/api/hydration", hydrationRoutes);
+  app.use("/api/templates", templatesRoutes);
+  app.use("/api/exports", exportsRoutes);
 
   app.use(express.static(clientRoot));
 

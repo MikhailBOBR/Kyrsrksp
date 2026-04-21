@@ -137,6 +137,7 @@ function deleteMeal(userId, mealId) {
 module.exports = {
   createMeal,
   deleteMeal,
+  getMealById,
   listMeals,
   updateMeal
 };

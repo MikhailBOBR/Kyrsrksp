@@ -57,6 +57,33 @@ function ensureSchema() {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS hydration_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      amount_ml REAL NOT NULL,
+      entry_date TEXT NOT NULL,
+      logged_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      meal_type TEXT NOT NULL,
+      grams REAL NOT NULL,
+      calories REAL NOT NULL,
+      protein REAL NOT NULL,
+      fat REAL NOT NULL,
+      carbs REAL NOT NULL,
+      notes TEXT DEFAULT '',
+      usage_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 }
 
@@ -235,12 +262,103 @@ function seedMeals() {
   });
 }
 
+function seedHydration() {
+  const existingCount = db
+    .prepare(`SELECT COUNT(*) AS count FROM hydration_logs`)
+    .get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const today = getLocalDate();
+  const createdAt = getTimestamp();
+  const insertHydration = db.prepare(`
+    INSERT INTO hydration_logs (user_id, amount_ml, entry_date, logged_at, created_at)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  [
+    { amountMl: 350, loggedAt: "08:10" },
+    { amountMl: 500, loggedAt: "12:45" },
+    { amountMl: 400, loggedAt: "16:20" }
+  ].forEach((entry) => {
+    insertHydration.run(demoUserId, entry.amountMl, today, entry.loggedAt, createdAt);
+  });
+}
+
+function seedTemplates() {
+  const existingCount = db
+    .prepare(`SELECT COUNT(*) AS count FROM meal_templates`)
+    .get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const now = getTimestamp();
+  const insertTemplate = db.prepare(`
+    INSERT INTO meal_templates (
+      user_id, name, meal_type, grams, calories, protein, fat, carbs, notes, usage_count, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  [
+    {
+      name: "Белковый завтрак",
+      mealType: "Завтрак",
+      grams: 320,
+      calories: 470,
+      protein: 34,
+      fat: 14,
+      carbs: 49,
+      notes: "Омлет, йогурт и овсянка",
+      usageCount: 3
+    },
+    {
+      name: "Быстрый перекус",
+      mealType: "Перекус",
+      grams: 180,
+      calories: 240,
+      protein: 18,
+      fat: 8,
+      carbs: 22,
+      notes: "Йогурт и банан",
+      usageCount: 5
+    }
+  ].forEach((template) => {
+    insertTemplate.run(
+      demoUserId,
+      template.name,
+      template.mealType,
+      template.grams,
+      template.calories,
+      template.protein,
+      template.fat,
+      template.carbs,
+      template.notes,
+      template.usageCount,
+      now,
+      now
+    );
+  });
+}
+
 function initializeDatabase() {
   ensureSchema();
   seedUsers();
   seedGoals();
   seedProducts();
   seedMeals();
+  seedHydration();
+  seedTemplates();
 }
 
 module.exports = {

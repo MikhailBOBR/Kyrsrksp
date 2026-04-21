@@ -5,10 +5,16 @@
 Что уже есть:
 
 - модули `auth`, `goals`, `products`, `meals`, `dashboard`;
+- модули `hydration`, `templates`, `exports`;
 - JWT-аутентификация и ролевая модель `user/admin`;
 - SQLite-база данных с инициализацией схемы и seed-данными;
+- вычисление smart score, streak, achievements и рекомендаций;
 - Swagger UI и OpenAPI JSON;
 - API-тесты на `node:test`;
 - раздача статических файлов клиентского интерфейса.
 
 Следующий шаг для сервера - расширить доменную модель и перейти на PostgreSQL.
+
+
+
+ВРОДЕ ЭТО ВСЕ НАРАБОТКИ ЗА ДЕНЬ И НОЧЬ
