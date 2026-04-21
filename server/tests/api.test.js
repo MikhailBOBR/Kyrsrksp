@@ -21,6 +21,7 @@ dbFiles.forEach((filePath) => {
 const { initializeDatabase } = require("../src/db/init-schema");
 const { createApp } = require("../src/app");
 const { db } = require("../src/db/connection");
+const { getLocalDate } = require("../src/lib/date");
 
 let server;
 let baseUrl;
@@ -51,6 +52,7 @@ test.after(async () => {
 async function api(pathname, options = {}) {
   const response = await fetch(`${baseUrl}${pathname}`, options);
   const payload = await response.json().catch(() => ({}));
+
   return {
     status: response.status,
     payload
@@ -95,7 +97,7 @@ test("denies dashboard access without auth token", async () => {
   assert.equal(response.status, 401);
 });
 
-test("allows demo user to access dashboard and meals", async () => {
+test("allows demo user to access extended dashboard", async () => {
   const token = await login("demo@nutritrack.local", "Demo123!");
 
   const dashboard = await api("/api/dashboard", {
@@ -108,9 +110,14 @@ test("allows demo user to access dashboard and meals", async () => {
   assert.equal(dashboard.payload.user.role, "user");
   assert.ok(Array.isArray(dashboard.payload.meals));
   assert.ok(Array.isArray(dashboard.payload.weeklyTrend));
+  assert.ok(Array.isArray(dashboard.payload.extendedTrend));
   assert.ok(Array.isArray(dashboard.payload.achievements));
   assert.ok(Array.isArray(dashboard.payload.recommendations));
   assert.ok(dashboard.payload.smartScore.total >= 0);
+  assert.ok(dashboard.payload.wellbeing);
+  assert.ok(dashboard.payload.bodyMetrics);
+  assert.ok(dashboard.payload.planner);
+  assert.ok(dashboard.payload.shopping);
 });
 
 test("prevents regular user from creating products", async () => {
@@ -259,6 +266,162 @@ test("creates and applies meal template", async () => {
   assert.equal(applied.payload.title, "Шаблон теста");
 });
 
+test("creates wellbeing checkin and returns readiness summary", async () => {
+  const token = await login("demo@nutritrack.local", "Demo123!");
+
+  const updated = await api("/api/checkins", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      mood: 5,
+      energy: 4,
+      stress: 2,
+      hunger: 3,
+      sleepHours: 7.8,
+      notes: "Тестовый wellbeing check-in"
+    })
+  });
+
+  assert.equal(updated.status, 200);
+  assert.equal(updated.payload.mood, 5);
+
+  const summary = await api("/api/checkins", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  assert.equal(summary.status, 200);
+  assert.ok(summary.payload.readinessScore > 0);
+  assert.equal(summary.payload.entry.notes, "Тестовый wellbeing check-in");
+});
+
+test("creates body metric entry and exposes summary", async () => {
+  const token = await login("demo@nutritrack.local", "Demo123!");
+
+  const created = await api("/api/metrics", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      weightKg: 77.9,
+      bodyFat: 18.2,
+      waistCm: 81.5,
+      notes: "Контрольный замер"
+    })
+  });
+
+  assert.equal(created.status, 201);
+  assert.equal(created.payload.weightKg, 77.9);
+
+  const metrics = await api("/api/metrics", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  assert.equal(metrics.status, 200);
+  assert.ok(metrics.payload.latest);
+  assert.ok(Array.isArray(metrics.payload.entries));
+  assert.ok(metrics.payload.entries.length >= 1);
+});
+
+test("creates meal plan from template and marks it completed", async () => {
+  const token = await login("demo@nutritrack.local", "Demo123!");
+
+  const templates = await api("/api/templates", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  const created = await api(`/api/planner/from-template/${templates.payload[0].id}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      plannedTime: "18:40"
+    })
+  });
+
+  assert.equal(created.status, 201);
+
+  const completed = await api(`/api/planner/${created.payload.id}/completion`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      completed: true
+    })
+  });
+
+  assert.equal(completed.status, 200);
+  assert.equal(completed.payload.completed, true);
+
+  const planner = await api(`/api/planner?date=${getLocalDate()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  assert.equal(planner.status, 200);
+  assert.ok(Array.isArray(planner.payload.items));
+});
+
+test("adds product to shopping list and toggles checked state", async () => {
+  const token = await login("demo@nutritrack.local", "Demo123!");
+
+  const products = await api("/api/products");
+  assert.equal(products.status, 200);
+
+  const created = await api(`/api/shopping/from-product/${products.payload[0].id}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      quantity: 2,
+      unit: "шт"
+    })
+  });
+
+  assert.equal(created.status, 201);
+
+  const toggled = await api(`/api/shopping/${created.payload.id}/check`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      checked: true
+    })
+  });
+
+  assert.equal(toggled.status, 200);
+  assert.equal(toggled.payload.checked, true);
+
+  const shopping = await api("/api/shopping", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  assert.equal(shopping.status, 200);
+  assert.ok(Array.isArray(shopping.payload.items));
+  assert.ok(shopping.payload.summary.total >= 1);
+});
+
 test("exports daily report in csv format", async () => {
   const token = await login("demo@nutritrack.local", "Demo123!");
 
@@ -275,7 +438,7 @@ test("exports daily report in csv format", async () => {
   assert.match(content, /meal_id/);
 });
 
-test("exposes OpenAPI document", async () => {
+test("exposes extended OpenAPI document", async () => {
   const response = await api("/api/openapi.json");
 
   assert.equal(response.status, 200);
@@ -283,4 +446,8 @@ test("exposes OpenAPI document", async () => {
   assert.ok(response.payload.paths["/api/dashboard"]);
   assert.ok(response.payload.paths["/api/templates"]);
   assert.ok(response.payload.paths["/api/hydration"]);
+  assert.ok(response.payload.paths["/api/checkins"]);
+  assert.ok(response.payload.paths["/api/metrics"]);
+  assert.ok(response.payload.paths["/api/planner"]);
+  assert.ok(response.payload.paths["/api/shopping"]);
 });

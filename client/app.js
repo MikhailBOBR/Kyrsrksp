@@ -1,15 +1,33 @@
 const tokenStorageKey = "nutriTrackToken";
 const themeStorageKey = "nutriTrackTheme";
 
+const scoreLabels = {
+  calories: "Калории",
+  protein: "Белок",
+  hydration: "Вода",
+  rhythm: "Ритм",
+  wellbeing: "Самочувствие",
+  planning: "Планирование"
+};
+
+const metricLabels = {
+  calories: { title: "Калории", unit: "ккал" },
+  protein: { title: "Белки", unit: "г" },
+  fat: { title: "Жиры", unit: "г" },
+  carbs: { title: "Углеводы", unit: "г" }
+};
+
 const state = {
   token: localStorage.getItem(tokenStorageKey),
   theme: localStorage.getItem(themeStorageKey) || "light",
+  selectedDate: getTodayDate(),
   user: null,
   dashboard: null,
   meals: [],
   products: [],
   templates: [],
-  hydration: null,
+  metrics: null,
+  shopping: null,
   currentMealType: "Все",
   productSearch: ""
 };
@@ -28,6 +46,10 @@ const themeToggle = document.querySelector("#theme-toggle");
 const exportJsonButton = document.querySelector("#export-json-button");
 const exportCsvButton = document.querySelector("#export-csv-button");
 const globalMessage = document.querySelector("#global-message");
+const previousDateButton = document.querySelector("#previous-date-button");
+const nextDateButton = document.querySelector("#next-date-button");
+const todayButton = document.querySelector("#today-button");
+const datePickerInput = document.querySelector("#date-picker-input");
 
 const goalsForm = document.querySelector("#goals-form");
 const mealForm = document.querySelector("#meal-form");
@@ -35,6 +57,10 @@ const templateForm = document.querySelector("#template-form");
 const productForm = document.querySelector("#product-form");
 const productSearchForm = document.querySelector("#product-search-form");
 const productSearchInput = document.querySelector("#product-search-input");
+const checkinForm = document.querySelector("#checkin-form");
+const bodyMetricForm = document.querySelector("#body-metric-form");
+const plannerForm = document.querySelector("#planner-form");
+const shoppingForm = document.querySelector("#shopping-form");
 
 const productAdminPanel = document.querySelector("#product-admin-panel");
 const productsMeta = document.querySelector("#products-meta");
@@ -53,6 +79,16 @@ const hydrationList = document.querySelector("#hydration-list");
 const scoreBreakdown = document.querySelector("#score-breakdown");
 const filterButtons = [...document.querySelectorAll("[data-meal-filter]")];
 const quickWaterButtons = [...document.querySelectorAll("[data-water]")];
+const wellbeingReadinessScore = document.querySelector("#wellbeing-readiness-score");
+const wellbeingReadinessCaption = document.querySelector("#wellbeing-readiness-caption");
+const wellbeingTrend = document.querySelector("#wellbeing-trend");
+const bodyMetricsSummary = document.querySelector("#body-metrics-summary");
+const bodyMetricsList = document.querySelector("#body-metrics-list");
+const plannerMeta = document.querySelector("#planner-meta");
+const plannerList = document.querySelector("#planner-list");
+const shoppingMeta = document.querySelector("#shopping-meta");
+const shoppingList = document.querySelector("#shopping-list");
+const clearCheckedShoppingButton = document.querySelector("#clear-checked-shopping-button");
 
 const heroCalories = document.querySelector("#hero-calories");
 const heroCaloriesCaption = document.querySelector("#hero-calories-caption");
@@ -86,12 +122,18 @@ const insightAverageProtein = document.querySelector("#insight-average-protein")
 const insightGoalStatus = document.querySelector("#insight-goal-status");
 const insightGoalText = document.querySelector("#insight-goal-text");
 
-const metricLabels = {
-  calories: { title: "Калории", unit: "ккал" },
-  protein: { title: "Белки", unit: "г" },
-  fat: { title: "Жиры", unit: "г" },
-  carbs: { title: "Углеводы", unit: "г" }
-};
+function getTodayDate() {
+  const now = new Date();
+  const adjusted = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return adjusted.toISOString().slice(0, 10);
+}
+
+function shiftDate(date, delta) {
+  const next = new Date(`${date}T00:00:00`);
+  next.setDate(next.getDate() + delta);
+  const adjusted = new Date(next.getTime() - next.getTimezoneOffset() * 60000);
+  return adjusted.toISOString().slice(0, 10);
+}
 
 function setTheme(theme) {
   state.theme = theme;
@@ -181,14 +223,16 @@ async function request(path, options = {}, authRequired = true) {
 function setFormValues(form, values) {
   Object.entries(values).forEach(([key, value]) => {
     const input = form.elements.namedItem(key);
-    if (input) {
+
+    if (input && value !== undefined && value !== null) {
       input.value = value;
     }
   });
 }
 
 function toNumber(form, key) {
-  return Number(form.elements.namedItem(key).value);
+  const rawValue = form.elements.namedItem(key)?.value;
+  return rawValue === "" ? null : Number(rawValue);
 }
 
 function formatMetricValue(metric, value) {
@@ -203,12 +247,28 @@ function formatDate(dateString) {
   });
 }
 
+function formatShortDate(dateString) {
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit"
+  });
+}
+
 function formatTime(value) {
   return value?.slice(0, 5) || "--:--";
 }
 
 function nowTime() {
   return new Date().toTimeString().slice(0, 5);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function downloadTextFile(filename, content, mimeType) {
@@ -223,13 +283,18 @@ function downloadTextFile(filename, content, mimeType) {
   URL.revokeObjectURL(url);
 }
 
+function syncDateControls() {
+  datePickerInput.value = state.selectedDate;
+  plannerForm.elements.namedItem("date").value = state.selectedDate;
+}
+
 function getFocus(dashboard) {
-  const { meals, goals, summary, insights, hydration } = dashboard;
+  const { meals, goals, summary, insights, hydration, wellbeing, planner } = dashboard;
 
   if (!meals.length) {
     return {
       title: "Начните дневник",
-      text: "Добавьте первый приём пищи и запись воды, чтобы открыть аналитику дня."
+      text: "Добавьте первый прием пищи и запись воды, чтобы открыть аналитику дня."
     };
   }
 
@@ -240,9 +305,23 @@ function getFocus(dashboard) {
     };
   }
 
+  if (wellbeing.entry && wellbeing.entry.stress >= 4) {
+    return {
+      title: "Снизить нагрузку",
+      text: "Сегодня стоит сделать ставку на простой и предсказуемый режим питания."
+    };
+  }
+
+  if (planner.totals.planned > planner.totals.completed) {
+    return {
+      title: "Держать план",
+      text: `В планере еще ${planner.totals.planned - planner.totals.completed} открытых слотов.`
+    };
+  }
+
   if (!insights.withinCalorieGoal) {
     return {
-      title: "Проверьте калорийность",
+      title: "Проверить калорийность",
       text: `Есть превышение цели на ${(summary.totals.calories - goals.calories).toFixed(0)} ккал.`
     };
   }
@@ -258,6 +337,30 @@ function getFocus(dashboard) {
     title: "День выглядит уверенно",
     text: `Smart Score сейчас на уровне ${dashboard.smartScore.total}.`
   };
+}
+
+function fillMealFormFromSource(source, titleOverride) {
+  mealForm.elements.namedItem("title").value = titleOverride || source.name || source.title;
+  mealForm.elements.namedItem("mealType").value = source.mealType || "Перекус";
+  mealForm.elements.namedItem("grams").value = source.grams || 100;
+  mealForm.elements.namedItem("calories").value = source.calories;
+  mealForm.elements.namedItem("protein").value = source.protein;
+  mealForm.elements.namedItem("fat").value = source.fat;
+  mealForm.elements.namedItem("carbs").value = source.carbs;
+  mealForm.elements.namedItem("notes").value = source.notes || "";
+  mealForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function fillPlannerFormFromSource(source, titleOverride) {
+  plannerForm.elements.namedItem("title").value = titleOverride || source.name || source.title;
+  plannerForm.elements.namedItem("mealType").value = source.mealType || "Обед";
+  plannerForm.elements.namedItem("date").value = state.selectedDate;
+  plannerForm.elements.namedItem("plannedTime").value = source.eatenAt || "13:00";
+  plannerForm.elements.namedItem("targetCalories").value = source.calories || 0;
+  plannerForm.elements.namedItem("targetProtein").value = source.protein || 0;
+  plannerForm.elements.namedItem("targetFat").value = source.fat || 0;
+  plannerForm.elements.namedItem("targetCarbs").value = source.carbs || 0;
+  plannerForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderSummary(summary, goals) {
@@ -288,7 +391,7 @@ function renderScoreBreakdown(score) {
     const card = document.createElement("article");
     card.className = "score-card";
     card.innerHTML = `
-      <p class="dashboard-label">${key}</p>
+      <p class="dashboard-label">${escapeHtml(scoreLabels[key] || key)}</p>
       <strong>${value.toFixed(1)}</strong>
       <div class="mini-progress">
         <div class="mini-progress-fill" style="width:${Math.min(value, 100)}%"></div>
@@ -305,7 +408,7 @@ function renderBreakdown(items) {
     const card = document.createElement("article");
     card.className = "breakdown-card";
     card.innerHTML = `
-      <p class="dashboard-label">${item.mealType}</p>
+      <p class="dashboard-label">${escapeHtml(item.mealType)}</p>
       <strong>${item.count}</strong>
       <p class="dashboard-note">${item.calories.toFixed(0)} ккал</p>
     `;
@@ -326,23 +429,25 @@ function renderAchievements(items) {
     const badge = document.createElement("article");
     badge.className = "badge-card";
     badge.innerHTML = `
-      <strong>${item.title}</strong>
-      <p class="dashboard-note">${item.description}</p>
+      <strong>${escapeHtml(item.title)}</strong>
+      <p class="dashboard-note">${escapeHtml(item.description)}</p>
     `;
     achievementsList.append(badge);
   });
 }
 
-function fillMealFormFromSource(source, titleOverride) {
-  mealForm.elements.namedItem("title").value = titleOverride || source.name || source.title;
-  mealForm.elements.namedItem("mealType").value = source.mealType || "Перекус";
-  mealForm.elements.namedItem("grams").value = source.grams || 100;
-  mealForm.elements.namedItem("calories").value = source.calories;
-  mealForm.elements.namedItem("protein").value = source.protein;
-  mealForm.elements.namedItem("fat").value = source.fat;
-  mealForm.elements.namedItem("carbs").value = source.carbs;
-  mealForm.elements.namedItem("notes").value = source.notes || "";
-  mealForm.scrollIntoView({ behavior: "smooth", block: "start" });
+async function addProductToShopping(productId, productName, overrides = {}) {
+  await request(`/api/shopping/from-product/${productId}`, {
+    method: "POST",
+    body: JSON.stringify({
+      quantity: overrides.quantity || 1,
+      unit: overrides.unit || "шт",
+      notes: overrides.notes || ""
+    })
+  });
+  await loadShopping();
+  await loadDashboard();
+  showFlash(`"${productName}" добавлен в список покупок`, "success");
 }
 
 function renderRecommendations(items) {
@@ -354,37 +459,51 @@ function renderRecommendations(items) {
     const suggestions = item.suggestedProducts
       .map(
         (product) => `
-          <button class="suggestion-chip" type="button" data-product-id="${product.id}">
-            ${product.name}
-          </button>
+          <div class="suggestion-tile">
+            <button class="suggestion-chip" type="button" data-product-id="${product.id}" data-mode="meal">
+              В прием · ${escapeHtml(product.name)}
+            </button>
+            <button class="ghost-button small-button" type="button" data-product-id="${product.id}" data-mode="shopping">
+              В список
+            </button>
+          </div>
         `
       )
       .join("");
 
     card.innerHTML = `
-      <p class="dashboard-label">${item.title}</p>
-      <strong>${item.text}</strong>
+      <p class="dashboard-label">${escapeHtml(item.title)}</p>
+      <strong>${escapeHtml(item.text)}</strong>
       <div class="suggestion-row">${suggestions}</div>
     `;
 
     card.querySelectorAll("[data-product-id]").forEach((button) => {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         const product = item.suggestedProducts.find(
           (entry) => String(entry.id) === button.dataset.productId
         );
 
-        if (product) {
-          fillMealFormFromSource(
-            {
-              ...product,
-              grams: 100,
-              mealType: "Перекус",
-              notes: `Добавлено по рекомендации: ${item.title}`
-            },
-            product.name
-          );
-          showFlash(`Продукт "${product.name}" перенесён в форму`, "success");
+        if (!product) {
+          return;
         }
+
+        if (button.dataset.mode === "shopping") {
+          await addProductToShopping(product.id, product.name, {
+            notes: `Добавлено из рекомендаций: ${item.title}`
+          });
+          return;
+        }
+
+        fillMealFormFromSource(
+          {
+            ...product,
+            grams: 100,
+            mealType: "Перекус",
+            notes: `Добавлено по рекомендации: ${item.title}`
+          },
+          product.name
+        );
+        showFlash(`Продукт "${product.name}" перенесен в форму`, "success");
       });
     });
 
@@ -397,9 +516,9 @@ function renderInsights(dashboard) {
 
   if (!insights.topCalorieMeal) {
     insightTopCalorieTitle.textContent = "Нет записей";
-    insightTopCalorieText.textContent = "Добавьте первый приём пищи.";
+    insightTopCalorieText.textContent = "Добавьте первый прием пищи.";
     insightTopProteinTitle.textContent = "Нет записей";
-    insightTopProteinText.textContent = "Добавьте первый приём пищи.";
+    insightTopProteinText.textContent = "Добавьте первый прием пищи.";
     insightAverageCalories.textContent = "0 ккал";
     insightAverageProtein.textContent = "Средний белок: 0.0 г";
     insightGoalStatus.textContent = "Нет активности";
@@ -432,11 +551,11 @@ function renderWeeklyTrend(items) {
     const bar = document.createElement("article");
     bar.className = "weekly-card";
     bar.innerHTML = `
-      <p class="dashboard-label">${new Date(`${item.date}T00:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}</p>
+      <p class="dashboard-label">${formatShortDate(item.date)}</p>
       <strong>${item.calories.toFixed(0)} ккал</strong>
-      <p class="dashboard-note">Белки: ${item.protein.toFixed(1)} г</p>
+      <p class="dashboard-note">Белки: ${item.protein.toFixed(1)} г · Вода: ${item.hydrationMl.toFixed(0)} мл</p>
       <div class="mini-progress">
-        <div class="mini-progress-fill" style="width: ${(item.calories / maxCalories) * 100}%"></div>
+        <div class="mini-progress-fill" style="width:${(item.calories / maxCalories) * 100}%"></div>
       </div>
     `;
     weeklyTrend.append(bar);
@@ -454,7 +573,7 @@ function renderHydration(hydration) {
 
   if (!hydration.entries.length) {
     hydrationList.innerHTML =
-      '<article class="stack-card"><p class="dashboard-note">Записей воды сегодня пока нет.</p></article>';
+      '<article class="stack-card"><p class="dashboard-note">Записей воды на выбранную дату пока нет.</p></article>';
     return;
   }
 
@@ -471,7 +590,6 @@ function renderHydration(hydration) {
 
     node.querySelector("button").addEventListener("click", async () => {
       await request(`/api/hydration/${entry.id}`, { method: "DELETE" });
-      await loadHydration();
       await loadDashboard();
       showFlash("Запись воды удалена", "success");
     });
@@ -495,38 +613,49 @@ function renderTemplates(items) {
     card.innerHTML = `
       <div class="stack-card-head">
         <div>
-          <strong>${template.name}</strong>
-          <p class="dashboard-note">${template.mealType} · использований: ${template.usageCount}</p>
+          <strong>${escapeHtml(template.name)}</strong>
+          <p class="dashboard-note">${escapeHtml(template.mealType)} · использований: ${template.usageCount}</p>
         </div>
         <div class="stack-card-actions">
           <button class="ghost-button small-button template-apply-button" type="button">Применить</button>
+          <button class="ghost-button small-button template-plan-button" type="button">В план</button>
           <button class="danger-button small-button template-delete-button" type="button">Удалить</button>
         </div>
       </div>
       <p class="dashboard-note">
         ${template.calories.toFixed(0)} ккал · Б ${template.protein.toFixed(1)} · Ж ${template.fat.toFixed(1)} · У ${template.carbs.toFixed(1)}
       </p>
-      <p class="dashboard-note">${template.notes || "Без описания"}</p>
+      <p class="dashboard-note">${escapeHtml(template.notes || "Без описания")}</p>
     `;
 
     card.querySelector(".template-apply-button").addEventListener("click", async () => {
       await request(`/api/templates/${template.id}/apply`, {
         method: "POST",
         body: JSON.stringify({
-          eatenAt: nowTime()
+          eatenAt: nowTime(),
+          date: state.selectedDate
+        })
+      });
+      await Promise.all([loadDashboard(), loadMeals(), loadTemplates()]);
+      showFlash(`Шаблон "${template.name}" применен`, "success");
+    });
+
+    card.querySelector(".template-plan-button").addEventListener("click", async () => {
+      await request(`/api/planner/from-template/${template.id}`, {
+        method: "POST",
+        body: JSON.stringify({
+          date: state.selectedDate,
+          plannedTime: "13:00"
         })
       });
       await loadDashboard();
-      await loadMeals();
-      await loadTemplates();
-      showFlash(`Шаблон "${template.name}" применён`, "success");
+      showFlash(`Шаблон "${template.name}" отправлен в планер`, "success");
     });
 
     card.querySelector(".template-delete-button").addEventListener("click", async () => {
       await request(`/api/templates/${template.id}`, { method: "DELETE" });
-      await loadTemplates();
-      await loadDashboard();
-      showFlash(`Шаблон "${template.name}" удалён`, "success");
+      await Promise.all([loadTemplates(), loadDashboard()]);
+      showFlash(`Шаблон "${template.name}" удален`, "success");
     });
 
     templatesList.append(card);
@@ -549,11 +678,12 @@ function renderProducts(products) {
     productCard.innerHTML = `
       <div class="product-head">
         <div>
-          <h3 class="meal-title">${product.name}</h3>
-          <p class="meal-meta">${product.brand || "Без бренда"} · ${product.category}</p>
+          <h3 class="meal-title">${escapeHtml(product.name)}</h3>
+          <p class="meal-meta">${escapeHtml(product.brand || "Без бренда")} · ${escapeHtml(product.category)}</p>
         </div>
         <div class="stack-card-actions">
           <button class="ghost-button small-button product-fill-button" type="button">В форму</button>
+          <button class="ghost-button small-button product-shopping-button" type="button">В список</button>
           ${
             state.user?.role === "admin"
               ? '<button class="danger-button small-button product-delete-button" type="button">Удалить</button>'
@@ -564,29 +694,31 @@ function renderProducts(products) {
       <p class="meal-macros">К: ${product.calories.toFixed(1)} · Б: ${product.protein.toFixed(1)} · Ж: ${product.fat.toFixed(1)} · У: ${product.carbs.toFixed(1)}</p>
     `;
 
+    productCard.querySelector(".product-fill-button").addEventListener("click", () => {
+      fillMealFormFromSource(
+        {
+          ...product,
+          grams: 100,
+          mealType: "Перекус",
+          notes: `Источник: ${product.name}`
+        },
+        product.name
+      );
+      showFlash(`Продукт "${product.name}" перенесен в форму`, "success");
+    });
+
     productCard
-      .querySelector(".product-fill-button")
-      .addEventListener("click", () => {
-        fillMealFormFromSource(
-          {
-            ...product,
-            grams: 100,
-            mealType: "Перекус",
-            notes: `Источник: ${product.name}`
-          },
-          product.name
-        );
-        showFlash(`Продукт "${product.name}" перенесён в форму`, "success");
+      .querySelector(".product-shopping-button")
+      .addEventListener("click", async () => {
+        await addProductToShopping(product.id, product.name);
       });
 
     if (state.user?.role === "admin") {
-      productCard
-        .querySelector(".product-delete-button")
-        .addEventListener("click", async () => {
-          await request(`/api/products/${product.id}`, { method: "DELETE" });
-          await loadProducts();
-          showFlash(`Продукт "${product.name}" удалён`, "success");
-        });
+      productCard.querySelector(".product-delete-button").addEventListener("click", async () => {
+        await request(`/api/products/${product.id}`, { method: "DELETE" });
+        await loadProducts();
+        showFlash(`Продукт "${product.name}" удален`, "success");
+      });
     }
 
     productsList.append(productCard);
@@ -596,9 +728,7 @@ function renderProducts(products) {
 function renderMeals(meals) {
   mealsList.innerHTML = "";
   const suffix =
-    state.currentMealType === "Все"
-      ? "за день"
-      : `по фильтру "${state.currentMealType}"`;
+    state.currentMealType === "Все" ? "за день" : `по фильтру "${state.currentMealType}"`;
   mealCount.textContent = `${meals.length} записей ${suffix}`;
 
   if (!meals.length) {
@@ -619,26 +749,29 @@ function renderMeals(meals) {
     const actions = item.querySelector(".meal-actions");
     actions.innerHTML = `
       <button class="ghost-button small-button save-template-button" type="button">В шаблон</button>
+      <button class="ghost-button small-button save-plan-button" type="button">В план</button>
       <button class="danger-button small-button delete-meal-button" type="button">Удалить</button>
     `;
 
-    actions
-      .querySelector(".save-template-button")
-      .addEventListener("click", async () => {
-        await request(`/api/templates/from-meal/${meal.id}`, {
-          method: "POST",
-          body: JSON.stringify({
-            name: `${meal.title} template`
-          })
-        });
-        await loadTemplates();
-        showFlash(`Запись "${meal.title}" сохранена в шаблоны`, "success");
+    actions.querySelector(".save-template-button").addEventListener("click", async () => {
+      await request(`/api/templates/from-meal/${meal.id}`, {
+        method: "POST",
+        body: JSON.stringify({
+          name: `${meal.title} template`
+        })
       });
+      await loadTemplates();
+      showFlash(`Запись "${meal.title}" сохранена в шаблоны`, "success");
+    });
+
+    actions.querySelector(".save-plan-button").addEventListener("click", () => {
+      fillPlannerFormFromSource(meal, meal.title);
+      showFlash(`Запись "${meal.title}" перенесена в планер`, "info");
+    });
 
     actions.querySelector(".delete-meal-button").addEventListener("click", async () => {
       await request(`/api/meals/${meal.id}`, { method: "DELETE" });
-      await loadDashboard();
-      await loadMeals();
+      await Promise.all([loadDashboard(), loadMeals()]);
       showFlash(`Запись "${meal.title}" удалена`, "success");
     });
 
@@ -648,10 +781,7 @@ function renderMeals(meals) {
 
 function renderFilters() {
   filterButtons.forEach((button) => {
-    button.classList.toggle(
-      "is-active",
-      button.dataset.mealFilter === state.currentMealType
-    );
+    button.classList.toggle("is-active", button.dataset.mealFilter === state.currentMealType);
   });
 }
 
@@ -666,7 +796,7 @@ function renderHero(dashboard) {
   heroMealsCount.textContent = String(dashboard.metadata.totalMeals);
   heroLastMeal.textContent = latestMeal
     ? `${latestMeal.mealType}: ${latestMeal.title} в ${latestMeal.eatenAt}`
-    : "Сегодня ещё нет записей";
+    : "На выбранную дату еще нет записей";
   heroFocusTitle.textContent = focus.title;
   heroFocusText.textContent = focus.text;
   heroUpdatedAt.textContent = "Данные синхронизированы с сервером";
@@ -675,12 +805,234 @@ function renderHero(dashboard) {
   heroUserName.textContent = dashboard.user.name;
   heroUserRole.textContent =
     dashboard.user.role === "admin" ? "Роль: администратор" : "Роль: пользователь";
-  currentDateLabel.textContent = `Текущая дата: ${formatDate(dashboard.date)}`;
+  currentDateLabel.textContent = `Выбранная дата: ${formatDate(dashboard.date)}`;
   sessionUserName.textContent = `${dashboard.user.name} · ${dashboard.user.role}`;
   heroSmartScore.textContent = dashboard.smartScore.total.toFixed(1);
   heroSmartScoreCaption.textContent = "Индекс качества текущего дня";
   heroStreak.textContent = `${dashboard.streak} дней`;
   heroStreakCaption.textContent = "Сколько дней подряд ведется дневник";
+}
+
+function renderWellbeing(wellbeing) {
+  wellbeingReadinessScore.textContent = wellbeing.readinessScore.toFixed(1);
+  wellbeingReadinessCaption.textContent = wellbeing.entry
+    ? `Настроение ${wellbeing.entry.mood}/5 · Энергия ${wellbeing.entry.energy}/5 · Сон ${wellbeing.entry.sleepHours.toFixed(1)} ч`
+    : "На выбранную дату wellbeing-check-in пока не заполнен.";
+
+  if (wellbeing.entry) {
+    setFormValues(checkinForm, wellbeing.entry);
+  } else {
+    checkinForm.reset();
+    setFormValues(checkinForm, {
+      mood: 4,
+      energy: 4,
+      stress: 2,
+      hunger: 3,
+      sleepHours: 7.5
+    });
+  }
+
+  wellbeingTrend.innerHTML = "";
+
+  wellbeing.trend.forEach((entry) => {
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <p class="dashboard-label">${formatShortDate(entry.date)}</p>
+      <strong>${entry.readiness.toFixed(1)}</strong>
+      <p class="dashboard-note">Настроение ${entry.mood}/5 · Энергия ${entry.energy}/5 · Стресс ${entry.stress}/5</p>
+    `;
+    wellbeingTrend.append(node);
+  });
+}
+
+function renderBodyMetrics(metrics) {
+  bodyMetricsSummary.innerHTML = "";
+
+  const summaryItems = [
+    {
+      title: "Текущий вес",
+      value: metrics.latest ? `${metrics.latest.weightKg.toFixed(1)} кг` : "—"
+    },
+    {
+      title: "Дельта",
+      value: metrics.latest && metrics.previous ? `${metrics.deltaWeight.toFixed(1)} кг` : "—"
+    },
+    {
+      title: "Жир",
+      value: metrics.latest?.bodyFat ? `${metrics.latest.bodyFat.toFixed(1)}%` : "—"
+    },
+    {
+      title: "Талия",
+      value: metrics.latest?.waistCm ? `${metrics.latest.waistCm.toFixed(1)} см` : "—"
+    }
+  ];
+
+  summaryItems.forEach((item) => {
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <p class="dashboard-label">${escapeHtml(item.title)}</p>
+      <strong>${escapeHtml(item.value)}</strong>
+    `;
+    bodyMetricsSummary.append(node);
+  });
+
+  bodyMetricsList.innerHTML = "";
+
+  if (!metrics.entries.length) {
+    bodyMetricsList.innerHTML =
+      '<article class="stack-card"><p class="dashboard-note">История замеров пока пуста.</p></article>';
+    return;
+  }
+
+  metrics.entries.forEach((entry) => {
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <div class="stack-card-head">
+        <div>
+          <strong>${entry.weightKg.toFixed(1)} кг · ${formatDate(entry.date)}</strong>
+          <p class="dashboard-note">Жир ${entry.bodyFat ?? "—"} · Талия ${entry.waistCm ?? "—"} · Грудь ${entry.chestCm ?? "—"}</p>
+        </div>
+        <button class="danger-button small-button" type="button">Удалить</button>
+      </div>
+      <p class="dashboard-note">${escapeHtml(entry.notes || "Без комментария")}</p>
+    `;
+
+    node.querySelector("button").addEventListener("click", async () => {
+      await request(`/api/metrics/${entry.id}`, { method: "DELETE" });
+      await Promise.all([loadMetrics(), loadDashboard()]);
+      showFlash("Замер удален", "success");
+    });
+
+    bodyMetricsList.append(node);
+  });
+}
+
+function renderPlanner(planner) {
+  plannerMeta.textContent =
+    `${planner.totals.planned} слотов · выполнено ${planner.totals.completed} · ${Math.round(planner.completionRate)}%`;
+  plannerList.innerHTML = "";
+  plannerForm.elements.namedItem("date").value = state.selectedDate;
+
+  if (!planner.items.length) {
+    plannerList.innerHTML =
+      '<article class="stack-card"><strong>На выбранную дату план пуст</strong><p class="dashboard-note">Можно создать план вручную или отправить туда шаблон.</p></article>';
+    return;
+  }
+
+  planner.items.forEach((item) => {
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <div class="stack-card-head">
+        <div>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p class="dashboard-note">${escapeHtml(item.mealType)} · ${item.plannedTime} · ${item.targetCalories.toFixed(0)} ккал</p>
+        </div>
+        <div class="stack-card-actions">
+          <button class="ghost-button small-button planner-toggle-button" type="button">
+            ${item.completed ? "Снять" : "Готово"}
+          </button>
+          <button class="danger-button small-button planner-delete-button" type="button">Удалить</button>
+        </div>
+      </div>
+      <p class="dashboard-note">Б ${item.targetProtein.toFixed(1)} · Ж ${item.targetFat.toFixed(1)} · У ${item.targetCarbs.toFixed(1)}</p>
+    `;
+
+    node.querySelector(".planner-toggle-button").addEventListener("click", async () => {
+      await request(`/api/planner/${item.id}/completion`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          completed: !item.completed
+        })
+      });
+      await loadDashboard();
+      showFlash("Статус плана обновлен", "success");
+    });
+
+    node.querySelector(".planner-delete-button").addEventListener("click", async () => {
+      await request(`/api/planner/${item.id}`, { method: "DELETE" });
+      await loadDashboard();
+      showFlash("Позиция плана удалена", "success");
+    });
+
+    plannerList.append(node);
+  });
+}
+
+function renderShopping(shopping) {
+  shoppingMeta.textContent =
+    `${shopping.summary.total} позиций · активных ${shopping.summary.pending} · закрытых ${shopping.summary.checked}`;
+  shoppingList.innerHTML = "";
+
+  if (!shopping.items.length) {
+    shoppingList.innerHTML =
+      '<article class="stack-card"><strong>Список покупок пуст</strong><p class="dashboard-note">Добавляйте базовые продукты вручную или прямо из каталога.</p></article>';
+    return;
+  }
+
+  shopping.items.forEach((item) => {
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <div class="stack-card-head">
+        <div>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p class="dashboard-note">${escapeHtml(item.category)} · ${item.quantity} ${escapeHtml(item.unit)} · ${item.checked ? "куплено" : "в работе"}</p>
+        </div>
+        <div class="stack-card-actions">
+          <button class="ghost-button small-button shopping-check-button" type="button">
+            ${item.checked ? "Вернуть" : "Куплено"}
+          </button>
+          <button class="danger-button small-button shopping-delete-button" type="button">Удалить</button>
+        </div>
+      </div>
+      <p class="dashboard-note">${escapeHtml(item.notes || "Без комментария")}</p>
+    `;
+
+    node.querySelector(".shopping-check-button").addEventListener("click", async () => {
+      await request(`/api/shopping/${item.id}/check`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          checked: !item.checked
+        })
+      });
+      await Promise.all([loadShopping(), loadDashboard()]);
+      showFlash("Статус покупки обновлен", "success");
+    });
+
+    node.querySelector(".shopping-delete-button").addEventListener("click", async () => {
+      await request(`/api/shopping/${item.id}`, { method: "DELETE" });
+      await Promise.all([loadShopping(), loadDashboard()]);
+      showFlash("Позиция удалена из списка покупок", "success");
+    });
+
+    shoppingList.append(node);
+  });
+}
+
+function renderDashboardSnapshot() {
+  if (!state.dashboard) {
+    return;
+  }
+
+  state.user = state.dashboard.user;
+  state.selectedDate = state.dashboard.date;
+  syncDateControls();
+  setFormValues(goalsForm, state.dashboard.goals);
+  renderHero(state.dashboard);
+  renderSummary(state.dashboard.summary, state.dashboard.goals);
+  renderInsights(state.dashboard);
+  renderWeeklyTrend(state.dashboard.weeklyTrend);
+  renderAchievements(state.dashboard.achievements);
+  renderRecommendations(state.dashboard.recommendations);
+  renderScoreBreakdown(state.dashboard.smartScore);
+  renderHydration(state.dashboard.hydration);
+  renderWellbeing(state.dashboard.wellbeing);
+  renderPlanner(state.dashboard.planner);
+  productAdminPanel.classList.toggle("hidden", state.user.role !== "admin");
 }
 
 async function loadProducts() {
@@ -696,41 +1048,51 @@ async function loadTemplates() {
   renderTemplates(state.templates);
 }
 
-async function loadHydration() {
-  state.hydration = await request("/api/hydration");
-  renderHydration(state.hydration);
-}
-
 async function loadMeals() {
-  const query =
-    state.currentMealType === "Все"
-      ? ""
-      : `?mealType=${encodeURIComponent(state.currentMealType)}`;
-  state.meals = await request(`/api/meals${query}`);
+  const query = new URLSearchParams({
+    date: state.selectedDate
+  });
+
+  if (state.currentMealType !== "Все") {
+    query.set("mealType", state.currentMealType);
+  }
+
+  state.meals = await request(`/api/meals?${query.toString()}`);
   renderMeals(state.meals);
   renderFilters();
 }
 
 async function loadDashboard() {
-  state.dashboard = await request("/api/dashboard");
-  state.user = state.dashboard.user;
-  setFormValues(goalsForm, state.dashboard.goals);
-  renderHero(state.dashboard);
-  renderSummary(state.dashboard.summary, state.dashboard.goals);
-  renderInsights(state.dashboard);
-  renderWeeklyTrend(state.dashboard.weeklyTrend);
-  renderAchievements(state.dashboard.achievements);
-  renderRecommendations(state.dashboard.recommendations);
-  renderScoreBreakdown(state.dashboard.smartScore);
-  renderHydration(state.dashboard.hydration);
-  heroWater.textContent = `${state.dashboard.hydration.totalMl.toFixed(0)} мл`;
-  heroWaterCaption.textContent = `${Math.round(state.dashboard.hydration.progress)}% от цели`;
-  productAdminPanel.classList.toggle("hidden", state.user.role !== "admin");
+  state.dashboard = await request(`/api/dashboard?date=${encodeURIComponent(state.selectedDate)}`);
+  renderDashboardSnapshot();
+}
+
+async function loadMetrics() {
+  state.metrics = await request("/api/metrics");
+  renderBodyMetrics(state.metrics);
+}
+
+async function loadShopping() {
+  state.shopping = await request("/api/shopping");
+  renderShopping(state.shopping);
+}
+
+async function refreshWorkspace() {
+  await Promise.all([
+    loadDashboard(),
+    loadMeals(),
+    loadProducts(),
+    loadTemplates(),
+    loadMetrics(),
+    loadShopping()
+  ]);
 }
 
 async function bootstrapSession() {
   setTheme(state.theme);
   apiStatus.textContent = "Система онлайн";
+  syncDateControls();
+  mealForm.elements.namedItem("eatenAt").value = nowTime();
 
   if (!state.token) {
     showAuth();
@@ -740,7 +1102,7 @@ async function bootstrapSession() {
   try {
     await request("/api/auth/me");
     showApp();
-    await Promise.all([loadDashboard(), loadMeals(), loadProducts(), loadTemplates()]);
+    await refreshWorkspace();
   } catch (error) {
     apiStatus.textContent = "Нужен вход";
     showAuth(error.message);
@@ -748,11 +1110,14 @@ async function bootstrapSession() {
 }
 
 async function exportReport(format) {
-  const response = await fetch(`/api/exports/daily-report?format=${format}`, {
-    headers: {
-      Authorization: `Bearer ${state.token}`
+  const response = await fetch(
+    `/api/exports/daily-report?format=${format}&date=${encodeURIComponent(state.selectedDate)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${state.token}`
+      }
     }
-  });
+  );
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
@@ -760,13 +1125,12 @@ async function exportReport(format) {
   }
 
   const content = await response.text();
-  const date = state.dashboard?.date || "today";
 
   if (format === "csv") {
-    downloadTextFile(`nutrition-report-${date}.csv`, content, "text/csv;charset=utf-8");
+    downloadTextFile(`nutrition-report-${state.selectedDate}.csv`, content, "text/csv;charset=utf-8");
   } else {
     downloadTextFile(
-      `nutrition-report-${date}.json`,
+      `nutrition-report-${state.selectedDate}.json`,
       content,
       "application/json;charset=utf-8"
     );
@@ -791,7 +1155,7 @@ loginForm.addEventListener("submit", async (event) => {
 
     setToken(payload.token);
     showApp();
-    await Promise.all([loadDashboard(), loadMeals(), loadProducts(), loadTemplates()]);
+    await refreshWorkspace();
     showFlash("Вход выполнен", "success");
   } catch (error) {
     authMessage.textContent = error.message;
@@ -817,7 +1181,7 @@ registerForm.addEventListener("submit", async (event) => {
 
     setToken(payload.token);
     showApp();
-    await Promise.all([loadDashboard(), loadMeals(), loadProducts(), loadTemplates()]);
+    await refreshWorkspace();
     showFlash("Аккаунт создан", "success");
   } catch (error) {
     authMessage.textContent = error.message;
@@ -837,7 +1201,7 @@ themeToggle.addEventListener("click", () => {
 exportJsonButton.addEventListener("click", async () => {
   try {
     await exportReport("json");
-    showFlash("JSON-отчёт выгружен", "success");
+    showFlash("JSON-отчет выгружен", "success");
   } catch (error) {
     showFlash(error.message, "error");
   }
@@ -846,7 +1210,7 @@ exportJsonButton.addEventListener("click", async () => {
 exportCsvButton.addEventListener("click", async () => {
   try {
     await exportReport("csv");
-    showFlash("CSV-отчёт выгружен", "success");
+    showFlash("CSV-отчет выгружен", "success");
   } catch (error) {
     showFlash(error.message, "error");
   }
@@ -877,6 +1241,7 @@ mealForm.addEventListener("submit", async (event) => {
     body: JSON.stringify({
       title: mealForm.elements.namedItem("title").value.trim(),
       mealType: mealForm.elements.namedItem("mealType").value,
+      date: state.selectedDate,
       eatenAt: mealForm.elements.namedItem("eatenAt").value,
       grams: toNumber(mealForm, "grams"),
       calories: toNumber(mealForm, "calories"),
@@ -890,9 +1255,8 @@ mealForm.addEventListener("submit", async (event) => {
   mealForm.reset();
   mealForm.elements.namedItem("mealType").value = "Завтрак";
   mealForm.elements.namedItem("eatenAt").value = nowTime();
-  await loadDashboard();
-  await loadMeals();
-  showFlash("Приём пищи добавлен", "success");
+  await Promise.all([loadDashboard(), loadMeals()]);
+  showFlash("Прием пищи добавлен", "success");
 });
 
 templateForm.addEventListener("submit", async (event) => {
@@ -914,9 +1278,8 @@ templateForm.addEventListener("submit", async (event) => {
 
   templateForm.reset();
   templateForm.elements.namedItem("mealType").value = "Завтрак";
-  await loadTemplates();
-  await loadDashboard();
-  showFlash("Шаблон сохранён", "success");
+  await Promise.all([loadTemplates(), loadDashboard()]);
+  showFlash("Шаблон сохранен", "success");
 });
 
 if (productForm) {
@@ -943,6 +1306,92 @@ if (productForm) {
   });
 }
 
+checkinForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  await request("/api/checkins", {
+    method: "PUT",
+    body: JSON.stringify({
+      date: state.selectedDate,
+      mood: toNumber(checkinForm, "mood"),
+      energy: toNumber(checkinForm, "energy"),
+      stress: toNumber(checkinForm, "stress"),
+      hunger: toNumber(checkinForm, "hunger"),
+      sleepHours: toNumber(checkinForm, "sleepHours"),
+      notes: checkinForm.elements.namedItem("notes").value.trim()
+    })
+  });
+
+  await loadDashboard();
+  showFlash("Wellbeing check-in сохранен", "success");
+});
+
+bodyMetricForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  await request("/api/metrics", {
+    method: "POST",
+    body: JSON.stringify({
+      date: state.selectedDate,
+      weightKg: toNumber(bodyMetricForm, "weightKg"),
+      bodyFat: toNumber(bodyMetricForm, "bodyFat"),
+      waistCm: toNumber(bodyMetricForm, "waistCm"),
+      chestCm: toNumber(bodyMetricForm, "chestCm"),
+      notes: bodyMetricForm.elements.namedItem("notes").value.trim()
+    })
+  });
+
+  bodyMetricForm.reset();
+  await Promise.all([loadMetrics(), loadDashboard()]);
+  showFlash("Замер тела добавлен", "success");
+});
+
+plannerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  await request("/api/planner", {
+    method: "POST",
+    body: JSON.stringify({
+      title: plannerForm.elements.namedItem("title").value.trim(),
+      mealType: plannerForm.elements.namedItem("mealType").value,
+      date: plannerForm.elements.namedItem("date").value,
+      plannedTime: plannerForm.elements.namedItem("plannedTime").value,
+      targetCalories: toNumber(plannerForm, "targetCalories"),
+      targetProtein: toNumber(plannerForm, "targetProtein"),
+      targetFat: toNumber(plannerForm, "targetFat"),
+      targetCarbs: toNumber(plannerForm, "targetCarbs")
+    })
+  });
+
+  plannerForm.reset();
+  plannerForm.elements.namedItem("mealType").value = "Завтрак";
+  plannerForm.elements.namedItem("date").value = state.selectedDate;
+  plannerForm.elements.namedItem("plannedTime").value = "13:00";
+  await loadDashboard();
+  showFlash("Позиция добавлена в планер", "success");
+});
+
+shoppingForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  await request("/api/shopping", {
+    method: "POST",
+    body: JSON.stringify({
+      title: shoppingForm.elements.namedItem("title").value.trim(),
+      category: shoppingForm.elements.namedItem("category").value.trim(),
+      quantity: toNumber(shoppingForm, "quantity"),
+      unit: shoppingForm.elements.namedItem("unit").value,
+      plannedFor: state.selectedDate,
+      notes: shoppingForm.elements.namedItem("notes").value.trim()
+    })
+  });
+
+  shoppingForm.reset();
+  shoppingForm.elements.namedItem("unit").value = "шт";
+  await Promise.all([loadShopping(), loadDashboard()]);
+  showFlash("Позиция добавлена в список покупок", "success");
+});
+
 productSearchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   state.productSearch = productSearchInput.value.trim();
@@ -955,10 +1404,10 @@ quickWaterButtons.forEach((button) => {
       method: "POST",
       body: JSON.stringify({
         amountMl: Number(button.dataset.water),
-        loggedAt: nowTime()
+        loggedAt: nowTime(),
+        date: state.selectedDate
       })
     });
-    await loadHydration();
     await loadDashboard();
     showFlash(`Добавлено ${button.dataset.water} мл воды`, "success");
   });
@@ -971,12 +1420,41 @@ filterButtons.forEach((button) => {
   });
 });
 
+clearCheckedShoppingButton.addEventListener("click", async () => {
+  await request("/api/shopping/checked", { method: "DELETE" });
+  await Promise.all([loadShopping(), loadDashboard()]);
+  showFlash("Закрытые позиции очищены", "success");
+});
+
+previousDateButton.addEventListener("click", async () => {
+  state.selectedDate = shiftDate(state.selectedDate, -1);
+  await Promise.all([loadDashboard(), loadMeals()]);
+});
+
+nextDateButton.addEventListener("click", async () => {
+  state.selectedDate = shiftDate(state.selectedDate, 1);
+  await Promise.all([loadDashboard(), loadMeals()]);
+});
+
+todayButton.addEventListener("click", async () => {
+  state.selectedDate = getTodayDate();
+  await Promise.all([loadDashboard(), loadMeals()]);
+});
+
+datePickerInput.addEventListener("change", async () => {
+  state.selectedDate = datePickerInput.value || getTodayDate();
+  await Promise.all([loadDashboard(), loadMeals()]);
+});
+
 refreshButton.addEventListener("click", async () => {
-  await Promise.all([loadDashboard(), loadMeals(), loadProducts(), loadTemplates()]);
+  await refreshWorkspace();
   showFlash("Данные обновлены", "info");
 });
 
 mealForm.elements.namedItem("eatenAt").value = nowTime();
+plannerForm.elements.namedItem("date").value = state.selectedDate;
+plannerForm.elements.namedItem("plannedTime").value = "13:00";
+shoppingForm.elements.namedItem("unit").value = "шт";
 setTheme(state.theme);
 
 bootstrapSession().catch((error) => {

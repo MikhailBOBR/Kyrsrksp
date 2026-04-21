@@ -2,7 +2,7 @@ const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "NutriTrack API",
-    version: "1.0.0",
+    version: "1.1.0",
     description:
       "API клиент-серверного приложения для персонального дневника питания с анализом КБЖУ."
   },
@@ -20,7 +20,11 @@ const openApiDocument = {
     { name: "Dashboard" },
     { name: "Hydration" },
     { name: "Templates" },
-    { name: "Exports" }
+    { name: "Exports" },
+    { name: "Checkins" },
+    { name: "Metrics" },
+    { name: "Planner" },
+    { name: "Shopping" }
   ],
   components: {
     securitySchemes: {
@@ -46,35 +50,20 @@ const openApiDocument = {
     "/api/auth/register": {
       post: {
         tags: ["Auth"],
-        summary: "Регистрация пользователя",
-        responses: {
-          201: {
-            description: "Пользователь создан"
-          }
-        }
+        summary: "Регистрация пользователя"
       }
     },
     "/api/auth/login": {
       post: {
         tags: ["Auth"],
-        summary: "Вход пользователя",
-        responses: {
-          200: {
-            description: "Успешная аутентификация"
-          }
-        }
+        summary: "Вход пользователя"
       }
     },
     "/api/auth/me": {
       get: {
         tags: ["Auth"],
         summary: "Текущий пользователь",
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: {
-            description: "Данные текущего пользователя"
-          }
-        }
+        security: [{ bearerAuth: [] }]
       }
     },
     "/api/goals": {
@@ -115,24 +104,24 @@ const openApiDocument = {
     "/api/meals": {
       get: {
         tags: ["Meals"],
-        summary: "Список приёмов пищи",
+        summary: "Список приемов пищи",
         security: [{ bearerAuth: [] }]
       },
       post: {
         tags: ["Meals"],
-        summary: "Создать приём пищи",
+        summary: "Создать прием пищи",
         security: [{ bearerAuth: [] }]
       }
     },
     "/api/meals/{id}": {
       put: {
         tags: ["Meals"],
-        summary: "Обновить приём пищи",
+        summary: "Обновить прием пищи",
         security: [{ bearerAuth: [] }]
       },
       delete: {
         tags: ["Meals"],
-        summary: "Удалить приём пищи",
+        summary: "Удалить прием пищи",
         security: [{ bearerAuth: [] }]
       }
     },
@@ -165,26 +154,26 @@ const openApiDocument = {
     "/api/templates": {
       get: {
         tags: ["Templates"],
-        summary: "Список шаблонов приёмов пищи",
+        summary: "Список шаблонов приемов пищи",
         security: [{ bearerAuth: [] }]
       },
       post: {
         tags: ["Templates"],
-        summary: "Создать шаблон приёма пищи",
+        summary: "Создать шаблон приема пищи",
         security: [{ bearerAuth: [] }]
       }
     },
     "/api/templates/from-meal/{mealId}": {
       post: {
         tags: ["Templates"],
-        summary: "Создать шаблон из существующего приёма пищи",
+        summary: "Создать шаблон из существующего приема пищи",
         security: [{ bearerAuth: [] }]
       }
     },
     "/api/templates/{id}/apply": {
       post: {
         tags: ["Templates"],
-        summary: "Применить шаблон и создать запись приёма пищи",
+        summary: "Применить шаблон и создать запись приема пищи",
         security: [{ bearerAuth: [] }]
       }
     },
@@ -198,7 +187,116 @@ const openApiDocument = {
     "/api/exports/daily-report": {
       get: {
         tags: ["Exports"],
-        summary: "Экспорт дневного отчёта в JSON или CSV",
+        summary: "Экспорт дневного отчета в JSON или CSV",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/checkins": {
+      get: {
+        tags: ["Checkins"],
+        summary: "Получить wellbeing-запись и тренд",
+        security: [{ bearerAuth: [] }]
+      },
+      put: {
+        tags: ["Checkins"],
+        summary: "Создать или обновить wellbeing-запись",
+        security: [{ bearerAuth: [] }]
+      },
+      delete: {
+        tags: ["Checkins"],
+        summary: "Удалить wellbeing-запись по дате",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/metrics": {
+      get: {
+        tags: ["Metrics"],
+        summary: "Получить историю замеров тела",
+        security: [{ bearerAuth: [] }]
+      },
+      post: {
+        tags: ["Metrics"],
+        summary: "Добавить замер тела",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/metrics/{id}": {
+      delete: {
+        tags: ["Metrics"],
+        summary: "Удалить замер тела",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/planner": {
+      get: {
+        tags: ["Planner"],
+        summary: "Получить план приемов пищи",
+        security: [{ bearerAuth: [] }]
+      },
+      post: {
+        tags: ["Planner"],
+        summary: "Создать план приема пищи",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/planner/from-template/{templateId}": {
+      post: {
+        tags: ["Planner"],
+        summary: "Создать план на основе шаблона",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/planner/{id}/completion": {
+      patch: {
+        tags: ["Planner"],
+        summary: "Изменить статус выполнения плана",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/planner/{id}": {
+      delete: {
+        tags: ["Planner"],
+        summary: "Удалить план приема пищи",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/shopping": {
+      get: {
+        tags: ["Shopping"],
+        summary: "Получить список покупок",
+        security: [{ bearerAuth: [] }]
+      },
+      post: {
+        tags: ["Shopping"],
+        summary: "Добавить позицию в список покупок",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/shopping/from-product/{productId}": {
+      post: {
+        tags: ["Shopping"],
+        summary: "Добавить продукт из каталога в список покупок",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/shopping/{id}/check": {
+      patch: {
+        tags: ["Shopping"],
+        summary: "Изменить статус покупки",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/shopping/checked": {
+      delete: {
+        tags: ["Shopping"],
+        summary: "Очистить закрытые позиции списка покупок",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/shopping/{id}": {
+      delete: {
+        tags: ["Shopping"],
+        summary: "Удалить позицию из списка покупок",
         security: [{ bearerAuth: [] }]
       }
     }

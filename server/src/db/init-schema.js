@@ -84,6 +84,70 @@ function ensureSchema() {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS daily_checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      entry_date TEXT NOT NULL,
+      mood REAL NOT NULL,
+      energy REAL NOT NULL,
+      stress REAL NOT NULL,
+      hunger REAL NOT NULL,
+      sleep_hours REAL NOT NULL,
+      notes TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(user_id, entry_date),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS body_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      entry_date TEXT NOT NULL,
+      weight_kg REAL NOT NULL,
+      body_fat REAL,
+      waist_cm REAL,
+      chest_cm REAL,
+      notes TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      entry_date TEXT NOT NULL,
+      meal_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      target_calories REAL NOT NULL,
+      target_protein REAL NOT NULL,
+      target_fat REAL NOT NULL,
+      target_carbs REAL NOT NULL,
+      planned_time TEXT NOT NULL,
+      completed INTEGER NOT NULL DEFAULT 0,
+      linked_template_id INTEGER,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (linked_template_id) REFERENCES meal_templates(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS shopping_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit TEXT NOT NULL DEFAULT 'шт',
+      planned_for TEXT,
+      source TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      is_checked INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 }
 
@@ -351,6 +415,207 @@ function seedTemplates() {
   });
 }
 
+function seedCheckins() {
+  const existingCount = db
+    .prepare(`SELECT COUNT(*) AS count FROM daily_checkins`)
+    .get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const today = getLocalDate();
+  const now = getTimestamp();
+  const insertCheckin = db.prepare(`
+    INSERT INTO daily_checkins (
+      user_id, entry_date, mood, energy, stress, hunger, sleep_hours, notes, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insertCheckin.run(
+    demoUserId,
+    today,
+    4,
+    4,
+    2,
+    3,
+    7.5,
+    "Ровный день, комфортный аппетит и хорошая концентрация.",
+    now,
+    now
+  );
+}
+
+function seedBodyMetrics() {
+  const existingCount = db.prepare(`SELECT COUNT(*) AS count FROM body_metrics`).get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const today = getLocalDate();
+  const insertMetric = db.prepare(`
+    INSERT INTO body_metrics (
+      user_id, entry_date, weight_kg, body_fat, waist_cm, chest_cm, notes, created_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  [
+    {
+      date: today,
+      weightKg: 78.4,
+      bodyFat: 18.6,
+      waistCm: 83,
+      chestCm: 102,
+      notes: "Контрольная утренняя запись."
+    },
+    {
+      date: today,
+      weightKg: 78.2,
+      bodyFat: 18.4,
+      waistCm: 82.5,
+      chestCm: 102,
+      notes: "Повторный замер после недели стабильного режима."
+    }
+  ].forEach((entry, index) => {
+    insertMetric.run(
+      demoUserId,
+      index === 0 ? getLocalDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) : entry.date,
+      entry.weightKg,
+      entry.bodyFat,
+      entry.waistCm,
+      entry.chestCm,
+      entry.notes,
+      getTimestamp()
+    );
+  });
+}
+
+function seedPlanner() {
+  const existingCount = db.prepare(`SELECT COUNT(*) AS count FROM meal_plans`).get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const templateId = db
+    .prepare(`SELECT id FROM meal_templates WHERE user_id = ? ORDER BY id ASC LIMIT 1`)
+    .get(demoUserId)?.id;
+  const today = getLocalDate();
+  const insertPlan = db.prepare(`
+    INSERT INTO meal_plans (
+      user_id, entry_date, meal_type, title, target_calories, target_protein,
+      target_fat, target_carbs, planned_time, completed, linked_template_id, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  [
+    {
+      date: today,
+      mealType: "Завтрак",
+      title: "Белковый завтрак",
+      targetCalories: 430,
+      targetProtein: 32,
+      targetFat: 14,
+      targetCarbs: 42,
+      plannedTime: "08:00",
+      completed: 1
+    },
+    {
+      date: today,
+      mealType: "Обед",
+      title: "Курица с рисом и овощами",
+      targetCalories: 620,
+      targetProtein: 44,
+      targetFat: 18,
+      targetCarbs: 68,
+      plannedTime: "13:00",
+      completed: 0
+    },
+    {
+      date: today,
+      mealType: "Ужин",
+      title: "Легкий ужин с рыбой",
+      targetCalories: 430,
+      targetProtein: 34,
+      targetFat: 11,
+      targetCarbs: 30,
+      plannedTime: "19:30",
+      completed: 0
+    }
+  ].forEach((entry) => {
+    const now = getTimestamp();
+    insertPlan.run(
+      demoUserId,
+      entry.date,
+      entry.mealType,
+      entry.title,
+      entry.targetCalories,
+      entry.targetProtein,
+      entry.targetFat,
+      entry.targetCarbs,
+      entry.plannedTime,
+      entry.completed,
+      templateId || null,
+      now,
+      now
+    );
+  });
+}
+
+function seedShopping() {
+  const existingCount = db.prepare(`SELECT COUNT(*) AS count FROM shopping_items`).get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const today = getLocalDate();
+  const now = getTimestamp();
+  const insertItem = db.prepare(`
+    INSERT INTO shopping_items (
+      user_id, title, category, quantity, unit, planned_for, source, notes, is_checked, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  [
+    ["Греческий йогурт", "Белковые продукты", 4, "шт", today, "quick-add", "На неделю", 0],
+    ["Овсяные хлопья", "Крупы и гарниры", 1, "уп", today, "planner", "Для завтраков", 0],
+    ["Брокколи", "Овощи", 2, "уп", today, "planner", "", 0],
+    ["Бананы", "Фрукты", 6, "шт", today, "recommendation", "Для перекусов", 1]
+  ].forEach((entry) => {
+    insertItem.run(
+      demoUserId,
+      entry[0],
+      entry[1],
+      entry[2],
+      entry[3],
+      entry[4],
+      entry[5],
+      entry[6],
+      entry[7],
+      now,
+      now
+    );
+  });
+}
+
 function initializeDatabase() {
   ensureSchema();
   seedUsers();
@@ -359,6 +624,10 @@ function initializeDatabase() {
   seedMeals();
   seedHydration();
   seedTemplates();
+  seedCheckins();
+  seedBodyMetrics();
+  seedPlanner();
+  seedShopping();
 }
 
 module.exports = {

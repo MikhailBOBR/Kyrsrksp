@@ -160,6 +160,22 @@ a {
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
+.date-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.date-toolbar input {
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
 .primary-button,
 .primary-link,
 .filter-chip.is-active {
@@ -441,7 +457,9 @@ a {
 .products-grid,
 .weekly-grid,
 .recommendations-grid,
-.score-grid {
+.score-grid,
+.wellbeing-grid,
+.stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
@@ -501,6 +519,12 @@ a {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
+}
+
+.suggestion-tile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .hydration-summary {
@@ -578,6 +602,14 @@ a {
   align-items: center;
 }
 
+.wellbeing-highlight {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
 .hidden {
   display: none !important;
 }
@@ -598,7 +630,9 @@ a {
   .products-grid,
   .weekly-grid,
   .recommendations-grid,
-  .score-grid {
+  .score-grid,
+  .wellbeing-grid,
+  .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -635,11 +669,14 @@ a {
   .products-grid,
   .weekly-grid,
   .recommendations-grid,
-  .score-grid {
+  .score-grid,
+  .wellbeing-grid,
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 
   .toolbar-form,
+  .date-toolbar,
   .panel-head,
   .meal-card,
   .meal-head,
@@ -661,6 +698,10 @@ a {
   .primary-link,
   .ghost-link,
   .topbar-chip {
+    width: 100%;
+  }
+
+  .date-toolbar input {
     width: 100%;
   }
 }

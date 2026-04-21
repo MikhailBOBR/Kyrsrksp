@@ -21,10 +21,16 @@
 - справочник продуктов с административным управлением;
 - ежедневный dashboard с summary, insights и weekly trend;
 - smart score, achievements и streak;
+- wellbeing check-in с оценкой настроения, энергии, стресса, аппетита и сна;
+- body metrics: вес, процент жира, талия, грудь и история замеров;
+- meal planner с планированием приемов пищи и контролем выполнения;
+- shopping board для списка покупок с быстрым добавлением из каталога продуктов;
 - трекер воды и быстрые кнопки hydration;
 - шаблоны приёмов пищи с применением в один клик;
+- отправка шаблонов и записей в планер;
 - рекомендации по добору КБЖУ на основе каталога продуктов;
 - экспорт отчёта за день в `JSON` и `CSV`;
+- просмотр dashboard и журнала по выбранной дате;
 - светлая и тёмная тема интерфейса;
 - фильтрация журнала по типам приёма пищи;
 - Swagger по адресу `/api/docs`;
@@ -131,6 +137,16 @@ npm test
 - `GET /api/dashboard`
 - `GET /api/hydration`
 - `POST /api/hydration`
+- `GET /api/checkins`
+- `PUT /api/checkins`
+- `GET /api/metrics`
+- `POST /api/metrics`
+- `GET /api/planner`
+- `POST /api/planner`
+- `PATCH /api/planner/:id/completion`
+- `GET /api/shopping`
+- `POST /api/shopping`
+- `POST /api/shopping/from-product/:productId`
 - `GET /api/templates`
 - `POST /api/templates`
 - `POST /api/templates/:id/apply`
@@ -148,4 +164,4 @@ npm test
 
 
 
-ВСЕ за ночь и день вроде
+Все это точно все что было 

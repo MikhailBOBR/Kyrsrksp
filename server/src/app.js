@@ -11,6 +11,10 @@ const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const hydrationRoutes = require("./modules/hydration/hydration.routes");
 const templatesRoutes = require("./modules/templates/templates.routes");
 const exportsRoutes = require("./modules/exports/exports.routes");
+const checkinsRoutes = require("./modules/checkins/checkins.routes");
+const metricsRoutes = require("./modules/metrics/metrics.routes");
+const plannerRoutes = require("./modules/planner/planner.routes");
+const shoppingRoutes = require("./modules/shopping/shopping.routes");
 const { openApiDocument } = require("./modules/docs/openapi");
 
 function createApp() {
@@ -40,6 +44,10 @@ function createApp() {
   app.use("/api/hydration", hydrationRoutes);
   app.use("/api/templates", templatesRoutes);
   app.use("/api/exports", exportsRoutes);
+  app.use("/api/checkins", checkinsRoutes);
+  app.use("/api/metrics", metricsRoutes);
+  app.use("/api/planner", plannerRoutes);
+  app.use("/api/shopping", shoppingRoutes);
 
   app.use(express.static(clientRoot));
 

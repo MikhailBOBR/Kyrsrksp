@@ -1,6 +1,7 @@
 const { adminUser, demoUser } = require("../config/env");
 const { addDays, getLocalDate, getTimestamp } = require("../lib/date");
 const { hashPassword } = require("../lib/security");
+const { seedWellbeingRange } = require("../modules/checkins/checkins.service");
 const { db } = require("./connection");
 const { initializeDatabase } = require("./init-schema");
 
@@ -16,7 +17,10 @@ const BULK_SEED_CONFIG = {
   demoHistoryDays: 120,
   sampleHistoryDays: 75,
   demoTemplateCount: 24,
-  sampleTemplateCount: 12
+  sampleTemplateCount: 12,
+  demoMetricCount: 16,
+  sampleMetricCount: 8,
+  plannerDays: 6
 };
 
 const productBlueprints = [
@@ -423,8 +427,157 @@ function buildHydrationPlan(userIndex) {
   return plan;
 }
 
+function ensureBodyMetricsForUser(userId, daysBack, baseWeight) {
+  const existingDates = new Set(
+    db
+      .prepare(`SELECT entry_date FROM body_metrics WHERE user_id = ?`)
+      .all(userId)
+      .map((entry) => entry.entry_date)
+  );
+  const insertMetric = db.prepare(`
+    INSERT INTO body_metrics (
+      user_id, entry_date, weight_kg, body_fat, waist_cm, chest_cm, notes, created_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (let index = daysBack - 1; index >= 0; index -= 1) {
+    const date = addDays(getLocalDate(), -(index * 7));
+
+    if (existingDates.has(date)) {
+      continue;
+    }
+
+    const weightKg = Number((baseWeight - (daysBack - index) * 0.15).toFixed(1));
+    const bodyFat = Number((18 + ((userId + index) % 4) * 0.4).toFixed(1));
+    const waistCm = Number((82 + ((userId + index) % 5) * 0.5).toFixed(1));
+    const chestCm = Number((100 + ((userId + index) % 3) * 0.7).toFixed(1));
+
+    insertMetric.run(
+      userId,
+      date,
+      weightKg,
+      bodyFat,
+      waistCm,
+      chestCm,
+      "Bulk body-metrics seed.",
+      `${date}T07:30:00.000Z`
+    );
+  }
+}
+
+function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
+  const insertPlan = db.prepare(`
+    INSERT INTO meal_plans (
+      user_id, entry_date, meal_type, title, target_calories, target_protein,
+      target_fat, target_carbs, planned_time, completed, linked_template_id, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const existingKeys = new Set(
+    db
+      .prepare(`SELECT entry_date, meal_type, planned_time FROM meal_plans WHERE user_id = ?`)
+      .all(userId)
+      .map((entry) => `${entry.entry_date}|${entry.meal_type}|${entry.planned_time}`)
+  );
+  const templates = db
+    .prepare(`SELECT id, name, meal_type, calories, protein, fat, carbs FROM meal_templates WHERE user_id = ?`)
+    .all(userId);
+
+  for (let index = 0; index < daysCount; index += 1) {
+    const date = addDays(startDate, index);
+    const plan = buildMealPlan(userIndex + index);
+
+    plan.forEach((entry, planIndex) => {
+      const key = `${date}|${entry.mealType}|${entry.time}`;
+
+      if (existingKeys.has(key)) {
+        return;
+      }
+
+      const template = templates[(index + planIndex) % Math.max(templates.length, 1)] || null;
+      const calories = 320 + ((index + planIndex) % 5) * 70;
+      const protein = 18 + ((index + planIndex) % 4) * 8;
+      const fat = 9 + ((index + planIndex) % 4) * 3;
+      const carbs = 24 + ((index + planIndex) % 4) * 11;
+
+      insertPlan.run(
+        userId,
+        date,
+        entry.mealType,
+        template?.name || `${entry.mealType} plan ${index + 1}`,
+        template?.calories || calories,
+        template?.protein || protein,
+        template?.fat || fat,
+        template?.carbs || carbs,
+        entry.time,
+        index === 0 && planIndex === 0 ? 1 : 0,
+        template?.id || null,
+        `${date}T06:00:00.000Z`,
+        `${date}T06:00:00.000Z`
+      );
+    });
+  }
+}
+
+function ensureShoppingForUser(userId, userIndex) {
+  const existingTitles = new Set(
+    db
+      .prepare(`SELECT title FROM shopping_items WHERE user_id = ?`)
+      .all(userId)
+      .map((entry) => entry.title)
+  );
+  const insertItem = db.prepare(`
+    INSERT INTO shopping_items (
+      user_id, title, category, quantity, unit, planned_for, source, notes, is_checked, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const today = getLocalDate();
+  const suggestions = [
+    ["Греческий йогурт", "Белковые продукты", 4, "шт"],
+    ["Овсяные хлопья", "Крупы и гарниры", 1, "уп"],
+    ["Брокколи", "Овощи", 2, "уп"],
+    ["Бананы", "Фрукты", 6, "шт"],
+    ["Кефир 1%", "Напитки", 2, "шт"]
+  ];
+
+  suggestions.forEach((item, index) => {
+    const title = `${item[0]} ${userIndex + 1}`;
+
+    if (existingTitles.has(title)) {
+      return;
+    }
+
+    insertItem.run(
+      userId,
+      title,
+      item[1],
+      item[2],
+      item[3],
+      today,
+      "bulk-seed",
+      "Автоматически добавлено для пользовательского сценария закупки.",
+      index === 0 ? 1 : 0,
+      `${today}T09:00:00.000Z`,
+      `${today}T09:00:00.000Z`
+    );
+  });
+}
+
 function collectStats() {
-  const tables = ["users", "goals", "products", "meals", "hydration_logs", "meal_templates"];
+  const tables = [
+    "users",
+    "goals",
+    "products",
+    "meals",
+    "hydration_logs",
+    "meal_templates",
+    "daily_checkins",
+    "body_metrics",
+    "meal_plans",
+    "shopping_items"
+  ];
   const stats = Object.fromEntries(
     tables.map((table) => [
       table,
@@ -447,6 +600,18 @@ function collectStats() {
       .get(demoUserId).count,
     templates: db
       .prepare(`SELECT COUNT(*) AS count FROM meal_templates WHERE user_id = ?`)
+      .get(demoUserId).count,
+    checkins: db
+      .prepare(`SELECT COUNT(*) AS count FROM daily_checkins WHERE user_id = ?`)
+      .get(demoUserId).count,
+    metrics: db
+      .prepare(`SELECT COUNT(*) AS count FROM body_metrics WHERE user_id = ?`)
+      .get(demoUserId).count,
+    plans: db
+      .prepare(`SELECT COUNT(*) AS count FROM meal_plans WHERE user_id = ?`)
+      .get(demoUserId).count,
+    shopping: db
+      .prepare(`SELECT COUNT(*) AS count FROM shopping_items WHERE user_id = ?`)
       .get(demoUserId).count
   };
 
@@ -484,6 +649,10 @@ function main() {
       { time: "20:15", amountMl: 450 }
     ]);
     ensureTemplatesForUser(demo.id, BULK_SEED_CONFIG.demoTemplateCount);
+    seedWellbeingRange(demo.id, getLocalDate(), BULK_SEED_CONFIG.demoHistoryDays);
+    ensureBodyMetricsForUser(demo.id, BULK_SEED_CONFIG.demoMetricCount, 81.4);
+    ensurePlannerForUser(demo.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, 0);
+    ensureShoppingForUser(demo.id, 0);
 
     others.forEach((user, index) => {
       ensureMealsForUser(
@@ -498,6 +667,14 @@ function main() {
         buildHydrationPlan(index)
       );
       ensureTemplatesForUser(user.id, BULK_SEED_CONFIG.sampleTemplateCount);
+      seedWellbeingRange(user.id, getLocalDate(), BULK_SEED_CONFIG.sampleHistoryDays);
+      ensureBodyMetricsForUser(
+        user.id,
+        BULK_SEED_CONFIG.sampleMetricCount,
+        86 + index * 1.4
+      );
+      ensurePlannerForUser(user.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, index + 1);
+      ensureShoppingForUser(user.id, index + 1);
     });
   });
 

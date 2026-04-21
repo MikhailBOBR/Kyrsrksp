@@ -3,8 +3,7 @@ const { getGoals } = require("../goals/goals.service");
 const { listMeals } = require("../meals/meals.service");
 const { getHydrationSummary } = require("../hydration/hydration.service");
 
-function buildReport(user) {
-  const date = getLocalDate();
+function buildReport(user, date = getLocalDate()) {
   const goals = getGoals(user.id);
   const meals = listMeals(user.id, { date });
   const hydration = getHydrationSummary(user.id, date);

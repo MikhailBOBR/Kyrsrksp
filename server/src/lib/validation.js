@@ -39,6 +39,23 @@ function assertNumber(value, fieldName) {
   }
 }
 
+function assertInRange(value, fieldName, min, max) {
+  if (typeof value !== "number" || Number.isNaN(value) || value < min || value > max) {
+    throw createHttpError(400, `Field "${fieldName}" must be between ${min} and ${max}`);
+  }
+}
+
+function assertOneOf(value, fieldName, allowedValues) {
+  assertNonEmptyString(value, fieldName);
+
+  if (!allowedValues.includes(value.trim())) {
+    throw createHttpError(
+      400,
+      `Field "${fieldName}" must be one of: ${allowedValues.join(", ")}`
+    );
+  }
+}
+
 function assertDate(value, fieldName = "date") {
   assertNonEmptyString(value, fieldName);
 
@@ -77,9 +94,11 @@ function assertProductCategory(value) {
 module.exports = {
   assertDate,
   assertEmail,
+  assertInRange,
   assertMealType,
   assertNonEmptyString,
   assertNumber,
+  assertOneOf,
   assertPassword,
   assertProductCategory,
   assertTime,
