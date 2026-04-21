@@ -3,25 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NutriTrack | Персональный дневник питания</title>
+    <title>Дневник питания | NutriTrack</title>
+    <meta name="theme-color" content="#536883" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="page-shell">
       <header class="topbar">
         <div class="topbar-brand-block">
-          <a class="brand" href="/">NutriTrack</a>
-          <p class="topbar-subtitle">Персональный дневник питания с анализом КБЖУ</p>
+          <p class="brand-kicker">Персональный дневник питания</p>
+          <a class="brand" href="/">Дневник питания</a>
+          <p class="topbar-subtitle">NutriTrack · контроль КБЖУ, самочувствия и режима дня</p>
         </div>
 
         <div class="topbar-actions">
-          <a class="topbar-chip" href="/api/docs" target="_blank" rel="noreferrer">Swagger</a>
+          <a class="topbar-chip" href="/api/docs" target="_blank" rel="noreferrer">API-документация</a>
           <button id="theme-toggle" class="topbar-chip" type="button">Темная тема</button>
           <button id="export-json-button" class="topbar-chip hidden" type="button">
-            Export JSON
+            Экспорт JSON
           </button>
           <button id="export-csv-button" class="topbar-chip hidden" type="button">
-            Export CSV
+            Экспорт CSV
           </button>
           <div class="topbar-chip topbar-chip-status">
             <span class="status-dot"></span>
@@ -35,13 +38,16 @@
       </header>
 
       <section id="auth-shell" class="auth-layout">
-        <article class="panel auth-panel">
-          <p class="section-label">Вход</p>
-          <h2>Рабочее пространство пользователя</h2>
-          <p class="panel-text">
-            Войдите в аккаунт, чтобы открыть аналитику, планер, список покупок, замеры тела,
-            шаблоны, рекомендации и историю питания.
-          </p>
+        <article class="panel auth-panel auth-panel-primary">
+          <div class="auth-panel-copy">
+            <p class="section-label">Вход</p>
+            <h2>Рабочая панель питания</h2>
+            <p class="panel-text">
+              Войдите в систему, чтобы открыть дневник питания, аналитику КБЖУ, планер приемов
+              пищи, оценку самочувствия, замеры тела и список покупок.
+            </p>
+          </div>
+
           <form id="login-form" class="grid-form auth-form">
             <label>
               Email
@@ -53,6 +59,7 @@
             </label>
             <button class="primary-button" type="submit">Войти</button>
           </form>
+
           <div class="credentials-card">
             <p class="dashboard-label">Тестовые аккаунты</p>
             <p class="dashboard-note">Пользователь: demo@nutritrack.local / Demo123!</p>
@@ -61,12 +68,15 @@
         </article>
 
         <article class="panel auth-panel">
-          <p class="section-label">Регистрация</p>
-          <h2>Создать новый профиль</h2>
-          <p class="panel-text">
-            После регистрации система создаст персональные цели по КБЖУ и полноценное рабочее
-            пространство для контроля питания.
-          </p>
+          <div class="auth-panel-copy">
+            <p class="section-label">Регистрация</p>
+            <h2>Создать новый профиль</h2>
+            <p class="panel-text">
+              После регистрации система подготовит базовые цели по КБЖУ и персональное рабочее
+              пространство для контроля рациона по дням.
+            </p>
+          </div>
+
           <form id="register-form" class="grid-form auth-form">
             <label>
               Имя
@@ -82,618 +92,488 @@
             </label>
             <button class="primary-button" type="submit">Зарегистрироваться</button>
           </form>
+
           <p id="auth-message" class="muted-text">
             После входа откроется рабочая панель пользователя.
           </p>
         </article>
       </section>
 
-      <div id="app-shell" class="hidden">
-        <section class="hero">
-          <div class="hero-copy">
-            <p class="eyebrow">Smart Nutrition Workspace</p>
-            <h1>Взрослая панель управления питанием, самочувствием и режимом дня.</h1>
-            <p class="hero-text">
-              Здесь собраны аналитика КБЖУ, планер приема пищи, wellbeing check-in, замеры тела,
-              список покупок, рекомендации, трекер воды, шаблоны и журнал активности по датам.
+      <div id="app-shell" class="workspace-shell hidden">
+        <aside class="workspace-sidebar">
+          <section class="sidebar-card sidebar-brand">
+            <p class="sidebar-kicker">Система</p>
+            <h2>Панель питания</h2>
+            <p class="sidebar-product-name">NutriTrack</p>
+            <p class="sidebar-copy">
+              Рабочая область для учета приемов пищи, контроля целей и планирования рациона по
+              дням.
             </p>
-
-            <div class="hero-actions">
-              <a class="primary-link" href="#meal-panel">Добавить прием пищи</a>
-              <a class="ghost-link" href="#planner-panel">Открыть планер</a>
-            </div>
-
-            <div class="hero-points">
-              <span>Dark theme</span>
-              <span>Meal templates</span>
-              <span>Hydration tracker</span>
-              <span>Achievements</span>
-              <span>Recommendations</span>
-              <span>Meal planner</span>
-              <span>Body metrics</span>
-              <span>Shopping board</span>
-            </div>
-          </div>
-
-          <div class="hero-grid">
-            <article class="hero-card hero-card-main">
-              <p class="dashboard-label">Калории за день</p>
-              <strong id="hero-calories">0 ккал</strong>
-              <p id="hero-calories-caption" class="dashboard-note">Загрузка данных...</p>
-              <p id="hero-updated-at" class="dashboard-subnote">Подготовка данных...</p>
-              <div class="mini-progress">
-                <div id="hero-calories-bar" class="mini-progress-fill"></div>
-              </div>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Smart Score</p>
-              <strong id="hero-smart-score">0</strong>
-              <p id="hero-smart-score-caption" class="dashboard-note">Индекс качества дня</p>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Streak</p>
-              <strong id="hero-streak">0 дней</strong>
-              <p id="hero-streak-caption" class="dashboard-note">Серийность дневника</p>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Вода</p>
-              <strong id="hero-water">0 мл</strong>
-              <p id="hero-water-caption" class="dashboard-note">Прогресс гидратации</p>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Профиль</p>
-              <strong id="hero-user-name">--</strong>
-              <p id="hero-user-role" class="dashboard-note">Роль загружается</p>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Дата</p>
-              <strong id="hero-date-label">--</strong>
-              <p id="hero-storage" class="dashboard-note">Источник данных загружается</p>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Приемов пищи</p>
-              <strong id="hero-meals-count">0</strong>
-              <p id="hero-last-meal" class="dashboard-note">Сегодня еще нет записей</p>
-            </article>
-
-            <article class="hero-card">
-              <p class="dashboard-label">Фокус дня</p>
-              <strong id="hero-focus-title">Подготовка аналитики</strong>
-              <p id="hero-focus-text" class="dashboard-note">Данные появятся после загрузки.</p>
-            </article>
-          </div>
-        </section>
-
-        <p id="global-message" class="flash-message hidden"></p>
-
-        <main class="layout">
-          <section class="panel wide-panel" id="analytics-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Аналитика</p>
-                <h2>Сводка по КБЖУ и ежедневный баланс</h2>
-              </div>
-              <div class="panel-head-actions">
-                <p id="current-date-label" class="muted-text">Текущая дата: --</p>
-                <div class="date-toolbar">
-                  <button id="previous-date-button" class="ghost-button small-button" type="button">
-                    Вчера
-                  </button>
-                  <input id="date-picker-input" type="date" />
-                  <button id="today-button" class="ghost-button small-button" type="button">
-                    Сегодня
-                  </button>
-                  <button id="next-date-button" class="ghost-button small-button" type="button">
-                    Завтра
-                  </button>
-                </div>
-                <button id="refresh-button" class="ghost-button" type="button">
-                  Обновить данные
-                </button>
-              </div>
-            </div>
-            <div id="summary-cards" class="summary-grid"></div>
           </section>
 
-          <section class="panel" id="score-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Smart Score</p>
-                <h2>Компоненты качества дня</h2>
-              </div>
-            </div>
-            <div id="score-breakdown" class="score-grid"></div>
+          <nav class="sidebar-card sidebar-nav">
+            <p class="sidebar-title">Навигация</p>
+            <a class="sidebar-link" href="#analytics-panel">Обзор дня</a>
+            <a class="sidebar-link" href="#wellbeing-panel">Самочувствие</a>
+            <a class="sidebar-link" href="#planner-panel">План питания</a>
+            <a class="sidebar-link" href="#journal-panel">Журнал</a>
+            <a class="sidebar-link" href="#products-panel">Каталог</a>
+            <a class="sidebar-link" href="#shopping-panel">Покупки</a>
+          </nav>
+
+          <section class="sidebar-card sidebar-meta">
+            <p class="sidebar-title">Рабочие модули</p>
+            <ul class="sidebar-list">
+              <li>Аналитика КБЖУ и индекс дня</li>
+              <li>Вода, самочувствие и замеры тела</li>
+              <li>План питания, шаблоны и журнал</li>
+              <li>Покупки и продуктовый справочник</li>
+            </ul>
           </section>
+        </aside>
 
-          <section class="panel" id="hydration-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Hydration</p>
-                <h2>Трекер воды</h2>
-              </div>
-            </div>
-            <div class="hydration-summary">
-              <strong id="hydration-total">0 мл</strong>
-              <p id="hydration-caption" class="dashboard-note">Прогресс гидратации</p>
-              <div class="mini-progress">
-                <div id="hydration-progress" class="mini-progress-fill"></div>
-              </div>
-            </div>
-            <div class="quick-actions">
-              <button class="quick-water-button" type="button" data-water="250">+250 мл</button>
-              <button class="quick-water-button" type="button" data-water="350">+350 мл</button>
-              <button class="quick-water-button" type="button" data-water="500">+500 мл</button>
-            </div>
-            <div id="hydration-list" class="stack-list"></div>
-          </section>
-
-          <section class="panel wide-panel" id="insights-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Insights</p>
-                <h2>Ключевые показатели и достижения</h2>
-              </div>
-            </div>
-            <div class="insights-grid">
-              <article class="insight-card">
-                <p class="dashboard-label">Самая калорийная запись</p>
-                <strong id="insight-top-calorie-title">--</strong>
-                <p id="insight-top-calorie-text" class="dashboard-note">--</p>
-              </article>
-
-              <article class="insight-card">
-                <p class="dashboard-label">Лучший источник белка</p>
-                <strong id="insight-top-protein-title">--</strong>
-                <p id="insight-top-protein-text" class="dashboard-note">--</p>
-              </article>
-
-              <article class="insight-card">
-                <p class="dashboard-label">Средняя калорийность</p>
-                <strong id="insight-average-calories">--</strong>
-                <p id="insight-average-protein" class="dashboard-note">--</p>
-              </article>
-
-              <article class="insight-card">
-                <p class="dashboard-label">Статус по цели</p>
-                <strong id="insight-goal-status">--</strong>
-                <p id="insight-goal-text" class="dashboard-note">--</p>
-              </article>
-            </div>
-
-            <div class="split-grid">
-              <div class="subsection-card">
-                <div class="panel-head panel-head-compact">
-                  <div>
-                    <p class="section-label">Achievements</p>
-                    <h2>Достижения пользователя</h2>
-                  </div>
-                </div>
-                <div id="achievements-list" class="badge-grid"></div>
-              </div>
-
-              <div class="subsection-card">
-                <div class="panel-head panel-head-compact">
-                  <div>
-                    <p class="section-label">Breakdown</p>
-                    <h2>Распределение по типам</h2>
-                  </div>
-                </div>
-                <div id="meal-type-breakdown" class="breakdown-grid"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel wide-panel" id="recommendations-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Recommendations</p>
-                <h2>Персональные рекомендации на сегодня</h2>
-              </div>
-            </div>
-            <div id="recommendations-list" class="recommendations-grid"></div>
-          </section>
-
-          <section class="panel wide-panel" id="weekly-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Weekly Trend</p>
-                <h2>Активность за последние 7 дней</h2>
-              </div>
-            </div>
-            <div id="weekly-trend" class="weekly-grid"></div>
-          </section>
-
-          <section class="panel wide-panel" id="wellbeing-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Wellbeing</p>
-                <h2>Самочувствие, энергия и готовность дня</h2>
-              </div>
-            </div>
-            <div class="split-grid">
-              <div class="subsection-card">
-                <div class="panel-head panel-head-compact">
-                  <div>
-                    <p class="section-label">Check-In</p>
-                    <h2>Ежедневная отметка состояния</h2>
-                  </div>
-                </div>
-                <form id="checkin-form" class="grid-form">
-                  <label>
-                    Настроение
-                    <input name="mood" type="number" min="1" max="5" step="1" required />
-                  </label>
-                  <label>
-                    Энергия
-                    <input name="energy" type="number" min="1" max="5" step="1" required />
-                  </label>
-                  <label>
-                    Стресс
-                    <input name="stress" type="number" min="1" max="5" step="1" required />
-                  </label>
-                  <label>
-                    Аппетит
-                    <input name="hunger" type="number" min="1" max="5" step="1" required />
-                  </label>
-                  <label>
-                    Сон, часы
-                    <input name="sleepHours" type="number" min="0" max="24" step="0.1" required />
-                  </label>
-                  <label class="wide-field">
-                    Заметка
-                    <input name="notes" type="text" maxlength="140" />
-                  </label>
-                  <button class="primary-button" type="submit">Сохранить check-in</button>
-                </form>
-              </div>
-
-              <div class="subsection-card">
-                <div class="panel-head panel-head-compact">
-                  <div>
-                    <p class="section-label">Readiness</p>
-                    <h2>Текущий индекс самочувствия</h2>
-                  </div>
-                </div>
-                <div class="wellbeing-highlight">
-                  <strong id="wellbeing-readiness-score">0</strong>
-                  <p id="wellbeing-readiness-caption" class="dashboard-note">Данные загружаются...</p>
-                </div>
-                <div id="wellbeing-trend" class="wellbeing-grid"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel wide-panel" id="body-metrics-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Body Metrics</p>
-                <h2>Контроль прогресса тела и антропометрии</h2>
-              </div>
-            </div>
-            <div class="split-grid">
-              <div class="subsection-card">
-                <div id="body-metrics-summary" class="stats-grid"></div>
-                <form id="body-metric-form" class="grid-form">
-                  <label>
-                    Вес, кг
-                    <input name="weightKg" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label>
-                    Жир, %
-                    <input name="bodyFat" type="number" min="0" step="0.1" />
-                  </label>
-                  <label>
-                    Талия, см
-                    <input name="waistCm" type="number" min="0" step="0.1" />
-                  </label>
-                  <label>
-                    Грудь, см
-                    <input name="chestCm" type="number" min="0" step="0.1" />
-                  </label>
-                  <label class="wide-field">
-                    Комментарий
-                    <input name="notes" type="text" maxlength="140" />
-                  </label>
-                  <button class="primary-button" type="submit">Добавить замер</button>
-                </form>
-              </div>
-              <div id="body-metrics-list" class="stack-list"></div>
-            </div>
-          </section>
-
-          <section class="panel wide-panel" id="planner-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Planner</p>
-                <h2>План приема пищи и ритм дня</h2>
-              </div>
-              <p id="planner-meta" class="muted-text">План загружается...</p>
-            </div>
-            <div class="split-grid">
-              <div class="subsection-card">
-                <form id="planner-form" class="grid-form">
-                  <label>
-                    Название
-                    <input name="title" type="text" required />
-                  </label>
-                  <label>
-                    Тип приема пищи
-                    <select name="mealType" required>
-                      <option value="Завтрак">Завтрак</option>
-                      <option value="Обед">Обед</option>
-                      <option value="Ужин">Ужин</option>
-                      <option value="Перекус">Перекус</option>
-                    </select>
-                  </label>
-                  <label>
-                    Дата
-                    <input name="date" type="date" required />
-                  </label>
-                  <label>
-                    Время
-                    <input name="plannedTime" type="time" required />
-                  </label>
-                  <label>
-                    Калории
-                    <input name="targetCalories" type="number" min="0" step="1" required />
-                  </label>
-                  <label>
-                    Белки
-                    <input name="targetProtein" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label>
-                    Жиры
-                    <input name="targetFat" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label>
-                    Углеводы
-                    <input name="targetCarbs" type="number" min="0" step="0.1" required />
-                  </label>
-                  <button class="primary-button" type="submit">Добавить в план</button>
-                </form>
-              </div>
-              <div id="planner-list" class="stack-list"></div>
-            </div>
-          </section>
-
-          <section class="panel wide-panel" id="shopping-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Shopping Board</p>
-                <h2>Список покупок для рациона и планирования</h2>
-              </div>
-              <div class="panel-head-actions">
-                <p id="shopping-meta" class="muted-text">Список покупок загружается...</p>
-                <button id="clear-checked-shopping-button" class="ghost-button" type="button">
-                  Очистить купленное
-                </button>
-              </div>
-            </div>
-            <div class="split-grid">
-              <div class="subsection-card">
-                <form id="shopping-form" class="grid-form">
-                  <label>
-                    Позиция
-                    <input name="title" type="text" required />
-                  </label>
-                  <label>
-                    Категория
-                    <input name="category" type="text" required />
-                  </label>
-                  <label>
-                    Количество
-                    <input name="quantity" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label>
-                    Единица
-                    <select name="unit" required>
-                      <option value="шт">шт</option>
-                      <option value="уп">уп</option>
-                      <option value="кг">кг</option>
-                      <option value="г">г</option>
-                      <option value="л">л</option>
-                      <option value="мл">мл</option>
-                    </select>
-                  </label>
-                  <label class="wide-field">
-                    Заметка
-                    <input name="notes" type="text" maxlength="140" />
-                  </label>
-                  <button class="primary-button" type="submit">Добавить в список</button>
-                </form>
-              </div>
-              <div id="shopping-list" class="stack-list"></div>
-            </div>
-          </section>
-
-          <section class="panel" id="goals-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Дневные цели</p>
-                <h2>План питания</h2>
-              </div>
-            </div>
-            <form id="goals-form" class="grid-form">
-              <label>
-                Калории
-                <input name="calories" type="number" min="0" step="1" required />
-              </label>
-              <label>
-                Белки
-                <input name="protein" type="number" min="0" step="0.1" required />
-              </label>
-              <label>
-                Жиры
-                <input name="fat" type="number" min="0" step="0.1" required />
-              </label>
-              <label>
-                Углеводы
-                <input name="carbs" type="number" min="0" step="0.1" required />
-              </label>
-              <button class="primary-button" type="submit">Сохранить цели</button>
-            </form>
-          </section>
-
-          <section class="panel" id="meal-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Meal Composer</p>
-                <h2>Добавить прием пищи</h2>
-              </div>
-            </div>
-            <form id="meal-form" class="grid-form">
-              <label>
-                Название
-                <input name="title" type="text" maxlength="80" required />
-              </label>
-              <label>
-                Тип приема пищи
-                <select name="mealType" required>
-                  <option value="Завтрак">Завтрак</option>
-                  <option value="Обед">Обед</option>
-                  <option value="Ужин">Ужин</option>
-                  <option value="Перекус">Перекус</option>
-                </select>
-              </label>
-              <label>
-                Время
-                <input name="eatenAt" type="time" required />
-              </label>
-              <label>
-                Вес, г
-                <input name="grams" type="number" min="1" step="1" required />
-              </label>
-              <label>
-                Калории
-                <input name="calories" type="number" min="0" step="1" required />
-              </label>
-              <label>
-                Белки
-                <input name="protein" type="number" min="0" step="0.1" required />
-              </label>
-              <label>
-                Жиры
-                <input name="fat" type="number" min="0" step="0.1" required />
-              </label>
-              <label>
-                Углеводы
-                <input name="carbs" type="number" min="0" step="0.1" required />
-              </label>
-              <label class="wide-field">
-                Заметка
-                <input name="notes" type="text" maxlength="140" />
-              </label>
-              <button class="primary-button" type="submit">Добавить запись</button>
-            </form>
-          </section>
-
-          <section class="panel wide-panel" id="templates-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Templates</p>
-                <h2>Шаблоны быстрых приемов пищи</h2>
-              </div>
-            </div>
-            <div class="split-grid">
-              <div class="subsection-card">
-                <p class="panel-text">
-                  Сохраняйте удачные комбинации и применяйте их в один клик, либо отправляйте в
-                  планер на будущую дату.
+        <div class="workspace-main">
+          <section class="hero">
+            <div class="hero-header">
+              <div class="hero-copy">
+                <p class="eyebrow">Рабочая панель</p>
+                <h1>Дневник питания и контроль КБЖУ без перегруженного интерфейса.</h1>
+                <p class="hero-text">
+                  Здесь собраны сводка по дню, журнал приема пищи, план питания, вода,
+                  самочувствие и каталог продуктов.
                 </p>
-                <form id="template-form" class="grid-form">
-                  <label>
-                    Название шаблона
-                    <input name="name" type="text" required />
-                  </label>
-                  <label>
-                    Тип приема пищи
-                    <select name="mealType" required>
-                      <option value="Завтрак">Завтрак</option>
-                      <option value="Обед">Обед</option>
-                      <option value="Ужин">Ужин</option>
-                      <option value="Перекус">Перекус</option>
-                    </select>
-                  </label>
-                  <label>
-                    Вес, г
-                    <input name="grams" type="number" min="1" step="1" required />
-                  </label>
-                  <label>
-                    Калории
-                    <input name="calories" type="number" min="0" step="1" required />
-                  </label>
-                  <label>
-                    Белки
-                    <input name="protein" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label>
-                    Жиры
-                    <input name="fat" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label>
-                    Углеводы
-                    <input name="carbs" type="number" min="0" step="0.1" required />
-                  </label>
-                  <label class="wide-field">
-                    Описание
-                    <input name="notes" type="text" maxlength="140" />
-                  </label>
-                  <button class="primary-button" type="submit">Сохранить шаблон</button>
-                </form>
               </div>
-              <div id="templates-list" class="stack-list"></div>
+
+              <div class="hero-side">
+                <div class="hero-actions">
+                  <a class="primary-link" href="#meal-panel">Добавить прием пищи</a>
+                  <a class="ghost-link" href="#planner-panel">Открыть план питания</a>
+                </div>
+
+                <div class="hero-points">
+                  <span>Сводка</span>
+                  <span>Журнал</span>
+                  <span>План питания</span>
+                  <span>Вода</span>
+                  <span>Самочувствие</span>
+                  <span>Каталог</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-grid">
+              <article class="hero-card hero-card-main">
+                <p class="dashboard-label">Калории за день</p>
+                <strong id="hero-calories">0 ккал</strong>
+                <p id="hero-calories-caption" class="dashboard-note">Загрузка данных...</p>
+                <p id="hero-updated-at" class="dashboard-subnote">Подготовка данных...</p>
+                <div class="mini-progress">
+                  <div id="hero-calories-bar" class="mini-progress-fill"></div>
+                </div>
+              </article>
+
+              <article class="hero-card">
+                <p class="dashboard-label">Индекс дня</p>
+                <strong id="hero-smart-score">0</strong>
+                <p id="hero-smart-score-caption" class="dashboard-note">Сводная оценка текущего дня</p>
+              </article>
+
+              <article class="hero-card">
+                <p class="dashboard-label">Серия дней</p>
+                <strong id="hero-streak">0 дней</strong>
+                <p id="hero-streak-caption" class="dashboard-note">Стабильность ведения дневника</p>
+              </article>
+
+              <article class="hero-card">
+                <p class="dashboard-label">Вода</p>
+                <strong id="hero-water">0 мл</strong>
+                <p id="hero-water-caption" class="dashboard-note">Прогресс гидратации</p>
+              </article>
+
+              <article class="hero-card">
+                <p class="dashboard-label">Профиль</p>
+                <strong id="hero-user-name">--</strong>
+                <p id="hero-user-role" class="dashboard-note">Роль загружается</p>
+              </article>
+
+              <article class="hero-card">
+                <p class="dashboard-label">Дата</p>
+                <strong id="hero-date-label">--</strong>
+                <p id="hero-storage" class="dashboard-note">Источник данных загружается</p>
+              </article>
+
+              <article class="hero-card">
+                <p class="dashboard-label">Приемов пищи</p>
+                <strong id="hero-meals-count">0</strong>
+                <p id="hero-last-meal" class="dashboard-note">На выбранную дату нет записей</p>
+              </article>
+
+              <article class="hero-card hero-card-focus">
+                <p class="dashboard-label">Фокус дня</p>
+                <strong id="hero-focus-title">Подготовка аналитики</strong>
+                <p id="hero-focus-text" class="dashboard-note">Данные появятся после загрузки.</p>
+              </article>
             </div>
           </section>
 
-          <section class="panel wide-panel" id="products-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Каталог продуктов</p>
-                <h2>Справочник пищевой ценности</h2>
+          <p id="global-message" class="flash-message hidden"></p>
+
+          <main class="layout">
+            <section class="panel wide-panel" id="analytics-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Сводка дня</p>
+                  <h2>Сводка по КБЖУ и дневной баланс</h2>
+                </div>
+                <div class="panel-head-actions">
+                  <p id="current-date-label" class="muted-text">Выбранная дата: --</p>
+                  <div class="date-toolbar">
+                    <button id="previous-date-button" class="ghost-button small-button" type="button">
+                      Вчера
+                    </button>
+                    <input id="date-picker-input" type="date" />
+                    <button id="today-button" class="ghost-button small-button" type="button">
+                      Сегодня
+                    </button>
+                    <button id="next-date-button" class="ghost-button small-button" type="button">
+                      Завтра
+                    </button>
+                  </div>
+                  <button id="refresh-button" class="ghost-button" type="button">
+                    Обновить данные
+                  </button>
+                </div>
               </div>
-              <p id="products-meta" class="muted-text">Загрузка каталога...</p>
-            </div>
+              <div id="summary-cards" class="summary-grid"></div>
+            </section>
 
-            <form id="product-search-form" class="toolbar-form">
-              <input
-                id="product-search-input"
-                type="search"
-                placeholder="Поиск по названию или бренду"
-              />
-              <button class="ghost-button" type="submit">Найти</button>
-            </form>
+            <section class="panel" id="score-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Индекс дня</p>
+                  <h2>Компоненты итоговой оценки</h2>
+                </div>
+              </div>
+              <div id="score-breakdown" class="score-grid"></div>
+            </section>
 
-            <div id="product-admin-panel" class="hidden">
-              <form id="product-form" class="grid-form">
-                <label>
-                  Название
-                  <input name="name" type="text" required />
-                </label>
-                <label>
-                  Бренд
-                  <input name="brand" type="text" />
-                </label>
-                <label>
-                  Категория
-                  <select name="category" required>
-                    <option value="Белковые продукты">Белковые продукты</option>
-                    <option value="Крупы и гарниры">Крупы и гарниры</option>
-                    <option value="Овощи">Овощи</option>
-                    <option value="Фрукты">Фрукты</option>
-                    <option value="Напитки">Напитки</option>
-                    <option value="Десерты">Десерты</option>
-                    <option value="Прочее">Прочее</option>
-                  </select>
-                </label>
+            <section class="panel" id="hydration-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Вода</p>
+                  <h2>Контроль воды</h2>
+                </div>
+              </div>
+              <div class="hydration-summary">
+                <strong id="hydration-total">0 мл</strong>
+                <p id="hydration-caption" class="dashboard-note">Прогресс гидратации</p>
+                <div class="mini-progress">
+                  <div id="hydration-progress" class="mini-progress-fill"></div>
+                </div>
+              </div>
+              <div class="quick-actions">
+                <button class="quick-water-button" type="button" data-water="250">+250 мл</button>
+                <button class="quick-water-button" type="button" data-water="350">+350 мл</button>
+                <button class="quick-water-button" type="button" data-water="500">+500 мл</button>
+              </div>
+              <div id="hydration-list" class="stack-list"></div>
+            </section>
+
+            <section class="panel wide-panel" id="insights-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Аналитика</p>
+                  <h2>Ключевые показатели и статус выполнения</h2>
+                </div>
+              </div>
+
+              <div class="insights-grid">
+                <article class="insight-card">
+                  <p class="dashboard-label">Самая калорийная запись</p>
+                  <strong id="insight-top-calorie-title">--</strong>
+                  <p id="insight-top-calorie-text" class="dashboard-note">--</p>
+                </article>
+
+                <article class="insight-card">
+                  <p class="dashboard-label">Лучший источник белка</p>
+                  <strong id="insight-top-protein-title">--</strong>
+                  <p id="insight-top-protein-text" class="dashboard-note">--</p>
+                </article>
+
+                <article class="insight-card">
+                  <p class="dashboard-label">Средняя калорийность</p>
+                  <strong id="insight-average-calories">--</strong>
+                  <p id="insight-average-protein" class="dashboard-note">--</p>
+                </article>
+
+                <article class="insight-card">
+                  <p class="dashboard-label">Статус по цели</p>
+                  <strong id="insight-goal-status">--</strong>
+                  <p id="insight-goal-text" class="dashboard-note">--</p>
+                </article>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Достижения</p>
+                      <h2>Достижения и сигналы дисциплины</h2>
+                    </div>
+                  </div>
+                  <div id="achievements-list" class="badge-grid"></div>
+                </div>
+
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Структура</p>
+                      <h2>Распределение приемов пищи</h2>
+                    </div>
+                  </div>
+                  <div id="meal-type-breakdown" class="breakdown-grid"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="recommendations-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Рекомендации</p>
+                  <h2>Решения на сегодня</h2>
+                </div>
+              </div>
+              <div id="recommendations-list" class="recommendations-grid"></div>
+            </section>
+
+            <section class="panel wide-panel" id="weekly-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Динамика</p>
+                  <h2>Динамика за последние 7 дней</h2>
+                </div>
+              </div>
+              <div id="weekly-trend" class="weekly-grid"></div>
+            </section>
+
+            <section class="panel wide-panel" id="wellbeing-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Самочувствие</p>
+                  <h2>Самочувствие, энергия и готовность дня</h2>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Оценка дня</p>
+                      <h2>Ежедневная оценка состояния</h2>
+                    </div>
+                  </div>
+                  <form id="checkin-form" class="grid-form">
+                    <label>
+                      Настроение
+                      <input name="mood" type="number" min="1" max="5" step="1" required />
+                    </label>
+                    <label>
+                      Энергия
+                      <input name="energy" type="number" min="1" max="5" step="1" required />
+                    </label>
+                    <label>
+                      Стресс
+                      <input name="stress" type="number" min="1" max="5" step="1" required />
+                    </label>
+                    <label>
+                      Аппетит
+                      <input name="hunger" type="number" min="1" max="5" step="1" required />
+                    </label>
+                    <label>
+                      Сон, часы
+                      <input name="sleepHours" type="number" min="0" max="24" step="0.1" required />
+                    </label>
+                    <label class="wide-field">
+                      Заметка
+                      <input name="notes" type="text" maxlength="140" />
+                    </label>
+                    <button class="primary-button" type="submit">Сохранить оценку</button>
+                  </form>
+                </div>
+
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Готовность</p>
+                      <h2>Текущий индекс готовности</h2>
+                    </div>
+                  </div>
+                  <div class="wellbeing-highlight">
+                    <strong id="wellbeing-readiness-score">0</strong>
+                    <p id="wellbeing-readiness-caption" class="dashboard-note">Данные загружаются...</p>
+                  </div>
+                  <div id="wellbeing-trend" class="wellbeing-grid"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="body-metrics-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Замеры</p>
+                  <h2>Замеры тела и визуальный контроль прогресса</h2>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <div id="body-metrics-summary" class="stats-grid"></div>
+                  <form id="body-metric-form" class="grid-form">
+                    <label>
+                      Вес, кг
+                      <input name="weightKg" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label>
+                      Жир, %
+                      <input name="bodyFat" type="number" min="0" step="0.1" />
+                    </label>
+                    <label>
+                      Талия, см
+                      <input name="waistCm" type="number" min="0" step="0.1" />
+                    </label>
+                    <label>
+                      Грудь, см
+                      <input name="chestCm" type="number" min="0" step="0.1" />
+                    </label>
+                    <label class="wide-field">
+                      Комментарий
+                      <input name="notes" type="text" maxlength="140" />
+                    </label>
+                    <button class="primary-button" type="submit">Добавить замер</button>
+                  </form>
+                </div>
+                <div id="body-metrics-list" class="stack-list"></div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="planner-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">План питания</p>
+                  <h2>План питания по времени и макросам</h2>
+                </div>
+                <p id="planner-meta" class="muted-text">План загружается...</p>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <form id="planner-form" class="grid-form">
+                    <label>
+                      Название
+                      <input name="title" type="text" required />
+                    </label>
+                    <label>
+                      Тип приема пищи
+                      <select name="mealType" required>
+                        <option value="Завтрак">Завтрак</option>
+                        <option value="Обед">Обед</option>
+                        <option value="Ужин">Ужин</option>
+                        <option value="Перекус">Перекус</option>
+                      </select>
+                    </label>
+                    <label>
+                      Дата
+                      <input name="date" type="date" required />
+                    </label>
+                    <label>
+                      Время
+                      <input name="plannedTime" type="time" required />
+                    </label>
+                    <label>
+                      Калории
+                      <input name="targetCalories" type="number" min="0" step="1" required />
+                    </label>
+                    <label>
+                      Белки
+                      <input name="targetProtein" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label>
+                      Жиры
+                      <input name="targetFat" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label>
+                      Углеводы
+                      <input name="targetCarbs" type="number" min="0" step="0.1" required />
+                    </label>
+                    <button class="primary-button" type="submit">Добавить в план</button>
+                  </form>
+                </div>
+                <div id="planner-list" class="stack-list"></div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="shopping-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Покупки</p>
+                  <h2>Список покупок для текущего рациона</h2>
+                </div>
+                <div class="panel-head-actions">
+                  <p id="shopping-meta" class="muted-text">Список покупок загружается...</p>
+                  <button id="clear-checked-shopping-button" class="ghost-button" type="button">
+                    Очистить купленное
+                  </button>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <form id="shopping-form" class="grid-form">
+                    <label>
+                      Позиция
+                      <input name="title" type="text" required />
+                    </label>
+                    <label>
+                      Категория
+                      <input name="category" type="text" required />
+                    </label>
+                    <label>
+                      Количество
+                      <input name="quantity" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label>
+                      Единица
+                      <select name="unit" required>
+                        <option value="шт">шт</option>
+                        <option value="уп">уп</option>
+                        <option value="кг">кг</option>
+                        <option value="г">г</option>
+                        <option value="л">л</option>
+                        <option value="мл">мл</option>
+                      </select>
+                    </label>
+                    <label class="wide-field">
+                      Заметка
+                      <input name="notes" type="text" maxlength="140" />
+                    </label>
+                    <button class="primary-button" type="submit">Добавить в список</button>
+                  </form>
+                </div>
+                <div id="shopping-list" class="stack-list"></div>
+              </div>
+            </section>
+
+            <section class="panel" id="goals-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Цели</p>
+                  <h2>Дневные цели по КБЖУ</h2>
+                </div>
+              </div>
+              <form id="goals-form" class="grid-form">
                 <label>
                   Калории
-                  <input name="calories" type="number" min="0" step="0.1" required />
+                  <input name="calories" type="number" min="0" step="1" required />
                 </label>
                 <label>
                   Белки
@@ -707,43 +587,206 @@
                   Углеводы
                   <input name="carbs" type="number" min="0" step="0.1" required />
                 </label>
-                <button class="primary-button" type="submit">Добавить продукт</button>
+                <button class="primary-button" type="submit">Сохранить цели</button>
               </form>
-            </div>
+            </section>
 
-            <div id="products-list" class="products-grid"></div>
-          </section>
-
-          <section class="panel wide-panel" id="journal-panel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Журнал</p>
-                <h2>Приемы пищи за выбранный день</h2>
-              </div>
-              <div class="journal-tools">
-                <div class="filter-row">
-                  <button class="filter-chip is-active" type="button" data-meal-filter="Все">
-                    Все
-                  </button>
-                  <button class="filter-chip" type="button" data-meal-filter="Завтрак">
-                    Завтрак
-                  </button>
-                  <button class="filter-chip" type="button" data-meal-filter="Обед">
-                    Обед
-                  </button>
-                  <button class="filter-chip" type="button" data-meal-filter="Ужин">
-                    Ужин
-                  </button>
-                  <button class="filter-chip" type="button" data-meal-filter="Перекус">
-                    Перекус
-                  </button>
+            <section class="panel" id="meal-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Запись</p>
+                  <h2>Добавление приема пищи</h2>
                 </div>
-                <p id="meal-count" class="muted-text">0 записей</p>
               </div>
-            </div>
-            <div id="meals-list" class="meal-list"></div>
-          </section>
-        </main>
+              <form id="meal-form" class="grid-form">
+                <label>
+                  Название
+                  <input name="title" type="text" maxlength="80" required />
+                </label>
+                <label>
+                  Тип приема пищи
+                  <select name="mealType" required>
+                    <option value="Завтрак">Завтрак</option>
+                    <option value="Обед">Обед</option>
+                    <option value="Ужин">Ужин</option>
+                    <option value="Перекус">Перекус</option>
+                  </select>
+                </label>
+                <label>
+                  Время
+                  <input name="eatenAt" type="time" required />
+                </label>
+                <label>
+                  Вес, г
+                  <input name="grams" type="number" min="1" step="1" required />
+                </label>
+                <label>
+                  Калории
+                  <input name="calories" type="number" min="0" step="1" required />
+                </label>
+                <label>
+                  Белки
+                  <input name="protein" type="number" min="0" step="0.1" required />
+                </label>
+                <label>
+                  Жиры
+                  <input name="fat" type="number" min="0" step="0.1" required />
+                </label>
+                <label>
+                  Углеводы
+                  <input name="carbs" type="number" min="0" step="0.1" required />
+                </label>
+                <label class="wide-field">
+                  Заметка
+                  <input name="notes" type="text" maxlength="140" />
+                </label>
+                <button class="primary-button" type="submit">Добавить запись</button>
+              </form>
+            </section>
+
+            <section class="panel wide-panel" id="templates-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Шаблоны</p>
+                  <h2>Шаблоны рационов и заготовок</h2>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <p class="panel-text">
+                    Сохраняйте повторяющиеся приемы пищи, переносите их в планер или мгновенно
+                    применяйте на выбранную дату.
+                  </p>
+                  <form id="template-form" class="grid-form">
+                    <label>
+                      Название шаблона
+                      <input name="name" type="text" required />
+                    </label>
+                    <label>
+                      Тип приема пищи
+                      <select name="mealType" required>
+                        <option value="Завтрак">Завтрак</option>
+                        <option value="Обед">Обед</option>
+                        <option value="Ужин">Ужин</option>
+                        <option value="Перекус">Перекус</option>
+                      </select>
+                    </label>
+                    <label>
+                      Вес, г
+                      <input name="grams" type="number" min="1" step="1" required />
+                    </label>
+                    <label>
+                      Калории
+                      <input name="calories" type="number" min="0" step="1" required />
+                    </label>
+                    <label>
+                      Белки
+                      <input name="protein" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label>
+                      Жиры
+                      <input name="fat" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label>
+                      Углеводы
+                      <input name="carbs" type="number" min="0" step="0.1" required />
+                    </label>
+                    <label class="wide-field">
+                      Описание
+                      <input name="notes" type="text" maxlength="140" />
+                    </label>
+                    <button class="primary-button" type="submit">Сохранить шаблон</button>
+                  </form>
+                </div>
+                <div id="templates-list" class="stack-list"></div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="products-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Каталог</p>
+                  <h2>Справочник пищевой ценности продуктов</h2>
+                </div>
+                <p id="products-meta" class="muted-text">Загрузка каталога...</p>
+              </div>
+
+              <form id="product-search-form" class="toolbar-form">
+                <input
+                  id="product-search-input"
+                  type="search"
+                  placeholder="Поиск по названию или бренду"
+                />
+                <button class="ghost-button" type="submit">Найти</button>
+              </form>
+
+              <div id="product-admin-panel" class="hidden">
+                <form id="product-form" class="grid-form">
+                  <label>
+                    Название
+                    <input name="name" type="text" required />
+                  </label>
+                  <label>
+                    Бренд
+                    <input name="brand" type="text" />
+                  </label>
+                  <label>
+                    Категория
+                    <select name="category" required>
+                      <option value="Белковые продукты">Белковые продукты</option>
+                      <option value="Крупы и гарниры">Крупы и гарниры</option>
+                      <option value="Овощи">Овощи</option>
+                      <option value="Фрукты">Фрукты</option>
+                      <option value="Напитки">Напитки</option>
+                      <option value="Десерты">Десерты</option>
+                      <option value="Прочее">Прочее</option>
+                    </select>
+                  </label>
+                  <label>
+                    Калории
+                    <input name="calories" type="number" min="0" step="0.1" required />
+                  </label>
+                  <label>
+                    Белки
+                    <input name="protein" type="number" min="0" step="0.1" required />
+                  </label>
+                  <label>
+                    Жиры
+                    <input name="fat" type="number" min="0" step="0.1" required />
+                  </label>
+                  <label>
+                    Углеводы
+                    <input name="carbs" type="number" min="0" step="0.1" required />
+                  </label>
+                  <button class="primary-button" type="submit">Добавить продукт</button>
+                </form>
+              </div>
+
+              <div id="products-list" class="products-grid"></div>
+            </section>
+
+            <section class="panel wide-panel" id="journal-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Журнал</p>
+                  <h2>Журнал приема пищи по выбранной дате</h2>
+                </div>
+                <div class="journal-tools">
+                  <div class="filter-row">
+                    <button class="filter-chip is-active" type="button" data-meal-filter="Все">Все</button>
+                    <button class="filter-chip" type="button" data-meal-filter="Завтрак">Завтрак</button>
+                    <button class="filter-chip" type="button" data-meal-filter="Обед">Обед</button>
+                    <button class="filter-chip" type="button" data-meal-filter="Ужин">Ужин</button>
+                    <button class="filter-chip" type="button" data-meal-filter="Перекус">Перекус</button>
+                  </div>
+                  <p id="meal-count" class="muted-text">0 записей</p>
+                </div>
+              </div>
+              <div id="meals-list" class="meal-list"></div>
+            </section>
+          </main>
+        </div>
       </div>
     </div>
 
@@ -764,11 +807,14 @@
       <article class="meal-card">
         <div class="meal-main">
           <div class="meal-head">
-            <h3 class="meal-title"></h3>
+            <div class="meal-title-wrap">
+              <h3 class="meal-title"></h3>
+              <p class="meal-meta"></p>
+            </div>
             <span class="meal-type"></span>
           </div>
-          <p class="meal-meta"></p>
-          <p class="meal-macros"></p>
+          <div class="meal-kbju"></div>
+          <p class="meal-note hidden"></p>
         </div>
         <div class="meal-actions"></div>
       </article>

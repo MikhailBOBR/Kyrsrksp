@@ -335,7 +335,7 @@ function getFocus(dashboard) {
 
   return {
     title: "День выглядит уверенно",
-    text: `Smart Score сейчас на уровне ${dashboard.smartScore.total}.`
+    text: `Индекс дня сейчас на уровне ${dashboard.smartScore.total}.`
   };
 }
 
@@ -676,22 +676,45 @@ function renderProducts(products) {
     const productCard = document.createElement("article");
     productCard.className = "product-card";
     productCard.innerHTML = `
-      <div class="product-head">
-        <div>
-          <h3 class="meal-title">${escapeHtml(product.name)}</h3>
-          <p class="meal-meta">${escapeHtml(product.brand || "Без бренда")} · ${escapeHtml(product.category)}</p>
-        </div>
-        <div class="stack-card-actions">
-          <button class="ghost-button small-button product-fill-button" type="button">В форму</button>
-          <button class="ghost-button small-button product-shopping-button" type="button">В список</button>
-          ${
-            state.user?.role === "admin"
-              ? '<button class="danger-button small-button product-delete-button" type="button">Удалить</button>'
-              : ""
-          }
+      <div class="product-card-head">
+        <div class="product-card-title-wrap">
+          <div class="product-title-row">
+            <h3 class="product-title">${escapeHtml(product.name)}</h3>
+            <span class="product-measure">на 100 г</span>
+          </div>
+          <div class="product-meta-row">
+            <span class="info-badge">${escapeHtml(product.brand || "Без бренда")}</span>
+            <span class="info-badge info-badge-muted">${escapeHtml(product.category)}</span>
+          </div>
         </div>
       </div>
-      <p class="meal-macros">К: ${product.calories.toFixed(1)} · Б: ${product.protein.toFixed(1)} · Ж: ${product.fat.toFixed(1)} · У: ${product.carbs.toFixed(1)}</p>
+      <div class="product-macro-grid">
+        <article class="product-macro-card">
+          <span>Калории</span>
+          <strong>${product.calories.toFixed(1)}</strong>
+        </article>
+        <article class="product-macro-card">
+          <span>Белки</span>
+          <strong>${product.protein.toFixed(1)} г</strong>
+        </article>
+        <article class="product-macro-card">
+          <span>Жиры</span>
+          <strong>${product.fat.toFixed(1)} г</strong>
+        </article>
+        <article class="product-macro-card">
+          <span>Углеводы</span>
+          <strong>${product.carbs.toFixed(1)} г</strong>
+        </article>
+      </div>
+      <div class="product-actions">
+        <button class="ghost-button small-button product-fill-button" type="button">Заполнить форму</button>
+        <button class="ghost-button small-button product-shopping-button" type="button">Добавить в покупки</button>
+        ${
+          state.user?.role === "admin"
+            ? '<button class="danger-button small-button product-delete-button" type="button">Удалить</button>'
+            : ""
+        }
+      </div>
     `;
 
     productCard.querySelector(".product-fill-button").addEventListener("click", () => {
@@ -742,9 +765,35 @@ function renderMeals(meals) {
     item.querySelector(".meal-title").textContent = meal.title;
     item.querySelector(".meal-type").textContent = meal.mealType;
     item.querySelector(".meal-meta").textContent =
-      `${meal.date} · ${meal.eatenAt} · ${meal.grams} г`;
-    item.querySelector(".meal-macros").textContent =
-      `К: ${meal.calories.toFixed(0)} · Б: ${meal.protein.toFixed(1)} · Ж: ${meal.fat.toFixed(1)} · У: ${meal.carbs.toFixed(1)}${meal.notes ? ` · ${meal.notes}` : ""}`;
+      `${formatDate(meal.date)} · ${formatTime(meal.eatenAt)} · ${meal.grams} г`;
+
+    item.querySelector(".meal-kbju").innerHTML = `
+      <article class="meal-macro-card">
+        <span>Калории</span>
+        <strong>${meal.calories.toFixed(0)} ккал</strong>
+      </article>
+      <article class="meal-macro-card">
+        <span>Белки</span>
+        <strong>${meal.protein.toFixed(1)} г</strong>
+      </article>
+      <article class="meal-macro-card">
+        <span>Жиры</span>
+        <strong>${meal.fat.toFixed(1)} г</strong>
+      </article>
+      <article class="meal-macro-card">
+        <span>Углеводы</span>
+        <strong>${meal.carbs.toFixed(1)} г</strong>
+      </article>
+    `;
+
+    const mealNote = item.querySelector(".meal-note");
+    if (meal.notes) {
+      mealNote.textContent = meal.notes;
+      mealNote.classList.remove("hidden");
+    } else {
+      mealNote.textContent = "";
+      mealNote.classList.add("hidden");
+    }
 
     const actions = item.querySelector(".meal-actions");
     actions.innerHTML = `
@@ -757,7 +806,7 @@ function renderMeals(meals) {
       await request(`/api/templates/from-meal/${meal.id}`, {
         method: "POST",
         body: JSON.stringify({
-          name: `${meal.title} template`
+          name: `${meal.title} шаблон`
         })
       });
       await loadTemplates();
@@ -808,7 +857,7 @@ function renderHero(dashboard) {
   currentDateLabel.textContent = `Выбранная дата: ${formatDate(dashboard.date)}`;
   sessionUserName.textContent = `${dashboard.user.name} · ${dashboard.user.role}`;
   heroSmartScore.textContent = dashboard.smartScore.total.toFixed(1);
-  heroSmartScoreCaption.textContent = "Индекс качества текущего дня";
+  heroSmartScoreCaption.textContent = "Сводная оценка по выбранной дате";
   heroStreak.textContent = `${dashboard.streak} дней`;
   heroStreakCaption.textContent = "Сколько дней подряд ведется дневник";
 }
@@ -817,7 +866,7 @@ function renderWellbeing(wellbeing) {
   wellbeingReadinessScore.textContent = wellbeing.readinessScore.toFixed(1);
   wellbeingReadinessCaption.textContent = wellbeing.entry
     ? `Настроение ${wellbeing.entry.mood}/5 · Энергия ${wellbeing.entry.energy}/5 · Сон ${wellbeing.entry.sleepHours.toFixed(1)} ч`
-    : "На выбранную дату wellbeing-check-in пока не заполнен.";
+    : "На выбранную дату оценка самочувствия еще не заполнена.";
 
   if (wellbeing.entry) {
     setFormValues(checkinForm, wellbeing.entry);
@@ -1121,7 +1170,7 @@ async function exportReport(format) {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || "Export failed");
+    throw new Error(payload.error || "Не удалось выполнить экспорт");
   }
 
   const content = await response.text();
@@ -1323,7 +1372,7 @@ checkinForm.addEventListener("submit", async (event) => {
   });
 
   await loadDashboard();
-  showFlash("Wellbeing check-in сохранен", "success");
+  showFlash("Оценка самочувствия сохранена", "success");
 });
 
 bodyMetricForm.addEventListener("submit", async (event) => {
