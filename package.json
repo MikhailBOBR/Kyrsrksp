@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server/src/index.js",
     "dev": "node --watch server/src/index.js",
+    "seed:large": "node server/src/db/seed-large-data.js",
     "test": "node --test server/tests/*.test.js",
     "test:watch": "node --test --watch server/tests/*.test.js"
   },
