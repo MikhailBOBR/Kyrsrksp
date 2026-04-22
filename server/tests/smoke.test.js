@@ -23,8 +23,10 @@ test.describe("application smoke checks", () => {
 
     assert.equal(openapi.status, 200);
     assert.equal(openapi.payload.openapi, "3.0.3");
+    assert.equal(openapi.payload.info.title, "Рацион API");
+    assert.equal(openapi.payload.servers[0].url, "/");
     assert.equal(docs.status, 200);
-    assert.match(docs.payload, /Swagger UI/i);
+    assert.match(docs.payload, /Рацион API \| Документация/i);
   });
 
   test("serves client html, styles and favicon", async () => {

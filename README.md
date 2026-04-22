@@ -30,7 +30,7 @@
 - трекер воды, самочувствие, замеры тела;
 - список покупок;
 - заметка дня и дневная аналитика;
-- экспорт отчета в `JSON` и `CSV`;
+- экспорт отчета в `JSON`, `CSV` и `PDF`;
 - Swagger по `/api/docs`;
 - seed-данные для демонстрации;
 - Docker и cloud-ready deploy-конфигурация;
@@ -117,10 +117,12 @@ UML-материалы:
 |   |-- 03-api-draft.md
 |   |-- 04-backlog.md
 |   |-- 05-testing-and-quality.md
-|   `-- 06-twelve-factor.md
+|   |-- 06-twelve-factor.md
+|   `-- 07-course-checklist.md
 |-- deploy/
 |   |-- docker/
 |   `-- README.md
+|-- wiki/
 |-- .github/workflows/
 |-- .dockerignore
 |-- .env.example
@@ -186,6 +188,15 @@ docker compose up --build
 - OpenAPI JSON: `GET /api/openapi.json`
 - Swagger UI: `GET /api/docs`
 
+## Wiki и проектные материалы
+
+- [wiki/Home.md](./wiki/Home.md)
+- [wiki/Architecture.md](./wiki/Architecture.md)
+- [wiki/API.md](./wiki/API.md)
+- [wiki/Testing-and-QA.md](./wiki/Testing-and-QA.md)
+- [wiki/Deployment.md](./wiki/Deployment.md)
+- [docs/07-course-checklist.md](./docs/07-course-checklist.md)
+
 ## Качество и методология
 
 - тестирование и fuzzing: [docs/05-testing-and-quality.md](./docs/05-testing-and-quality.md)
@@ -195,5 +206,5 @@ docker compose up --build
 - актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary и docker validation
 - актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance` и опциональный deploy hook для Render
 
-- [ci.yml](./.github/workflows/ci.yml) — тесты и docker build smoke check
-- [cd.yml](./.github/workflows/cd.yml) — публикация Docker image в `GHCR`
+- [ci.yml](./.github/workflows/ci.yml) — матричный CI, coverage и docker validation
+- [cd.yml](./.github/workflows/cd.yml) — multi-platform publish в `GHCR` и deploy hook для Render

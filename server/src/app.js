@@ -19,6 +19,7 @@ const dayNotesRoutes = require("./modules/day-notes/day-notes.routes");
 const favoritesRoutes = require("./modules/favorites/favorites.routes");
 const recipesRoutes = require("./modules/recipes/recipes.routes");
 const { openApiDocument } = require("./modules/docs/openapi");
+const { swaggerUiOptions } = require("./modules/docs/swagger-ui");
 
 function createApp() {
   const app = express();
@@ -34,7 +35,7 @@ function createApp() {
     });
   });
 
-  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument, swaggerUiOptions));
   app.get("/api/openapi.json", (_req, res) => {
     res.json(openApiDocument);
   });

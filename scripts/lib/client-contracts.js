@@ -26,10 +26,13 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
 
   const requiredStyleContracts = [
     /\.sidebar-nav\s*\{/,
-    /max-height:\s*calc\(100vh -/,
+    /--sticky-top-offset:/,
+    /position:\s*sticky/,
     /overflow-wrap:\s*anywhere/,
     /body\[data-theme="dark"\]/,
-    /\.topbar-chip-status/
+    /\.topbar-chip-status/,
+    /\.sidebar-link\.is-current/,
+    /\.hero-copy-visual/
   ];
 
   requiredStyleContracts.forEach((pattern) => {
@@ -37,6 +40,8 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
   });
 
   assert.doesNotThrow(() => new Function(appJs));
+  assert.match(appJs, /function syncLayoutMetrics/);
+  assert.match(appJs, /function updateActiveSectionLink/);
   assert.match(appJs, /function buildPrintableReportMarkup/);
   assert.match(appJs, /function openPrintableReport/);
   assert.match(appJs, /exportPdfButton\.addEventListener/);

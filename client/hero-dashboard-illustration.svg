@@ -1,0 +1,66 @@
+<svg width="960" height="420" viewBox="0 0 960 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="40" x2="816" y2="366" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FCFC"/>
+      <stop offset="1" stop-color="#EDF5F4"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#F2F8F7"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="204" y1="92" x2="712" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#88ADB2"/>
+      <stop offset="1" stop-color="#6D8696"/>
+    </linearGradient>
+    <filter id="shadow" x="82" y="33" width="796" height="355" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="19"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.140625 0 0 0 0 0.214381 0 0 0 0 0.250781 0 0 0 0.12 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect x="120" y="52" width="720" height="280" rx="32" fill="url(#bg)" stroke="#D8E5E5"/>
+  <g filter="url(#shadow)">
+    <rect x="120" y="52" width="720" height="280" rx="32" fill="url(#bg)"/>
+  </g>
+
+  <rect x="152" y="84" width="176" height="216" rx="24" fill="#F6FBFB" stroke="#D9E6E5"/>
+  <rect x="176" y="116" width="128" height="16" rx="8" fill="#D8E5E6"/>
+  <rect x="176" y="146" width="128" height="16" rx="8" fill="#E6EFF0"/>
+  <rect x="176" y="176" width="128" height="44" rx="16" fill="#FFFFFF" stroke="#DDE7E7"/>
+  <rect x="176" y="234" width="128" height="44" rx="16" fill="#FFFFFF" stroke="#DDE7E7"/>
+  <circle cx="240" cy="198" r="12" fill="#88ADB2" fill-opacity="0.22"/>
+  <circle cx="240" cy="256" r="12" fill="#6D8696" fill-opacity="0.16"/>
+  <rect x="200" y="193" width="80" height="10" rx="5" fill="#7091A2"/>
+  <rect x="200" y="251" width="66" height="10" rx="5" fill="#8FB3AE"/>
+
+  <rect x="352" y="84" width="456" height="216" rx="24" fill="url(#card)" stroke="#D9E5E5"/>
+  <rect x="384" y="112" width="160" height="18" rx="9" fill="#DCE9EA"/>
+  <rect x="384" y="142" width="108" height="14" rx="7" fill="#E7F0F1"/>
+  <rect x="632" y="114" width="144" height="20" rx="10" fill="#EEF4F4"/>
+
+  <rect x="384" y="180" width="176" height="88" rx="24" fill="#FFFFFF" stroke="#DCE7E7"/>
+  <circle cx="472" cy="224" r="38" fill="#F4FAF9" stroke="#DCE8E7"/>
+  <path d="M472 190C489.673 190 504 204.327 504 222C504 239.673 489.673 254 472 254C454.327 254 440 239.673 440 222C440 204.327 454.327 190 472 190Z" fill="none" stroke="url(#accent)" stroke-width="14" stroke-linecap="round" stroke-dasharray="126 82"/>
+  <circle cx="472" cy="222" r="10" fill="#6D8696"/>
+
+  <rect x="584" y="180" width="192" height="40" rx="16" fill="#F7FBFB" stroke="#DDE7E7"/>
+  <rect x="584" y="228" width="192" height="40" rx="16" fill="#F7FBFB" stroke="#DDE7E7"/>
+  <rect x="612" y="194" width="92" height="12" rx="6" fill="#6D8696" fill-opacity="0.9"/>
+  <rect x="612" y="242" width="76" height="12" rx="6" fill="#88ADB2" fill-opacity="0.9"/>
+  <rect x="710" y="192" width="38" height="16" rx="8" fill="#E4EEEF"/>
+  <rect x="694" y="240" width="54" height="16" rx="8" fill="#E4EEEF"/>
+
+  <rect x="384" y="286" width="110" height="10" rx="5" fill="#D3E1E3"/>
+  <rect x="510" y="286" width="82" height="10" rx="5" fill="#DDE9E8"/>
+  <rect x="606" y="286" width="140" height="10" rx="5" fill="#E7F0F0"/>
+
+  <g opacity="0.85">
+    <circle cx="794" cy="76" r="34" fill="#EEF5F6"/>
+    <path d="M793.5 55C803.432 55 811.5 63.0681 811.5 73C811.5 82.9319 803.432 91 793.5 91C783.568 91 775.5 82.9319 775.5 73C775.5 63.0681 783.568 55 793.5 55Z" fill="none" stroke="#7CA2AA" stroke-width="8" stroke-dasharray="56 28"/>
+  </g>
+</svg>

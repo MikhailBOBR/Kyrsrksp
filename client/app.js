@@ -50,6 +50,7 @@ const authMessage = document.querySelector("#auth-message");
 const sessionBadge = document.querySelector("#session-badge");
 const sessionUserName = document.querySelector("#session-user-name");
 const apiStatus = document.querySelector("#api-status");
+const topbar = document.querySelector(".topbar");
 const refreshButton = document.querySelector("#refresh-button");
 const themeToggle = document.querySelector("#theme-toggle");
 const exportJsonButton = document.querySelector("#export-json-button");
@@ -117,6 +118,7 @@ const plannerList = document.querySelector("#planner-list");
 const shoppingMeta = document.querySelector("#shopping-meta");
 const shoppingList = document.querySelector("#shopping-list");
 const clearCheckedShoppingButton = document.querySelector("#clear-checked-shopping-button");
+const navigationLinks = [...document.querySelectorAll(".sidebar-nav .sidebar-link[href^='#']")];
 
 const heroCalories = document.querySelector("#hero-calories");
 const heroCaloriesCaption = document.querySelector("#hero-calories-caption");
@@ -216,6 +218,82 @@ function setApiStatus(text) {
   apiStatus.textContent = text;
 }
 
+function syncLayoutMetrics() {
+  const compactLayout = window.matchMedia("(max-width: 820px)").matches;
+  const topbarHeight = compactLayout ? 0 : Math.ceil(topbar?.getBoundingClientRect().height || 0);
+  const stickyOffset = compactLayout ? 10 : topbarHeight + 24;
+
+  document.documentElement.style.setProperty("--sticky-top-offset", `${stickyOffset}px`);
+}
+
+function setActiveSidebarLink(hash, { reveal = false } = {}) {
+  let activeLink = null;
+
+  navigationLinks.forEach((link) => {
+    const isCurrent = link.getAttribute("href") === hash;
+    link.classList.toggle("is-current", isCurrent);
+
+    if (isCurrent) {
+      activeLink = link;
+    }
+  });
+
+  if (!activeLink) {
+    return;
+  }
+
+  if (reveal && window.matchMedia("(max-width: 820px)").matches) {
+    activeLink.scrollIntoView({
+      block: "nearest",
+      inline: "center"
+    });
+  }
+}
+
+function updateActiveSectionLink() {
+  if (!navigationLinks.length || !authShell.classList.contains("hidden")) {
+    return;
+  }
+
+  const stickyOffset =
+    (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sticky-top-offset")) ||
+      118) + 28;
+
+  let passedLink = null;
+  let nextLink = navigationLinks[0];
+  let nextDistance = Number.POSITIVE_INFINITY;
+
+  navigationLinks.forEach((link) => {
+    const target = document.querySelector(link.getAttribute("href"));
+
+    if (!target) {
+      return;
+    }
+
+    const top = target.getBoundingClientRect().top;
+
+    if (top <= stickyOffset) {
+      passedLink = link;
+      return;
+    }
+
+    if (top < nextDistance) {
+      nextDistance = top;
+      nextLink = link;
+    }
+  });
+
+  setActiveSidebarLink((passedLink || nextLink)?.getAttribute("href"));
+}
+
+function scheduleActiveSectionSync() {
+  cancelAnimationFrame(scheduleActiveSectionSync.frameId);
+  scheduleActiveSectionSync.frameId = requestAnimationFrame(() => {
+    syncLayoutMetrics();
+    updateActiveSectionLink();
+  });
+}
+
 window.addEventListener("unhandledrejection", (event) => {
   event.preventDefault();
   console.error(event.reason);
@@ -241,6 +319,7 @@ function showAuth(message = "После входа откроется рабоч
   exportPdfButton.classList.add("hidden");
   setApiStatus("Нужен вход");
   authMessage.textContent = message;
+  syncLayoutMetrics();
 }
 
 function showApp() {
@@ -251,6 +330,8 @@ function showApp() {
   exportJsonButton.classList.remove("hidden");
   exportCsvButton.classList.remove("hidden");
   exportPdfButton.classList.remove("hidden");
+  syncLayoutMetrics();
+  updateActiveSectionLink();
   setApiStatus("Система онлайн");
 }
 
@@ -2235,6 +2316,7 @@ async function refreshWorkspace() {
     loadShopping(),
     loadWeeklyPlans()
   ]);
+  scheduleActiveSectionSync();
   setApiStatus("Система онлайн");
 }
 
@@ -2665,6 +2747,17 @@ clearCheckedShoppingButton.addEventListener("click", async () => {
   showFlash("Закрытые позиции очищены", "success");
 });
 
+navigationLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    setActiveSidebarLink(link.getAttribute("href"), { reveal: true });
+    scheduleActiveSectionSync();
+  });
+});
+
+window.addEventListener("scroll", scheduleActiveSectionSync, { passive: true });
+window.addEventListener("resize", scheduleActiveSectionSync);
+window.addEventListener("hashchange", scheduleActiveSectionSync);
+
 previousDateButton.addEventListener("click", async () => {
   state.selectedDate = shiftDate(state.selectedDate, -1);
   state.weeklyPlanStart = state.selectedDate;
@@ -2700,6 +2793,8 @@ setFieldValue(plannerForm, "plannedTime", "13:00");
 setFieldValue(weeklyPlanForm, "startDate", state.weeklyPlanStart);
 setFieldValue(shoppingForm, "unit", "шт");
 setTheme(state.theme);
+syncLayoutMetrics();
+updateActiveSectionLink();
 resetRecipeDraft();
 
 bootstrapSession().catch((error) => {

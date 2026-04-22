@@ -1,41 +1,77 @@
-function secured(summary, tags) {
+function secured(summary, tags, extra = {}) {
   return {
     tags,
     summary,
-    security: [{ bearerAuth: [] }]
+    security: [{ bearerAuth: [] }],
+    responses: {
+      401: {
+        $ref: "#/components/responses/UnauthorizedError"
+      },
+      ...(extra.responses || {})
+    },
+    ...extra
+  };
+}
+
+function jsonResponse(description, schema) {
+  return {
+    description,
+    content: {
+      "application/json": {
+        schema
+      }
+    }
   };
 }
 
 const openApiDocument = {
   openapi: "3.0.3",
   info: {
-    title: "NutriTrack API",
-    version: "1.3.0",
-    description:
-      "API for the personal nutrition diary with KBJU analytics, planning, recipes, hydration, wellbeing and exports."
+    title: "Рацион API",
+    version: "1.4.0",
+    description: [
+      "REST API для курсового проекта «Персональный дневник питания с анализом КБЖУ».",
+      "",
+      "Что умеет система:",
+      "- вести дневник питания и расчёт КБЖУ;",
+      "- управлять целями, шаблонами, рецептами и недельным планом;",
+      "- учитывать воду, самочувствие, замеры тела и список покупок;",
+      "- формировать ежедневную аналитику и экспортировать отчёты;",
+      "- обеспечивать ролевой доступ `user/admin` и JWT-аутентификацию.",
+      "",
+      "Для защищённых маршрутов используйте `Authorize` и передавайте JWT в формате `Bearer <token>`."
+    ].join("\n"),
+    contact: {
+      name: "Курсовой проект «Рацион»"
+    }
   },
   servers: [
     {
-      url: "http://localhost:8080"
+      url: "/",
+      description: "Текущий хост приложения"
+    },
+    {
+      url: "http://localhost:8080",
+      description: "Локальное окружение"
     }
   ],
   tags: [
-    { name: "Health" },
-    { name: "Auth" },
-    { name: "Goals" },
-    { name: "Products" },
-    { name: "Meals" },
-    { name: "Dashboard" },
-    { name: "Hydration" },
-    { name: "Templates" },
-    { name: "Recipes" },
-    { name: "Exports" },
-    { name: "Checkins" },
-    { name: "Metrics" },
-    { name: "Planner" },
-    { name: "Shopping" },
-    { name: "Day Notes" },
-    { name: "Favorites" }
+    { name: "Health", description: "Проверка доступности сервиса и технологического стека." },
+    { name: "Auth", description: "Регистрация, вход и получение текущего профиля пользователя." },
+    { name: "Goals", description: "Управление персональными целями по КБЖУ и пресетами." },
+    { name: "Products", description: "Каталог продуктов и административное управление справочником." },
+    { name: "Meals", description: "CRUD-операции с дневником приёмов пищи." },
+    { name: "Dashboard", description: "Главная аналитическая панель пользователя за выбранную дату." },
+    { name: "Hydration", description: "Трекер воды и агрегированная гидратация." },
+    { name: "Templates", description: "Шаблоны приёмов пищи для ускоренного повторного ввода." },
+    { name: "Recipes", description: "Составные рецепты и сценарии применения в журнале и плане." },
+    { name: "Exports", description: "Экспорт ежедневного отчёта в JSON и CSV." },
+    { name: "Checkins", description: "Самочувствие, readiness score и дневные check-in записи." },
+    { name: "Metrics", description: "Замеры тела и прогресс физических показателей." },
+    { name: "Planner", description: "Планировщик питания, ручные и автоматические недельные планы." },
+    { name: "Shopping", description: "Список покупок и контроль отмеченных позиций." },
+    { name: "Day Notes", description: "Заметки дня, фокус, выводы и короткие итоги." },
+    { name: "Favorites", description: "Избранные продукты и шаблоны для быстрого доступа." }
   ],
   components: {
     securitySchemes: {
@@ -44,6 +80,165 @@ const openApiDocument = {
         scheme: "bearer",
         bearerFormat: "JWT"
       }
+    },
+    parameters: {
+      DateParameter: {
+        in: "query",
+        name: "date",
+        schema: {
+          type: "string",
+          format: "date",
+          example: "2026-04-23"
+        },
+        description: "Дата в формате YYYY-MM-DD."
+      }
+    },
+    responses: {
+      UnauthorizedError: jsonResponse("JWT отсутствует или недействителен.", {
+        $ref: "#/components/schemas/ErrorResponse"
+      }),
+      ValidationError: jsonResponse("Запрос не прошёл валидацию.", {
+        $ref: "#/components/schemas/ErrorResponse"
+      })
+    },
+    schemas: {
+      ErrorResponse: {
+        type: "object",
+        properties: {
+          error: {
+            type: "string",
+            example: "Route not found"
+          }
+        },
+        required: ["error"]
+      },
+      User: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 1 },
+          name: { type: "string", example: "Demo User" },
+          email: { type: "string", format: "email", example: "demo@nutritrack.local" },
+          role: { type: "string", enum: ["user", "admin"], example: "user" },
+          createdAt: { type: "string", example: "2026-04-23T10:00:00Z" }
+        },
+        required: ["id", "name", "email", "role"]
+      },
+      AuthPayload: {
+        type: "object",
+        properties: {
+          token: {
+            type: "string",
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          user: {
+            $ref: "#/components/schemas/User"
+          }
+        },
+        required: ["token", "user"]
+      },
+      Goals: {
+        type: "object",
+        properties: {
+          calories: { type: "number", example: 2200 },
+          protein: { type: "number", example: 140 },
+          fat: { type: "number", example: 70 },
+          carbs: { type: "number", example: 240 }
+        },
+        required: ["calories", "protein", "fat", "carbs"]
+      },
+      Product: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 12 },
+          name: { type: "string", example: "Куриная грудка" },
+          brand: { type: "string", example: "Fresh Farm" },
+          category: { type: "string", example: "Белковые продукты" },
+          calories: { type: "number", example: 165 },
+          protein: { type: "number", example: 31 },
+          fat: { type: "number", example: 3.6 },
+          carbs: { type: "number", example: 0 }
+        },
+        required: ["id", "name", "category", "calories", "protein", "fat", "carbs"]
+      },
+      MealEntry: {
+        type: "object",
+        properties: {
+          id: { type: "integer", example: 44 },
+          title: { type: "string", example: "Овсянка с бананом" },
+          mealType: { type: "string", example: "Завтрак" },
+          date: { type: "string", format: "date", example: "2026-04-23" },
+          eatenAt: { type: "string", example: "08:15" },
+          grams: { type: "number", example: 280 },
+          calories: { type: "number", example: 420 },
+          protein: { type: "number", example: 16 },
+          fat: { type: "number", example: 11 },
+          carbs: { type: "number", example: 67 },
+          notes: { type: "string", example: "Хороший старт дня" }
+        },
+        required: [
+          "id",
+          "title",
+          "mealType",
+          "date",
+          "eatenAt",
+          "grams",
+          "calories",
+          "protein",
+          "fat",
+          "carbs"
+        ]
+      },
+      DashboardResponse: {
+        type: "object",
+        properties: {
+          date: { type: "string", format: "date", example: "2026-04-23" },
+          user: { $ref: "#/components/schemas/User" },
+          summary: {
+            type: "object",
+            properties: {
+              totals: { $ref: "#/components/schemas/Goals" },
+              remaining: { $ref: "#/components/schemas/Goals" }
+            }
+          },
+          meals: {
+            type: "array",
+            items: { $ref: "#/components/schemas/MealEntry" }
+          },
+          hydration: {
+            type: "object",
+            properties: {
+              totalMl: { type: "number", example: 1350 }
+            }
+          },
+          smartScore: {
+            type: "object",
+            properties: {
+              total: { type: "number", example: 82.4 }
+            }
+          }
+        },
+        required: ["date", "user", "summary", "meals", "hydration", "smartScore"]
+      },
+      DailyReport: {
+        type: "object",
+        properties: {
+          date: { type: "string", format: "date", example: "2026-04-23" },
+          user: { $ref: "#/components/schemas/User" },
+          goals: { $ref: "#/components/schemas/Goals" },
+          totals: { $ref: "#/components/schemas/Goals" },
+          hydration: {
+            type: "object",
+            properties: {
+              totalMl: { type: "number", example: 1600 }
+            }
+          },
+          meals: {
+            type: "array",
+            items: { $ref: "#/components/schemas/MealEntry" }
+          }
+        },
+        required: ["date", "user", "goals", "totals", "hydration", "meals"]
+      }
     }
   },
   paths: {
@@ -51,31 +246,131 @@ const openApiDocument = {
       get: {
         tags: ["Health"],
         summary: "Health check",
+        description: "Возвращает статус сервиса и краткое описание технологического стека.",
         responses: {
-          200: {
-            description: "Service is available"
-          }
+          200: jsonResponse("Сервис доступен.", {
+            type: "object",
+            properties: {
+              status: { type: "string", example: "ok" },
+              service: { type: "string", example: "food-diary-app" },
+              stack: { type: "string", example: "express + sqlite + swagger" }
+            },
+            required: ["status", "service", "stack"]
+          })
         }
       }
     },
     "/api/auth/register": {
       post: {
         tags: ["Auth"],
-        summary: "Register a new user"
+        summary: "Register a new user",
+        description: "Создаёт новый пользовательский профиль, стартовые цели по КБЖУ и возвращает JWT.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string", example: "Иван Петров" },
+                  email: { type: "string", format: "email", example: "ivan@example.com" },
+                  password: { type: "string", example: "Password123!" }
+                },
+                required: ["name", "email", "password"]
+              }
+            }
+          }
+        },
+        responses: {
+          201: jsonResponse("Пользователь зарегистрирован.", {
+            $ref: "#/components/schemas/AuthPayload"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          },
+          409: jsonResponse("Пользователь с таким email уже существует.", {
+            $ref: "#/components/schemas/ErrorResponse"
+          })
+        }
       }
     },
     "/api/auth/login": {
       post: {
         tags: ["Auth"],
-        summary: "Authenticate user"
+        summary: "Authenticate user",
+        description: "Проверяет email и пароль, затем возвращает JWT и профиль пользователя.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  email: { type: "string", format: "email", example: "demo@nutritrack.local" },
+                  password: { type: "string", example: "Demo123!" }
+                },
+                required: ["email", "password"]
+              }
+            }
+          }
+        },
+        responses: {
+          200: jsonResponse("Аутентификация выполнена.", {
+            $ref: "#/components/schemas/AuthPayload"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          },
+          401: jsonResponse("Неверный email или пароль.", {
+            $ref: "#/components/schemas/ErrorResponse"
+          })
+        }
       }
     },
     "/api/auth/me": {
-      get: secured("Get current user profile", ["Auth"])
+      get: secured("Get current user profile", ["Auth"], {
+        description: "Возвращает профиль пользователя, связанный с текущим JWT.",
+        responses: {
+          200: jsonResponse("Профиль пользователя.", {
+            type: "object",
+            properties: {
+              user: {
+                $ref: "#/components/schemas/User"
+              }
+            },
+            required: ["user"]
+          })
+        }
+      })
     },
     "/api/goals": {
-      get: secured("Get KBJU goals", ["Goals"]),
-      put: secured("Update KBJU goals", ["Goals"])
+      get: secured("Get KBJU goals", ["Goals"], {
+        responses: {
+          200: jsonResponse("Текущие цели по КБЖУ.", {
+            $ref: "#/components/schemas/Goals"
+          })
+        }
+      }),
+      put: secured("Update KBJU goals", ["Goals"], {
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/Goals"
+              }
+            }
+          }
+        },
+        responses: {
+          200: jsonResponse("Цели обновлены.", {
+            $ref: "#/components/schemas/Goals"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          }
+        }
+      })
     },
     "/api/goals/presets": {
       get: secured("List goal presets", ["Goals"])
@@ -86,24 +381,74 @@ const openApiDocument = {
     "/api/products": {
       get: {
         tags: ["Products"],
-        summary: "List products"
+        summary: "List products",
+        description: "Возвращает каталог продуктов, доступный пользователю и административной панели.",
+        responses: {
+          200: jsonResponse("Список продуктов.", {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/Product"
+            }
+          })
+        }
       },
-      post: secured("Create product", ["Products"])
+      post: secured("Create product", ["Products"], {
+        responses: {
+          201: jsonResponse("Продукт создан.", {
+            $ref: "#/components/schemas/Product"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          }
+        }
+      })
     },
     "/api/products/{id}": {
       put: secured("Update product", ["Products"]),
       delete: secured("Delete product", ["Products"])
     },
     "/api/meals": {
-      get: secured("List meal entries", ["Meals"]),
-      post: secured("Create meal entry", ["Meals"])
+      get: secured("List meal entries", ["Meals"], {
+        description: "Возвращает дневник приёмов пищи пользователя с учётом фильтров.",
+        responses: {
+          200: jsonResponse("Список записей дневника.", {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/MealEntry"
+            }
+          })
+        }
+      }),
+      post: secured("Create meal entry", ["Meals"], {
+        responses: {
+          201: jsonResponse("Запись дневника создана.", {
+            $ref: "#/components/schemas/MealEntry"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          }
+        }
+      })
     },
     "/api/meals/{id}": {
       put: secured("Update meal entry", ["Meals"]),
       delete: secured("Delete meal entry", ["Meals"])
     },
     "/api/dashboard": {
-      get: secured("Get user dashboard", ["Dashboard"])
+      get: secured("Get user dashboard", ["Dashboard"], {
+        description:
+          "Возвращает агрегированную панель пользователя за выбранную дату: сводку КБЖУ, дневной контроль, гидратацию, прогресс, инсайты и рекомендации.",
+        parameters: [
+          {
+            $ref: "#/components/parameters/DateParameter"
+          }
+        ],
+        responses: {
+          200: jsonResponse("Панель пользователя за выбранную дату.", {
+            $ref: "#/components/schemas/DashboardResponse"
+          })
+        }
+      })
     },
     "/api/hydration": {
       get: secured("Get daily hydration summary", ["Hydration"]),
@@ -139,7 +484,45 @@ const openApiDocument = {
       delete: secured("Delete recipe", ["Recipes"])
     },
     "/api/exports/daily-report": {
-      get: secured("Export daily report as JSON or CSV", ["Exports"])
+      get: secured("Export daily report as JSON or CSV", ["Exports"], {
+        description: "Формирует ежедневный отчёт по питанию, воде и целям в JSON или CSV.",
+        parameters: [
+          {
+            $ref: "#/components/parameters/DateParameter"
+          },
+          {
+            in: "query",
+            name: "format",
+            schema: {
+              type: "string",
+              enum: ["json", "csv"],
+              default: "json"
+            },
+            description: "Формат результата."
+          }
+        ],
+        responses: {
+          200: {
+            description: "Ежедневный отчёт в выбранном формате.",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/DailyReport"
+                }
+              },
+              "text/csv": {
+                schema: {
+                  type: "string",
+                  example: "nutrition_report,..."
+                }
+              }
+            }
+          },
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          }
+        }
+      })
     },
     "/api/checkins": {
       get: secured("Get wellbeing check-in summary", ["Checkins"]),
