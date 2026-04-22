@@ -162,6 +162,11 @@ npm test
 - `GET /api/templates`
 - `POST /api/templates`
 - `POST /api/templates/:id/apply`
+- `GET /api/recipes`
+- `POST /api/recipes`
+- `POST /api/recipes/:id/apply`
+- `POST /api/recipes/:id/plan`
+- `POST /api/planner/generate-week`
 - `GET /api/favorites`
 - `POST /api/favorites/products/:productId`
 - `POST /api/favorites/templates/:templateId`
@@ -180,4 +185,4 @@ npm test
 5. Разделить frontend и backend на более независимые сборки.
 
 
-все фичи (но пока не все подключено)
+все фичи 

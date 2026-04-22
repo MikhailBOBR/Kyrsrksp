@@ -892,7 +892,7 @@ function renderTemplates(items) {
           plannedTime: "13:00"
         })
       });
-      await loadDashboard();
+      await Promise.all([loadDashboard(), loadWeeklyPlans()]);
       showFlash(`Шаблон "${template.name}" отправлен в планер`, "success");
     });
 
@@ -2014,7 +2014,7 @@ plannerForm.addEventListener("submit", async (event) => {
   plannerForm.elements.namedItem("mealType").value = "Завтрак";
   plannerForm.elements.namedItem("date").value = state.selectedDate;
   plannerForm.elements.namedItem("plannedTime").value = "13:00";
-  await loadDashboard();
+  await Promise.all([loadDashboard(), loadWeeklyPlans()]);
   showFlash("Позиция добавлена в планер", "success");
 });
 

@@ -1,10 +1,18 @@
+function secured(summary, tags) {
+  return {
+    tags,
+    summary,
+    security: [{ bearerAuth: [] }]
+  };
+}
+
 const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "NutriTrack API",
-    version: "1.2.0",
+    version: "1.3.0",
     description:
-      "API клиент-серверного приложения для персонального дневника питания с анализом КБЖУ."
+      "API for the personal nutrition diary with KBJU analytics, planning, recipes, hydration, wellbeing and exports."
   },
   servers: [
     {
@@ -20,6 +28,7 @@ const openApiDocument = {
     { name: "Dashboard" },
     { name: "Hydration" },
     { name: "Templates" },
+    { name: "Recipes" },
     { name: "Exports" },
     { name: "Checkins" },
     { name: "Metrics" },
@@ -41,10 +50,10 @@ const openApiDocument = {
     "/api/health": {
       get: {
         tags: ["Health"],
-        summary: "Проверка состояния сервиса",
+        summary: "Health check",
         responses: {
           200: {
-            description: "Сервис работает"
+            description: "Service is available"
           }
         }
       }
@@ -52,324 +61,148 @@ const openApiDocument = {
     "/api/auth/register": {
       post: {
         tags: ["Auth"],
-        summary: "Регистрация пользователя"
+        summary: "Register a new user"
       }
     },
     "/api/auth/login": {
       post: {
         tags: ["Auth"],
-        summary: "Вход пользователя"
+        summary: "Authenticate user"
       }
     },
     "/api/auth/me": {
-      get: {
-        tags: ["Auth"],
-        summary: "Текущий пользователь",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get current user profile", ["Auth"])
     },
     "/api/goals": {
-      get: {
-        tags: ["Goals"],
-        summary: "Получить цели по КБЖУ",
-        security: [{ bearerAuth: [] }]
-      },
-      put: {
-        tags: ["Goals"],
-        summary: "Обновить цели по КБЖУ",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get KBJU goals", ["Goals"]),
+      put: secured("Update KBJU goals", ["Goals"])
     },
     "/api/goals/presets": {
-      get: {
-        tags: ["Goals"],
-        summary: "Получить список пресетов целей",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("List goal presets", ["Goals"])
     },
     "/api/goals/presets/{presetId}/apply": {
-      post: {
-        tags: ["Goals"],
-        summary: "Применить пресет целей",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Apply goal preset", ["Goals"])
     },
     "/api/products": {
       get: {
         tags: ["Products"],
-        summary: "Список продуктов"
+        summary: "List products"
       },
-      post: {
-        tags: ["Products"],
-        summary: "Создать продукт",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Create product", ["Products"])
     },
     "/api/products/{id}": {
-      put: {
-        tags: ["Products"],
-        summary: "Обновить продукт",
-        security: [{ bearerAuth: [] }]
-      },
-      delete: {
-        tags: ["Products"],
-        summary: "Удалить продукт",
-        security: [{ bearerAuth: [] }]
-      }
+      put: secured("Update product", ["Products"]),
+      delete: secured("Delete product", ["Products"])
     },
     "/api/meals": {
-      get: {
-        tags: ["Meals"],
-        summary: "Список приемов пищи",
-        security: [{ bearerAuth: [] }]
-      },
-      post: {
-        tags: ["Meals"],
-        summary: "Создать прием пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("List meal entries", ["Meals"]),
+      post: secured("Create meal entry", ["Meals"])
     },
     "/api/meals/{id}": {
-      put: {
-        tags: ["Meals"],
-        summary: "Обновить прием пищи",
-        security: [{ bearerAuth: [] }]
-      },
-      delete: {
-        tags: ["Meals"],
-        summary: "Удалить прием пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      put: secured("Update meal entry", ["Meals"]),
+      delete: secured("Delete meal entry", ["Meals"])
     },
     "/api/dashboard": {
-      get: {
-        tags: ["Dashboard"],
-        summary: "Главный dashboard пользователя",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get user dashboard", ["Dashboard"])
     },
     "/api/hydration": {
-      get: {
-        tags: ["Hydration"],
-        summary: "Сводка по воде за день",
-        security: [{ bearerAuth: [] }]
-      },
-      post: {
-        tags: ["Hydration"],
-        summary: "Добавить запись воды",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get daily hydration summary", ["Hydration"]),
+      post: secured("Create hydration entry", ["Hydration"])
     },
     "/api/hydration/{id}": {
-      delete: {
-        tags: ["Hydration"],
-        summary: "Удалить запись воды",
-        security: [{ bearerAuth: [] }]
-      }
+      delete: secured("Delete hydration entry", ["Hydration"])
     },
     "/api/templates": {
-      get: {
-        tags: ["Templates"],
-        summary: "Список шаблонов приемов пищи",
-        security: [{ bearerAuth: [] }]
-      },
-      post: {
-        tags: ["Templates"],
-        summary: "Создать шаблон приема пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("List meal templates", ["Templates"]),
+      post: secured("Create meal template", ["Templates"])
     },
     "/api/templates/from-meal/{mealId}": {
-      post: {
-        tags: ["Templates"],
-        summary: "Создать шаблон из существующего приема пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Create template from meal", ["Templates"])
     },
     "/api/templates/{id}/apply": {
-      post: {
-        tags: ["Templates"],
-        summary: "Применить шаблон и создать запись приема пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Apply template as meal", ["Templates"])
     },
     "/api/templates/{id}": {
-      delete: {
-        tags: ["Templates"],
-        summary: "Удалить шаблон",
-        security: [{ bearerAuth: [] }]
-      }
+      delete: secured("Delete meal template", ["Templates"])
+    },
+    "/api/recipes": {
+      get: secured("List recipes", ["Recipes"]),
+      post: secured("Create recipe", ["Recipes"])
+    },
+    "/api/recipes/{id}/apply": {
+      post: secured("Apply recipe as meal", ["Recipes"])
+    },
+    "/api/recipes/{id}/plan": {
+      post: secured("Create plan from recipe", ["Recipes"])
+    },
+    "/api/recipes/{id}": {
+      delete: secured("Delete recipe", ["Recipes"])
     },
     "/api/exports/daily-report": {
-      get: {
-        tags: ["Exports"],
-        summary: "Экспорт дневного отчета в JSON или CSV",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Export daily report as JSON or CSV", ["Exports"])
     },
     "/api/checkins": {
-      get: {
-        tags: ["Checkins"],
-        summary: "Получить wellbeing-запись и тренд",
-        security: [{ bearerAuth: [] }]
-      },
-      put: {
-        tags: ["Checkins"],
-        summary: "Создать или обновить wellbeing-запись",
-        security: [{ bearerAuth: [] }]
-      },
-      delete: {
-        tags: ["Checkins"],
-        summary: "Удалить wellbeing-запись по дате",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get wellbeing check-in summary", ["Checkins"]),
+      put: secured("Create or update wellbeing check-in", ["Checkins"]),
+      delete: secured("Delete wellbeing check-in by date", ["Checkins"])
     },
     "/api/metrics": {
-      get: {
-        tags: ["Metrics"],
-        summary: "Получить историю замеров тела",
-        security: [{ bearerAuth: [] }]
-      },
-      post: {
-        tags: ["Metrics"],
-        summary: "Добавить замер тела",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get body metrics history", ["Metrics"]),
+      post: secured("Create body metric entry", ["Metrics"])
     },
     "/api/metrics/{id}": {
-      delete: {
-        tags: ["Metrics"],
-        summary: "Удалить замер тела",
-        security: [{ bearerAuth: [] }]
-      }
+      delete: secured("Delete body metric entry", ["Metrics"])
     },
     "/api/planner": {
-      get: {
-        tags: ["Planner"],
-        summary: "Получить план приемов пищи",
-        security: [{ bearerAuth: [] }]
-      },
-      post: {
-        tags: ["Planner"],
-        summary: "Создать план приема пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get meal planner data", ["Planner"]),
+      post: secured("Create planner entry", ["Planner"])
     },
     "/api/planner/from-template/{templateId}": {
-      post: {
-        tags: ["Planner"],
-        summary: "Создать план на основе шаблона",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Create planner entry from template", ["Planner"])
+    },
+    "/api/planner/generate-week": {
+      post: secured("Generate weekly meal plan", ["Planner"])
     },
     "/api/planner/{id}/completion": {
-      patch: {
-        tags: ["Planner"],
-        summary: "Изменить статус выполнения плана",
-        security: [{ bearerAuth: [] }]
-      }
+      patch: secured("Update planner completion state", ["Planner"])
     },
     "/api/planner/{id}": {
-      delete: {
-        tags: ["Planner"],
-        summary: "Удалить план приема пищи",
-        security: [{ bearerAuth: [] }]
-      }
+      delete: secured("Delete planner entry", ["Planner"])
     },
     "/api/shopping": {
-      get: {
-        tags: ["Shopping"],
-        summary: "Получить список покупок",
-        security: [{ bearerAuth: [] }]
-      },
-      post: {
-        tags: ["Shopping"],
-        summary: "Добавить позицию в список покупок",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get shopping list", ["Shopping"]),
+      post: secured("Create shopping list entry", ["Shopping"])
     },
     "/api/shopping/from-product/{productId}": {
-      post: {
-        tags: ["Shopping"],
-        summary: "Добавить продукт из каталога в список покупок",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Add product to shopping list", ["Shopping"])
     },
     "/api/shopping/{id}/check": {
-      patch: {
-        tags: ["Shopping"],
-        summary: "Изменить статус покупки",
-        security: [{ bearerAuth: [] }]
-      }
+      patch: secured("Toggle shopping entry state", ["Shopping"])
     },
     "/api/shopping/checked": {
-      delete: {
-        tags: ["Shopping"],
-        summary: "Очистить закрытые позиции списка покупок",
-        security: [{ bearerAuth: [] }]
-      }
+      delete: secured("Clear checked shopping entries", ["Shopping"])
     },
     "/api/shopping/{id}": {
-      delete: {
-        tags: ["Shopping"],
-        summary: "Удалить позицию из списка покупок",
-        security: [{ bearerAuth: [] }]
-      }
+      delete: secured("Delete shopping entry", ["Shopping"])
     },
     "/api/day-notes": {
-      get: {
-        tags: ["Day Notes"],
-        summary: "Получить заметку дня",
-        security: [{ bearerAuth: [] }]
-      },
-      put: {
-        tags: ["Day Notes"],
-        summary: "Создать или обновить заметку дня",
-        security: [{ bearerAuth: [] }]
-      },
-      delete: {
-        tags: ["Day Notes"],
-        summary: "Удалить заметку дня",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get note for selected day", ["Day Notes"]),
+      put: secured("Create or update day note", ["Day Notes"]),
+      delete: secured("Delete day note", ["Day Notes"])
     },
     "/api/day-notes/recent": {
-      get: {
-        tags: ["Day Notes"],
-        summary: "Получить последние заметки дня",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get recent day notes", ["Day Notes"])
     },
     "/api/favorites": {
-      get: {
-        tags: ["Favorites"],
-        summary: "Получить избранные продукты и шаблоны",
-        security: [{ bearerAuth: [] }]
-      }
+      get: secured("Get favorite products and templates", ["Favorites"])
     },
     "/api/favorites/products/{productId}": {
-      post: {
-        tags: ["Favorites"],
-        summary: "Добавить продукт в избранное",
-        security: [{ bearerAuth: [] }]
-      },
-      delete: {
-        tags: ["Favorites"],
-        summary: "Убрать продукт из избранного",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Add product to favorites", ["Favorites"]),
+      delete: secured("Remove product from favorites", ["Favorites"])
     },
     "/api/favorites/templates/{templateId}": {
-      post: {
-        tags: ["Favorites"],
-        summary: "Добавить шаблон в избранное",
-        security: [{ bearerAuth: [] }]
-      },
-      delete: {
-        tags: ["Favorites"],
-        summary: "Убрать шаблон из избранного",
-        security: [{ bearerAuth: [] }]
-      }
+      post: secured("Add template to favorites", ["Favorites"]),
+      delete: secured("Remove template from favorites", ["Favorites"])
     }
   }
 };

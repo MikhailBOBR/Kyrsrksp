@@ -297,6 +297,66 @@ test("creates and applies meal template", async () => {
   assert.equal(applied.payload.title, "Шаблон теста");
 });
 
+test("creates recipe, applies it and sends it to planner", async () => {
+  const token = await login("demo@nutritrack.local", "Demo123!");
+  const products = await api("/api/products");
+
+  assert.equal(products.status, 200);
+  assert.ok(products.payload.length >= 2);
+
+  const recipe = await api("/api/recipes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      title: "Recipe integration test",
+      mealType: "Обед",
+      notes: "Compound dish scenario validation",
+      instructions: "Mix ingredients and save as recipe",
+      ingredients: [
+        { productId: products.payload[0].id, grams: 180 },
+        { productId: products.payload[1].id, grams: 120 }
+      ]
+    })
+  });
+
+  assert.equal(recipe.status, 201);
+  assert.equal(recipe.payload.title, "Recipe integration test");
+  assert.equal(recipe.payload.ingredients.length, 2);
+
+  const appliedMeal = await api(`/api/recipes/${recipe.payload.id}/apply`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      date: getLocalDate(),
+      eatenAt: "14:10"
+    })
+  });
+
+  assert.equal(appliedMeal.status, 201);
+  assert.equal(appliedMeal.payload.title, "Recipe integration test");
+
+  const planned = await api(`/api/recipes/${recipe.payload.id}/plan`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      date: getLocalDate(),
+      plannedTime: "15:15"
+    })
+  });
+
+  assert.equal(planned.status, 201);
+  assert.equal(planned.payload.title, "Recipe integration test");
+});
+
 test("creates day note and returns it through dashboard", async () => {
   const token = await login("demo@nutritrack.local", "Demo123!");
   const today = getLocalDate();
@@ -442,6 +502,44 @@ test("creates meal plan from template and marks it completed", async () => {
   assert.ok(Array.isArray(planner.payload.items));
 });
 
+test("generates weekly plan from templates and recipes", async () => {
+  const token = await login("demo@nutritrack.local", "Demo123!");
+  const startDate = getLocalDate();
+
+  const generated = await api("/api/planner/generate-week", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      startDate,
+      days: 5,
+      includeSnack: true,
+      replaceExisting: true
+    })
+  });
+
+  assert.equal(generated.status, 201);
+  assert.equal(generated.payload.days, 5);
+  assert.equal(generated.payload.items.length, 20);
+
+  const range = await api(
+    `/api/planner?dateFrom=${encodeURIComponent(startDate)}&dateTo=${encodeURIComponent(
+      generated.payload.endDate
+    )}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  assert.equal(range.status, 200);
+  assert.ok(Array.isArray(range.payload));
+  assert.equal(range.payload.length, 20);
+});
+
 test("adds product to shopping list and toggles checked state", async () => {
   const token = await login("demo@nutritrack.local", "Demo123!");
 
@@ -563,4 +661,7 @@ test("exposes extended OpenAPI document", async () => {
   assert.ok(response.payload.paths["/api/goals/presets"]);
   assert.ok(response.payload.paths["/api/day-notes"]);
   assert.ok(response.payload.paths["/api/favorites"]);
+  assert.ok(response.payload.paths["/api/recipes"]);
+  assert.ok(response.payload.paths["/api/recipes/{id}/apply"]);
+  assert.ok(response.payload.paths["/api/planner/generate-week"]);
 });
