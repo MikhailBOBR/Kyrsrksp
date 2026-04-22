@@ -160,10 +160,132 @@ function getPlannerSummary(userId, date = getLocalDate()) {
   };
 }
 
+function getPlannedTimeByMealType(mealType) {
+  if (mealType === "Завтрак") {
+    return "08:00";
+  }
+
+  if (mealType === "Обед") {
+    return "13:00";
+  }
+
+  if (mealType === "Ужин") {
+    return "19:00";
+  }
+
+  return "16:30";
+}
+
+function buildGenerationPool(userId) {
+  const { listTemplates } = require("../templates/templates.service");
+  const { listRecipes } = require("../recipes/recipes.service");
+
+  const templatePool = listTemplates(userId).map((item) => ({
+    sourceType: "template",
+    id: item.id,
+    title: item.name,
+    mealType: item.mealType,
+    calories: item.calories,
+    protein: item.protein,
+    fat: item.fat,
+    carbs: item.carbs
+  }));
+  const recipePool = listRecipes(userId).map((item) => ({
+    sourceType: "recipe",
+    id: item.id,
+    title: item.title,
+    mealType: item.mealType,
+    calories: item.calories,
+    protein: item.protein,
+    fat: item.fat,
+    carbs: item.carbs
+  }));
+
+  return {
+    all: [...recipePool, ...templatePool],
+    byMealType: {
+      Завтрак: [...recipePool, ...templatePool].filter((item) => item.mealType === "Завтрак"),
+      Обед: [...recipePool, ...templatePool].filter((item) => item.mealType === "Обед"),
+      Ужин: [...recipePool, ...templatePool].filter((item) => item.mealType === "Ужин"),
+      Перекус: [...recipePool, ...templatePool].filter((item) => item.mealType === "Перекус")
+    }
+  };
+}
+
+function pickPlanSource(pool, mealType, index) {
+  const scopedPool = pool.byMealType[mealType];
+  const targetPool = scopedPool.length ? scopedPool : pool.all;
+
+  return targetPool[index % targetPool.length];
+}
+
+function generateWeeklyPlan(
+  userId,
+  { startDate = getLocalDate(), days = 7, includeSnack = true, replaceExisting = true } = {}
+) {
+  const safeDays = Math.min(Math.max(Number(days) || 7, 1), 14);
+  const endDate = addDays(startDate, safeDays - 1);
+  const pool = buildGenerationPool(userId);
+
+  if (!pool.all.length) {
+    throw createHttpError(
+      400,
+      "No templates or recipes available for week generation"
+    );
+  }
+
+  if (replaceExisting) {
+    db.prepare(
+      `
+        DELETE FROM meal_plans
+        WHERE user_id = ? AND entry_date >= ? AND entry_date <= ?
+      `
+    ).run(userId, startDate, endDate);
+  }
+
+  const slots = includeSnack
+    ? ["Завтрак", "Обед", "Перекус", "Ужин"]
+    : ["Завтрак", "Обед", "Ужин"];
+
+  for (let dayIndex = 0; dayIndex < safeDays; dayIndex += 1) {
+    const date = addDays(startDate, dayIndex);
+
+    slots.forEach((mealType, slotIndex) => {
+      const source = pickPlanSource(pool, mealType, dayIndex + slotIndex);
+
+      createPlan(userId, {
+        date,
+        title:
+          source.sourceType === "recipe"
+            ? `${source.title} · рецепт`
+            : `${source.title} · шаблон`,
+        mealType,
+        plannedTime: getPlannedTimeByMealType(mealType),
+        targetCalories: source.calories,
+        targetProtein: source.protein,
+        targetFat: source.fat,
+        targetCarbs: source.carbs
+      });
+    });
+  }
+
+  return {
+    startDate,
+    endDate,
+    days: safeDays,
+    includeSnack,
+    items: listPlans(userId, {
+      dateFrom: startDate,
+      dateTo: endDate
+    })
+  };
+}
+
 module.exports = {
   createPlan,
   createPlanFromTemplate,
   deletePlan,
+  generateWeeklyPlan,
   getPlannerSummary,
   listPlans,
   setPlanCompletion

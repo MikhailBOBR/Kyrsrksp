@@ -119,6 +119,8 @@
             <a class="sidebar-link" href="#wellbeing-panel">Самочувствие</a>
             <a class="sidebar-link" href="#day-note-panel">Заметка дня</a>
             <a class="sidebar-link" href="#planner-panel">План питания</a>
+            <a class="sidebar-link" href="#weekly-planner-panel">Неделя</a>
+            <a class="sidebar-link" href="#recipes-panel">Рецепты</a>
             <a class="sidebar-link" href="#favorites-panel">Избранное</a>
             <a class="sidebar-link" href="#journal-panel">Журнал</a>
             <a class="sidebar-link" href="#products-panel">Каталог</a>
@@ -541,6 +543,45 @@
               </div>
             </section>
 
+            <section class="panel wide-panel" id="weekly-planner-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Недельный план</p>
+                  <h2>Генерация плана питания на несколько дней вперед</h2>
+                </div>
+                <p id="weekly-plan-meta" class="muted-text">Недельный план загружается...</p>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <form id="weekly-plan-form" class="grid-form">
+                    <label>
+                      Начало периода
+                      <input name="startDate" type="date" required />
+                    </label>
+                    <label>
+                      Дней
+                      <select name="days">
+                        <option value="7">7 дней</option>
+                        <option value="5">5 дней</option>
+                        <option value="10">10 дней</option>
+                      </select>
+                    </label>
+                    <label class="checkbox-field">
+                      <input name="includeSnack" type="checkbox" checked />
+                      <span>Добавлять перекусы в недельный план</span>
+                    </label>
+                    <label class="checkbox-field">
+                      <input name="replaceExisting" type="checkbox" checked />
+                      <span>Пересобрать план на период заново</span>
+                    </label>
+                    <button class="primary-button" type="submit">Собрать неделю</button>
+                  </form>
+                </div>
+                <div id="weekly-plan-list" class="stack-list"></div>
+              </div>
+            </section>
+
             <section class="panel wide-panel" id="shopping-panel">
               <div class="panel-head">
                 <div>
@@ -733,6 +774,68 @@
               </div>
             </section>
 
+            <section class="panel wide-panel" id="recipes-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Рецепты</p>
+                  <h2>Составные блюда из каталога продуктов</h2>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <form id="recipe-form" class="grid-form">
+                    <label>
+                      Название рецепта
+                      <input name="title" type="text" maxlength="90" required />
+                    </label>
+                    <label>
+                      Тип приема пищи
+                      <select name="mealType" required>
+                        <option value="Завтрак">Завтрак</option>
+                        <option value="Обед">Обед</option>
+                        <option value="Ужин">Ужин</option>
+                        <option value="Перекус">Перекус</option>
+                      </select>
+                    </label>
+                    <label class="wide-field">
+                      Короткая заметка
+                      <input name="notes" type="text" maxlength="180" />
+                    </label>
+                    <label class="wide-field">
+                      Как готовить
+                      <textarea name="instructions" rows="4" maxlength="400"></textarea>
+                    </label>
+
+                    <div class="wide-field recipe-builder">
+                      <div class="panel-head panel-head-compact">
+                        <div>
+                          <p class="section-label">Ингредиенты</p>
+                          <h2>Соберите рецепт из каталога</h2>
+                        </div>
+                        <button id="add-recipe-ingredient-button" class="ghost-button small-button" type="button">
+                          Добавить ингредиент
+                        </button>
+                      </div>
+                      <div id="recipe-ingredients" class="stack-list"></div>
+                    </div>
+
+                    <button class="primary-button" type="submit">Сохранить рецепт</button>
+                  </form>
+                </div>
+
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Каталог рецептов</p>
+                      <h2>Быстрое применение и планирование</h2>
+                    </div>
+                  </div>
+                  <div id="recipes-list" class="stack-list"></div>
+                </div>
+              </div>
+            </section>
+
             <section class="panel wide-panel" id="favorites-panel">
               <div class="panel-head">
                 <div>
@@ -905,6 +1008,10 @@
         </div>
       </div>
     </div>
+
+    <footer class="page-footer">
+      <span>Автор проекта: Кашпирев М.Д.</span>
+    </footer>
 
     <template id="summary-card-template">
       <article class="metric-card">

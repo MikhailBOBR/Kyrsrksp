@@ -26,11 +26,19 @@ const state = {
   goalPresets: [],
   meals: [],
   products: [],
+  recipes: [],
   templates: [],
   metrics: null,
   shopping: null,
+  weeklyPlans: [],
+  weeklyPlanStart: getTodayDate(),
+  weeklyPlanDays: 7,
   currentMealType: "Все",
-  productSearch: ""
+  productSearch: "",
+  recipeDraftIngredients: [
+    { rowId: 1, productId: "", grams: 150 },
+    { rowId: 2, productId: "", grams: 100 }
+  ]
 };
 
 const authShell = document.querySelector("#auth-shell");
@@ -54,6 +62,7 @@ const datePickerInput = document.querySelector("#date-picker-input");
 
 const goalsForm = document.querySelector("#goals-form");
 const mealForm = document.querySelector("#meal-form");
+const recipeForm = document.querySelector("#recipe-form");
 const templateForm = document.querySelector("#template-form");
 const productForm = document.querySelector("#product-form");
 const productSearchForm = document.querySelector("#product-search-form");
@@ -62,6 +71,7 @@ const dayNoteForm = document.querySelector("#day-note-form");
 const checkinForm = document.querySelector("#checkin-form");
 const bodyMetricForm = document.querySelector("#body-metric-form");
 const plannerForm = document.querySelector("#planner-form");
+const weeklyPlanForm = document.querySelector("#weekly-plan-form");
 const shoppingForm = document.querySelector("#shopping-form");
 
 const goalPresetsList = document.querySelector("#goal-presets-list");
@@ -71,6 +81,11 @@ const productsList = document.querySelector("#products-list");
 const templatesList = document.querySelector("#templates-list");
 const favoriteProductsList = document.querySelector("#favorite-products-list");
 const favoriteTemplatesList = document.querySelector("#favorite-templates-list");
+const recipesList = document.querySelector("#recipes-list");
+const recipeIngredients = document.querySelector("#recipe-ingredients");
+const addRecipeIngredientButton = document.querySelector("#add-recipe-ingredient-button");
+const weeklyPlanMeta = document.querySelector("#weekly-plan-meta");
+const weeklyPlanList = document.querySelector("#weekly-plan-list");
 const comparisonCards = document.querySelector("#comparison-cards");
 const comparisonSummary = document.querySelector("#comparison-summary");
 const dailyControlsScore = document.querySelector("#daily-controls-score");
@@ -280,6 +295,133 @@ function formatDelta(value, unit = "") {
 
 function getFavoriteIds(type) {
   return new Set((state.dashboard?.favorites?.[type] || []).map((item) => item.id));
+}
+
+function getNextRecipeRowId() {
+  return (
+    state.recipeDraftIngredients.reduce(
+      (maxValue, item) => Math.max(maxValue, Number(item.rowId) || 0),
+      0
+    ) + 1
+  );
+}
+
+function resetRecipeDraft() {
+  state.recipeDraftIngredients = [
+    { rowId: 1, productId: "", grams: 150 },
+    { rowId: 2, productId: "", grams: 100 }
+  ];
+
+  if (recipeForm) {
+    recipeForm.reset();
+    recipeForm.elements.namedItem("mealType").value = "Обед";
+  }
+
+  renderRecipeIngredientRows();
+}
+
+function renderRecipeIngredientRows() {
+  if (!recipeIngredients) {
+    return;
+  }
+
+  recipeIngredients.innerHTML = "";
+
+  if (!state.products.length) {
+    recipeIngredients.innerHTML =
+      '<article class="stack-card"><p class="dashboard-note">Сначала нужен каталог продуктов, чтобы собрать составной рецепт.</p></article>';
+    return;
+  }
+
+  state.recipeDraftIngredients.forEach((row, index) => {
+    const node = document.createElement("article");
+    node.className = "stack-card recipe-ingredient-row";
+    const options = state.products
+      .map(
+        (product) => `
+          <option value="${product.id}" ${String(product.id) === String(row.productId) ? "selected" : ""}>
+            ${escapeHtml(product.name)}${product.brand ? ` · ${escapeHtml(product.brand)}` : ""}
+          </option>
+        `
+      )
+      .join("");
+
+    node.innerHTML = `
+      <div class="recipe-ingredient-grid">
+        <label class="wide-field">
+          Продукт ${index + 1}
+          <select data-recipe-row="${row.rowId}" data-field="productId">
+            <option value="">Выберите продукт</option>
+            ${options}
+          </select>
+        </label>
+        <label>
+          Граммы
+          <input data-recipe-row="${row.rowId}" data-field="grams" type="number" min="1" step="1" value="${row.grams}" />
+        </label>
+        <button class="danger-button small-button recipe-remove-button" data-recipe-row="${row.rowId}" type="button">
+          Убрать
+        </button>
+      </div>
+    `;
+
+    node.querySelectorAll("[data-recipe-row]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const rowId = Number(input.dataset.recipeRow);
+        const target = state.recipeDraftIngredients.find((item) => item.rowId === rowId);
+
+        if (!target) {
+          return;
+        }
+
+        if (input.dataset.field === "grams") {
+          target.grams = Number(input.value) || 0;
+          return;
+        }
+
+        target.productId = input.value;
+      });
+
+      input.addEventListener("change", () => {
+        const rowId = Number(input.dataset.recipeRow);
+        const target = state.recipeDraftIngredients.find((item) => item.rowId === rowId);
+
+        if (!target) {
+          return;
+        }
+
+        if (input.dataset.field === "grams") {
+          target.grams = Number(input.value) || 0;
+          return;
+        }
+
+        target.productId = input.value;
+      });
+    });
+
+    node.querySelector(".recipe-remove-button").addEventListener("click", () => {
+      state.recipeDraftIngredients = state.recipeDraftIngredients.filter(
+        (item) => item.rowId !== Number(row.rowId)
+      );
+
+      if (!state.recipeDraftIngredients.length) {
+        state.recipeDraftIngredients = [{ rowId: getNextRecipeRowId(), productId: "", grams: 100 }];
+      }
+
+      renderRecipeIngredientRows();
+    });
+
+    recipeIngredients.append(node);
+  });
+}
+
+function collectRecipeIngredients() {
+  return state.recipeDraftIngredients
+    .filter((item) => item.productId && Number(item.grams) > 0)
+    .map((item) => ({
+      productId: Number(item.productId),
+      grams: Number(item.grams)
+    }));
 }
 
 function nowTime() {
@@ -761,6 +903,125 @@ function renderTemplates(items) {
     });
 
     templatesList.append(card);
+  });
+}
+
+function renderRecipes(items) {
+  recipesList.innerHTML = "";
+
+  if (!items.length) {
+    recipesList.innerHTML =
+      '<article class="stack-card"><strong>Рецептов пока нет</strong><p class="dashboard-note">Соберите блюдо из нескольких продуктов и сохраните его как отдельный рецепт.</p></article>';
+    return;
+  }
+
+  items.forEach((recipe) => {
+    const ingredients = recipe.ingredients
+      .map((item) => `${escapeHtml(item.productName)} · ${item.grams.toFixed(0)} г`)
+      .join(" · ");
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <div class="stack-card-head">
+        <div>
+          <strong>${escapeHtml(recipe.title)}</strong>
+          <p class="dashboard-note">${escapeHtml(recipe.mealType)} · ${recipe.totalGrams.toFixed(0)} г · ${recipe.calories.toFixed(0)} ккал</p>
+        </div>
+        <div class="stack-card-actions">
+          <button class="ghost-button small-button recipe-apply-button" type="button">В прием</button>
+          <button class="ghost-button small-button recipe-plan-button" type="button">В план</button>
+          <button class="danger-button small-button recipe-delete-button" type="button">Удалить</button>
+        </div>
+      </div>
+      <p class="dashboard-note">Состав: ${ingredients || "ингредиенты не указаны"}</p>
+      <p class="dashboard-note">Б ${recipe.protein.toFixed(1)} · Ж ${recipe.fat.toFixed(1)} · У ${recipe.carbs.toFixed(1)}</p>
+      <p class="dashboard-note">${escapeHtml(recipe.instructions || recipe.notes || "Без комментария")}</p>
+    `;
+
+    node.querySelector(".recipe-apply-button").addEventListener("click", async () => {
+      await request(`/api/recipes/${recipe.id}/apply`, {
+        method: "POST",
+        body: JSON.stringify({
+          date: state.selectedDate,
+          eatenAt: nowTime()
+        })
+      });
+      await Promise.all([loadDashboard(), loadMeals()]);
+      showFlash(`Рецепт "${recipe.title}" добавлен в журнал`, "success");
+    });
+
+    node.querySelector(".recipe-plan-button").addEventListener("click", async () => {
+      await request(`/api/recipes/${recipe.id}/plan`, {
+        method: "POST",
+        body: JSON.stringify({
+          date: state.selectedDate,
+          plannedTime: "13:00"
+        })
+      });
+      await Promise.all([loadDashboard(), loadWeeklyPlans()]);
+      showFlash(`Рецепт "${recipe.title}" добавлен в план`, "success");
+    });
+
+    node.querySelector(".recipe-delete-button").addEventListener("click", async () => {
+      await request(`/api/recipes/${recipe.id}`, { method: "DELETE" });
+      await loadRecipes();
+      showFlash(`Рецепт "${recipe.title}" удален`, "success");
+    });
+
+    recipesList.append(node);
+  });
+}
+
+function renderWeeklyPlans() {
+  weeklyPlanMeta.textContent =
+    `${state.weeklyPlans.length} позиций с ${formatDate(state.weeklyPlanStart)} по ${formatDate(addDays(state.weeklyPlanStart, state.weeklyPlanDays - 1))}`;
+  weeklyPlanList.innerHTML = "";
+  weeklyPlanForm.elements.namedItem("startDate").value = state.weeklyPlanStart;
+  weeklyPlanForm.elements.namedItem("days").value = String(state.weeklyPlanDays);
+
+  if (!state.weeklyPlans.length) {
+    weeklyPlanList.innerHTML =
+      '<article class="stack-card"><strong>Недельный план пока пуст</strong><p class="dashboard-note">Можно собрать его автоматически на основе шаблонов и рецептов.</p></article>';
+    return;
+  }
+
+  const grouped = state.weeklyPlans.reduce((accumulator, item) => {
+    if (!accumulator[item.date]) {
+      accumulator[item.date] = [];
+    }
+
+    accumulator[item.date].push(item);
+    return accumulator;
+  }, {});
+
+  Object.entries(grouped).forEach(([date, items]) => {
+    const totalCalories = items.reduce((total, item) => total + item.targetCalories, 0);
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <div class="stack-card-head">
+        <div>
+          <strong>${formatDate(date)}</strong>
+          <p class="dashboard-note">${items.length} слота · ${totalCalories.toFixed(0)} ккал по плану</p>
+        </div>
+      </div>
+      <div class="weekly-plan-day-list">
+        ${items
+          .map(
+            (item) => `
+              <div class="weekly-plan-day-item">
+                <span class="meal-type">${escapeHtml(item.mealType)}</span>
+                <div>
+                  <strong>${escapeHtml(item.title)}</strong>
+                  <p class="dashboard-note">${item.plannedTime} · Б ${item.targetProtein.toFixed(1)} · Ж ${item.targetFat.toFixed(1)} · У ${item.targetCarbs.toFixed(1)}</p>
+                </div>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+    weeklyPlanList.append(node);
   });
 }
 
@@ -1402,11 +1663,17 @@ async function loadProducts() {
     : "";
   state.products = await request(`/api/products${query}`, {}, false);
   renderProducts(state.products);
+  renderRecipeIngredientRows();
 }
 
 async function loadTemplates() {
   state.templates = await request("/api/templates");
   renderTemplates(state.templates);
+}
+
+async function loadRecipes() {
+  state.recipes = await request("/api/recipes");
+  renderRecipes(state.recipes);
 }
 
 async function loadGoalPresets() {
@@ -1443,15 +1710,27 @@ async function loadShopping() {
   renderShopping(state.shopping);
 }
 
+async function loadWeeklyPlans() {
+  const endDate = addDays(state.weeklyPlanStart, state.weeklyPlanDays - 1);
+  const query = new URLSearchParams({
+    dateFrom: state.weeklyPlanStart,
+    dateTo: endDate
+  });
+  state.weeklyPlans = await request(`/api/planner?${query.toString()}`);
+  renderWeeklyPlans();
+}
+
 async function refreshWorkspace() {
   await Promise.all([
     loadDashboard(),
     loadGoalPresets(),
     loadMeals(),
     loadProducts(),
+    loadRecipes(),
     loadTemplates(),
     loadMetrics(),
-    loadShopping()
+    loadShopping(),
+    loadWeeklyPlans()
   ]);
 }
 
@@ -1460,6 +1739,7 @@ async function bootstrapSession() {
   apiStatus.textContent = "Система онлайн";
   syncDateControls();
   mealForm.elements.namedItem("eatenAt").value = nowTime();
+  weeklyPlanForm.elements.namedItem("startDate").value = state.weeklyPlanStart;
 
   if (!state.token) {
     showAuth();
@@ -1738,6 +2018,46 @@ plannerForm.addEventListener("submit", async (event) => {
   showFlash("Позиция добавлена в планер", "success");
 });
 
+recipeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  await request("/api/recipes", {
+    method: "POST",
+    body: JSON.stringify({
+      title: recipeForm.elements.namedItem("title").value.trim(),
+      mealType: recipeForm.elements.namedItem("mealType").value,
+      notes: recipeForm.elements.namedItem("notes").value.trim(),
+      instructions: recipeForm.elements.namedItem("instructions").value.trim(),
+      ingredients: collectRecipeIngredients()
+    })
+  });
+
+  resetRecipeDraft();
+  await loadRecipes();
+  showFlash("Рецепт сохранен", "success");
+});
+
+weeklyPlanForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  state.weeklyPlanStart =
+    weeklyPlanForm.elements.namedItem("startDate").value || state.selectedDate;
+  state.weeklyPlanDays = Number(weeklyPlanForm.elements.namedItem("days").value) || 7;
+
+  await request("/api/planner/generate-week", {
+    method: "POST",
+    body: JSON.stringify({
+      startDate: state.weeklyPlanStart,
+      days: state.weeklyPlanDays,
+      includeSnack: weeklyPlanForm.elements.namedItem("includeSnack").checked,
+      replaceExisting: weeklyPlanForm.elements.namedItem("replaceExisting").checked
+    })
+  });
+
+  await Promise.all([loadDashboard(), loadWeeklyPlans()]);
+  showFlash("Недельный план собран", "success");
+});
+
 shoppingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -1782,6 +2102,19 @@ productSearchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   state.productSearch = productSearchInput.value.trim();
   await loadProducts();
+  renderRecipeIngredientRows();
+});
+
+addRecipeIngredientButton.addEventListener("click", () => {
+  state.recipeDraftIngredients = [
+    ...state.recipeDraftIngredients,
+    {
+      rowId: getNextRecipeRowId(),
+      productId: "",
+      grams: 100
+    }
+  ];
+  renderRecipeIngredientRows();
 });
 
 quickWaterButtons.forEach((button) => {
@@ -1814,22 +2147,26 @@ clearCheckedShoppingButton.addEventListener("click", async () => {
 
 previousDateButton.addEventListener("click", async () => {
   state.selectedDate = shiftDate(state.selectedDate, -1);
-  await Promise.all([loadDashboard(), loadMeals()]);
+  state.weeklyPlanStart = state.selectedDate;
+  await Promise.all([loadDashboard(), loadMeals(), loadWeeklyPlans()]);
 });
 
 nextDateButton.addEventListener("click", async () => {
   state.selectedDate = shiftDate(state.selectedDate, 1);
-  await Promise.all([loadDashboard(), loadMeals()]);
+  state.weeklyPlanStart = state.selectedDate;
+  await Promise.all([loadDashboard(), loadMeals(), loadWeeklyPlans()]);
 });
 
 todayButton.addEventListener("click", async () => {
   state.selectedDate = getTodayDate();
-  await Promise.all([loadDashboard(), loadMeals()]);
+  state.weeklyPlanStart = state.selectedDate;
+  await Promise.all([loadDashboard(), loadMeals(), loadWeeklyPlans()]);
 });
 
 datePickerInput.addEventListener("change", async () => {
   state.selectedDate = datePickerInput.value || getTodayDate();
-  await Promise.all([loadDashboard(), loadMeals()]);
+  state.weeklyPlanStart = state.selectedDate;
+  await Promise.all([loadDashboard(), loadMeals(), loadWeeklyPlans()]);
 });
 
 refreshButton.addEventListener("click", async () => {
@@ -1840,8 +2177,10 @@ refreshButton.addEventListener("click", async () => {
 mealForm.elements.namedItem("eatenAt").value = nowTime();
 plannerForm.elements.namedItem("date").value = state.selectedDate;
 plannerForm.elements.namedItem("plannedTime").value = "13:00";
+weeklyPlanForm.elements.namedItem("startDate").value = state.weeklyPlanStart;
 shoppingForm.elements.namedItem("unit").value = "шт";
 setTheme(state.theme);
+resetRecipeDraft();
 
 bootstrapSession().catch((error) => {
   apiStatus.textContent = "Ошибка подключения";

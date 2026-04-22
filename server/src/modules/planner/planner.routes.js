@@ -11,6 +11,7 @@ const {
   createPlan,
   createPlanFromTemplate,
   deletePlan,
+  generateWeeklyPlan,
   getPlannerSummary,
   listPlans,
   setPlanCompletion
@@ -82,6 +83,25 @@ router.post("/from-template/:templateId", (req, res) => {
   res
     .status(201)
     .json(createPlanFromTemplate(req.user.id, Number(req.params.templateId), req.body));
+});
+
+router.post("/generate-week", (req, res) => {
+  if (req.body.startDate) {
+    assertDate(req.body.startDate, "startDate");
+  }
+
+  if (req.body.days !== undefined) {
+    assertNumber(Number(req.body.days), "days");
+  }
+
+  res.status(201).json(
+    generateWeeklyPlan(req.user.id, {
+      startDate: req.body.startDate,
+      days: req.body.days,
+      includeSnack: req.body.includeSnack !== false,
+      replaceExisting: req.body.replaceExisting !== false
+    })
+  );
 });
 
 router.patch("/:id/completion", (req, res) => {

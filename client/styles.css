@@ -108,6 +108,15 @@ a {
   padding: 18px 20px 32px;
 }
 
+.page-footer {
+  display: flex;
+  justify-content: center;
+  padding: 0 20px 24px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  opacity: 0.78;
+}
+
 .topbar {
   position: sticky;
   top: 16px;
@@ -581,6 +590,23 @@ body:not([data-theme="dark"]) .toolbar-form input {
   color: var(--muted);
 }
 
+.checkbox-field {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
 .toolbar-form {
   display: flex;
   gap: 10px;
@@ -978,6 +1004,39 @@ body[data-theme="dark"] #session-badge {
   padding-top: 2px;
 }
 
+.recipe-builder {
+  display: grid;
+  gap: 14px;
+}
+
+.recipe-ingredient-row {
+  padding: 14px 16px;
+}
+
+.recipe-ingredient-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.weekly-plan-day-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.weekly-plan-day-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
 .goal-preset-chip {
   min-height: 78px;
   align-items: flex-start;
@@ -1271,6 +1330,11 @@ body[data-theme="dark"] #session-badge {
   .product-actions {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .recipe-ingredient-grid,
+  .weekly-plan-day-item {
+    grid-template-columns: 1fr;
   }
 
   .date-toolbar input {

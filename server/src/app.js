@@ -17,6 +17,7 @@ const plannerRoutes = require("./modules/planner/planner.routes");
 const shoppingRoutes = require("./modules/shopping/shopping.routes");
 const dayNotesRoutes = require("./modules/day-notes/day-notes.routes");
 const favoritesRoutes = require("./modules/favorites/favorites.routes");
+const recipesRoutes = require("./modules/recipes/recipes.routes");
 const { openApiDocument } = require("./modules/docs/openapi");
 
 function createApp() {
@@ -52,6 +53,7 @@ function createApp() {
   app.use("/api/shopping", shoppingRoutes);
   app.use("/api/day-notes", dayNotesRoutes);
   app.use("/api/favorites", favoritesRoutes);
+  app.use("/api/recipes", recipesRoutes);
 
   app.use(express.static(clientRoot));
 
