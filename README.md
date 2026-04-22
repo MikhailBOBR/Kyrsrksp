@@ -1,47 +1,94 @@
 # Персональный дневник питания с анализом КБЖУ
 
-Клиент-серверное fullstack-приложение для ведения дневника питания, контроля дневных целей и анализа калорий, белков, жиров и углеводов. Текущая версия уже построена как серьёзная основа курсового проекта: есть авторизация, ролевая модель, база данных SQLite, Swagger-документация, CRUD-операции, автоматические тесты, CI/CD и расширенные пользовательские фичи.
+Клиент-серверное fullstack-приложение для ведения дневника питания, контроля калорий и макронутриентов, планирования рациона, отслеживания воды, самочувствия и сопутствующих показателей.
+
+Проект оформлен как курсовая работа по теме:
+
+> «Персональный дневник питания с анализом КБЖУ»
 
 ## Технологический стек
 
-- backend: `Node.js + Express`
+- frontend: `HTML + CSS + JavaScript`
+- backend: `Node.js 22 + Express`
 - database: `SQLite`
 - auth: `JWT + role-based access control`
-- docs: `Swagger UI`
+- docs: `OpenAPI + Swagger UI`
 - tests: `node:test`
-- ci/cd: `GitHub Actions + Docker + GHCR`
-- frontend: `HTML + CSS + JavaScript`
+- containers: `Docker + docker-compose`
+- CI/CD: `GitHub Actions + GHCR`
+- cloud-ready deploy: `Render`
 
-## Что уже реализовано
+## Что реализовано в приложении
 
 - регистрация, вход и получение профиля пользователя;
 - роли `user` и `admin`;
-- цели по КБЖУ с персональными настройками для каждого пользователя;
-- CRUD для приёмов пищи;
+- персональные цели по КБЖУ и готовые пресеты целей;
+- CRUD для приемов пищи;
 - справочник продуктов с административным управлением;
-- ежедневный dashboard с summary, insights и weekly trend;
-- smart score, achievements и streak;
-- wellbeing check-in с оценкой настроения, энергии, стресса, аппетита и сна;
-- body metrics: вес, процент жира, талия, грудь и история замеров;
-- meal planner с планированием приемов пищи и контролем выполнения;
-- shopping board для списка покупок с быстрым добавлением из каталога продуктов;
-- трекер воды и быстрые кнопки hydration;
-- шаблоны приёмов пищи с применением в один клик;
-- избранные продукты и шаблоны для быстрого доступа;
-- заметка дня с фокусом, выводами и кратким архивом по датам;
-- пресеты целей по КБЖУ: поддержание, снижение, высокий белок, набор массы;
-- сравнение с предыдущим днем и средними значениями недели;
-- блок контроля дня с чек-листом ключевых действий;
-- отправка шаблонов и записей в планер;
-- рекомендации по добору КБЖУ на основе каталога продуктов;
-- экспорт отчёта за день в `JSON` и `CSV`;
-- просмотр dashboard и журнала по выбранной дате;
-- светлая и тёмная тема интерфейса;
-- фильтрация журнала по типам приёма пищи;
-- Swagger по адресу `/api/docs`;
-- автоматические API-тесты;
-- локальный запуск через Docker;
-- CI и CD workflow для тестирования и публикации образа.
+- рецепты, шаблоны и избранное;
+- генерация недельного плана питания;
+- трекер воды, самочувствие, замеры тела;
+- список покупок;
+- заметка дня и дневная аналитика;
+- экспорт отчета в `JSON` и `CSV`;
+- Swagger по `/api/docs`;
+- seed-данные для демонстрации;
+- Docker и cloud-ready deploy-конфигурация;
+- автоматические тесты, негативные сценарии и fuzzing.
+
+## Покрытие требований курсовой
+
+### 1. Анализ предметной области
+
+Подготовлен в [docs/01-domain-overview.md](./docs/01-domain-overview.md).
+
+### 2. Клиент-серверная архитектура и UML
+
+Архитектура описана в [docs/02-architecture.md](./docs/02-architecture.md).
+
+UML-материалы:
+
+- [docs/diagrams/use-case.puml](./docs/diagrams/use-case.puml)
+- [docs/diagrams/component-diagram.puml](./docs/diagrams/component-diagram.puml)
+- [docs/diagrams/sequence-login.puml](./docs/diagrams/sequence-login.puml)
+- [docs/diagrams/deployment-diagram.puml](./docs/diagrams/deployment-diagram.puml)
+- [docs/diagrams/entity-diagram.puml](./docs/diagrams/entity-diagram.puml)
+
+### 3. Выбор программного стека
+
+Стек зафиксирован в этом README и в [docs/02-architecture.md](./docs/02-architecture.md).
+
+### 4. Клиентская и серверная части, авторизация, БД, тестовые данные, ролевая модель
+
+Все перечисленное реализовано в коде:
+
+- backend в [server/src](./server/src)
+- frontend в [client](./client)
+- инициализация БД в [server/src/db/init-schema.js](./server/src/db/init-schema.js)
+- массовый seed в [server/src/db/seed-large-data.js](./server/src/db/seed-large-data.js)
+- проверки ролей в [server/src/middlewares/auth.js](./server/src/middlewares/auth.js)
+- негативные сценарии в [server/tests/api.test.js](./server/tests/api.test.js)
+
+### 5. Фаззинг-тестирование
+
+Отдельный fuzzing-сценарий расположен в [server/tests/fuzz.test.js](./server/tests/fuzz.test.js).
+
+### 6. Git, Dockerfile, README и структура проекта
+
+В репозитории присутствуют:
+
+- [deploy/docker/server.Dockerfile](./deploy/docker/server.Dockerfile)
+- [deploy/docker/client.Dockerfile](./deploy/docker/client.Dockerfile)
+- [docker-compose.yml](./docker-compose.yml)
+- [deploy/README.md](./deploy/README.md)
+
+### 7. Облачное развертывание
+
+Подготовлена deploy-ready конфигурация:
+
+- [render.yaml](./render.yaml)
+
+Ограничение: фактический деплой в облако требует внешнего доступа к GitHub и облачной платформе. В этой локальной сессии подготовлены все конфиги и инструкции, но сам внешний запуск выполняется уже вне sandbox.
 
 ## Структура проекта
 
@@ -49,6 +96,7 @@
 .
 |-- client/
 |   |-- app.js
+|   |-- favicon.svg
 |   |-- index.html
 |   |-- styles.css
 |   `-- README.md
@@ -59,63 +107,54 @@
 |   |   |-- db/
 |   |   |-- lib/
 |   |   |-- middlewares/
-|   |   |-- modules/
-|   |   |   |-- auth/
-|   |   |   |-- dashboard/
-|   |   |   |-- day-notes/
-|   |   |   |-- docs/
-|   |   |   |-- exports/
-|   |   |   |-- favorites/
-|   |   |   |-- goals/
-|   |   |   |-- hydration/
-|   |   |   |-- meals/
-|   |   |   |-- metrics/
-|   |   |   |-- planner/
-|   |   |   |-- products/
-|   |   |   |-- shopping/
-|   |   |   `-- templates/
-|   |   |-- app.js
-|   |   `-- index.js
+|   |   `-- modules/
 |   |-- tests/
 |   `-- README.md
-|-- .github/
-|   `-- workflows/
 |-- docs/
+|   |-- diagrams/
+|   |-- 01-domain-overview.md
+|   |-- 02-architecture.md
+|   |-- 03-api-draft.md
+|   |-- 04-backlog.md
+|   |-- 05-testing-and-quality.md
+|   `-- 06-twelve-factor.md
 |-- deploy/
 |   |-- docker/
 |   `-- README.md
+|-- .github/workflows/
+|-- .dockerignore
+|-- .env.example
 |-- docker-compose.yml
 |-- package.json
-`-- package-lock.json
+|-- package-lock.json
+`-- render.yaml
 ```
 
 ## Быстрый запуск
 
-Требование: Node.js 22 или совместимая версия.
+Требование: `Node.js 22`.
 
 ```bash
 npm install
 npm start
 ```
 
-Приложение будет доступно по адресу:
+Приложение:
 
 ```text
 http://localhost:8080
 ```
 
-Swagger UI:
+Swagger:
 
 ```text
 http://localhost:8080/api/docs
 ```
 
-CD-пайплайн публикует Docker-образ в `GHCR` при push в `main`.
+## Тестовые учетные записи
 
-## Тестовые учётные записи
-
-- пользователь: `demo@nutritrack.local` / `Demo123!`
-- администратор: `admin@nutritrack.local` / `Admin123!`
+- пользователь: `demo@nutritrack.local / Demo123!`
+- администратор: `admin@nutritrack.local / Admin123!`
 
 ## Полезные команды
 
@@ -124,65 +163,33 @@ npm start
 npm run dev
 npm run seed:large
 npm test
+npm run test:fuzz
+docker compose up --build
 ```
 
-`npm run seed:large` наполняет SQLite большим демонстрационным набором данных:
-дополнительные пользователи, каталог продуктов, история приемов пищи, вода и шаблоны.
+## Docker и deploy
 
-## Основные API-маршруты
+Локальный контейнерный запуск:
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `GET /api/goals`
-- `PUT /api/goals`
-- `GET /api/goals/presets`
-- `POST /api/goals/presets/:presetId/apply`
-- `GET /api/products`
-- `POST /api/products`
-- `PUT /api/products/:id`
-- `DELETE /api/products/:id`
-- `GET /api/meals`
-- `POST /api/meals`
-- `PUT /api/meals/:id`
-- `DELETE /api/meals/:id`
-- `GET /api/dashboard`
-- `GET /api/hydration`
-- `POST /api/hydration`
-- `GET /api/checkins`
-- `PUT /api/checkins`
-- `GET /api/metrics`
-- `POST /api/metrics`
-- `GET /api/planner`
-- `POST /api/planner`
-- `PATCH /api/planner/:id/completion`
-- `GET /api/shopping`
-- `POST /api/shopping`
-- `POST /api/shopping/from-product/:productId`
-- `GET /api/templates`
-- `POST /api/templates`
-- `POST /api/templates/:id/apply`
-- `GET /api/recipes`
-- `POST /api/recipes`
-- `POST /api/recipes/:id/apply`
-- `POST /api/recipes/:id/plan`
-- `POST /api/planner/generate-week`
-- `GET /api/favorites`
-- `POST /api/favorites/products/:productId`
-- `POST /api/favorites/templates/:templateId`
-- `GET /api/day-notes`
-- `PUT /api/day-notes`
-- `GET /api/day-notes/recent`
-- `GET /api/exports/daily-report`
-- `GET /api/openapi.json`
+```bash
+docker compose up --build
+```
 
-## Что ещё предстоит
+Подробнее:
 
-1. Перейти с SQLite на PostgreSQL для production-сценария.
-2. Вынести UML-диаграммы в отдельные графические материалы.
-3. Добавить больше CRUD-сущностей: блюда, рецепты, шаблоны меню и цели по периодам.
-4. Подготовить фаззинг-тестирование и расширить покрытие негативных сценариев.
-5. Разделить frontend и backend на более независимые сборки.
+- [deploy/README.md](./deploy/README.md)
 
+## Документация API
 
-все фичи 
+- OpenAPI JSON: `GET /api/openapi.json`
+- Swagger UI: `GET /api/docs`
+
+## Качество и методология
+
+- тестирование и fuzzing: [docs/05-testing-and-quality.md](./docs/05-testing-and-quality.md)
+- методология Twelve-Factor: [docs/06-twelve-factor.md](./docs/06-twelve-factor.md)
+
+## CI/CD
+
+- [ci.yml](./.github/workflows/ci.yml) — тесты и docker build smoke check
+- [cd.yml](./.github/workflows/cd.yml) — публикация Docker image в `GHCR`

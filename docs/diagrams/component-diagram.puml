@@ -1,0 +1,68 @@
+@startuml
+skinparam componentStyle rectangle
+
+package "Client" {
+  [HTML UI]
+  [CSS Theme]
+  [app.js state and API calls]
+}
+
+package "Backend" {
+  [Express App]
+  [Auth Module]
+  [Goals Module]
+  [Meals Module]
+  [Products Module]
+  [Templates Module]
+  [Recipes Module]
+  [Planner Module]
+  [Dashboard Module]
+  [Hydration Module]
+  [Checkins Module]
+  [Metrics Module]
+  [Shopping Module]
+  [Day Notes Module]
+  [Favorites Module]
+  [Exports Module]
+  [Swagger / OpenAPI]
+}
+
+database "SQLite" as DB
+
+[HTML UI] --> [app.js state and API calls]
+[CSS Theme] --> [HTML UI]
+[app.js state and API calls] --> [Express App]
+
+[Express App] --> [Auth Module]
+[Express App] --> [Goals Module]
+[Express App] --> [Meals Module]
+[Express App] --> [Products Module]
+[Express App] --> [Templates Module]
+[Express App] --> [Recipes Module]
+[Express App] --> [Planner Module]
+[Express App] --> [Dashboard Module]
+[Express App] --> [Hydration Module]
+[Express App] --> [Checkins Module]
+[Express App] --> [Metrics Module]
+[Express App] --> [Shopping Module]
+[Express App] --> [Day Notes Module]
+[Express App] --> [Favorites Module]
+[Express App] --> [Exports Module]
+[Express App] --> [Swagger / OpenAPI]
+
+[Auth Module] --> DB
+[Goals Module] --> DB
+[Meals Module] --> DB
+[Products Module] --> DB
+[Templates Module] --> DB
+[Recipes Module] --> DB
+[Planner Module] --> DB
+[Dashboard Module] --> DB
+[Hydration Module] --> DB
+[Checkins Module] --> DB
+[Metrics Module] --> DB
+[Shopping Module] --> DB
+[Day Notes Module] --> DB
+[Favorites Module] --> DB
+[Exports Module] --> DB
+@enduml

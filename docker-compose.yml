@@ -5,9 +5,11 @@ services:
     build:
       context: .
       dockerfile: ./deploy/docker/server.Dockerfile
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8080
       JWT_SECRET: change_me_in_production
+      DB_PATH: /app/server/data/app.db
     ports:
       - "${SERVER_PORT:-8080}:8080"
     volumes:

@@ -59,16 +59,38 @@ function assertOneOf(value, fieldName, allowedValues) {
 function assertDate(value, fieldName = "date") {
   assertNonEmptyString(value, fieldName);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+  const normalized = value.trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
     throw createHttpError(400, `Field "${fieldName}" must match YYYY-MM-DD`);
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw createHttpError(400, `Field "${fieldName}" must be a valid calendar date`);
   }
 }
 
 function assertTime(value, fieldName = "eatenAt") {
   assertNonEmptyString(value, fieldName);
 
-  if (!/^\d{2}:\d{2}$/.test(value.trim())) {
+  const normalized = value.trim();
+
+  if (!/^\d{2}:\d{2}$/.test(normalized)) {
     throw createHttpError(400, `Field "${fieldName}" must match HH:MM`);
+  }
+
+  const [hours, minutes] = normalized.split(":").map(Number);
+
+  if (hours > 23 || minutes > 59) {
+    throw createHttpError(400, `Field "${fieldName}" must be a valid time`);
   }
 }
 

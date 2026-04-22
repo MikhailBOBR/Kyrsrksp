@@ -8,6 +8,7 @@
     "dev": "node --watch server/src/index.js",
     "seed:large": "node server/src/db/seed-large-data.js",
     "test": "node --test server/tests/*.test.js",
+    "test:fuzz": "node --test server/tests/fuzz.test.js",
     "test:watch": "node --test --watch server/tests/*.test.js"
   },
   "dependencies": {

@@ -1,0 +1,8 @@
+node_modules
+.git
+.github
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+npm-debug.log
+*.log

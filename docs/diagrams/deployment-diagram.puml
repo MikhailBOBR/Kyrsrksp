@@ -1,0 +1,27 @@
+@startuml
+node "Developer machine" {
+  artifact "Git repository"
+  artifact "Docker / docker-compose"
+}
+
+node "GitHub Actions" {
+  artifact "CI workflow"
+  artifact "CD workflow"
+  artifact "GHCR image"
+}
+
+node "Cloud platform" {
+  node "Web service container" {
+    artifact "Node.js + Express app"
+    artifact "Static client assets"
+  }
+  database "Persistent SQLite volume\nor managed DB" as CloudDB
+}
+
+"Git repository" --> "CI workflow"
+"CI workflow" --> "CD workflow"
+"CD workflow" --> "GHCR image"
+"GHCR image" --> "Web service container"
+"Web service container" --> CloudDB
+"Docker / docker-compose" --> "Web service container"
+@enduml

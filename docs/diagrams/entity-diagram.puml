@@ -1,0 +1,125 @@
+@startuml
+hide methods
+hide stereotypes
+
+entity User {
+  *id : int
+  --
+  name : string
+  email : string
+  password_hash : string
+  role : string
+}
+
+entity Goal {
+  *id : int
+  --
+  user_id : int
+  calories : number
+  protein : number
+  fat : number
+  carbs : number
+}
+
+entity Product {
+  *id : int
+  --
+  name : string
+  brand : string
+  category : string
+  calories : number
+  protein : number
+  fat : number
+  carbs : number
+}
+
+entity Meal {
+  *id : int
+  --
+  user_id : int
+  entry_date : date
+  meal_type : string
+  title : string
+}
+
+entity MealTemplate {
+  *id : int
+  --
+  user_id : int
+  name : string
+  meal_type : string
+}
+
+entity Recipe {
+  *id : int
+  --
+  user_id : int
+  title : string
+  meal_type : string
+}
+
+entity RecipeItem {
+  *id : int
+  --
+  recipe_id : int
+  product_id : int
+  grams : number
+}
+
+entity MealPlan {
+  *id : int
+  --
+  user_id : int
+  entry_date : date
+  title : string
+}
+
+entity HydrationLog {
+  *id : int
+  --
+  user_id : int
+  amount_ml : number
+  entry_date : date
+}
+
+entity Checkin {
+  *id : int
+  --
+  user_id : int
+  entry_date : date
+}
+
+entity BodyMetric {
+  *id : int
+  --
+  user_id : int
+  entry_date : date
+}
+
+entity ShoppingItem {
+  *id : int
+  --
+  user_id : int
+  title : string
+}
+
+entity DayNote {
+  *id : int
+  --
+  user_id : int
+  entry_date : date
+}
+
+User ||--|| Goal
+User ||--o{ Meal
+User ||--o{ MealTemplate
+User ||--o{ Recipe
+Recipe ||--o{ RecipeItem
+Product ||--o{ RecipeItem
+User ||--o{ MealPlan
+User ||--o{ HydrationLog
+User ||--o{ Checkin
+User ||--o{ BodyMetric
+User ||--o{ ShoppingItem
+User ||--o{ DayNote
+@enduml

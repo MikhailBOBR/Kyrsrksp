@@ -1,0 +1,19 @@
+@startuml
+actor User
+participant "Browser UI" as UI
+participant "Express API" as API
+participant "Auth Service" as Auth
+database "SQLite" as DB
+
+User -> UI : submit login form
+UI -> API : POST /api/auth/login
+API -> Auth : validate credentials
+Auth -> DB : find user by email
+DB --> Auth : user record
+Auth -> Auth : compare password hash
+Auth --> API : JWT + user
+API --> UI : 200 OK + token
+UI -> UI : store token
+UI -> API : GET /api/dashboard\nAuthorization: Bearer token
+API --> UI : dashboard payload
+@enduml

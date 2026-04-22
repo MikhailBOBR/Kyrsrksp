@@ -197,6 +197,63 @@ test("allows admin to create product", async () => {
   assert.equal(response.payload.name, "Тестовый продукт");
 });
 
+test("prevents regular user from updating and deleting admin catalog entries", async () => {
+  const adminToken = await login("admin@nutritrack.local", "Admin123!");
+  const userToken = await login("demo@nutritrack.local", "Demo123!");
+
+  const created = await api("/api/products", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${adminToken}`
+    },
+    body: JSON.stringify({
+      name: "Role Model Product",
+      brand: "QA",
+      category: "РџСЂРѕС‡РµРµ",
+      calories: 150,
+      protein: 9,
+      fat: 4,
+      carbs: 18
+    })
+  });
+
+  const products = await api("/api/products");
+
+  assert.equal(products.status, 200);
+  assert.ok(products.payload.length >= 1);
+
+  const productId = products.payload[0].id;
+
+  const updated = await api(`/api/products/${productId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${userToken}`
+    },
+    body: JSON.stringify({
+      name: "Illegal Update",
+      brand: "QA",
+      category: "РџСЂРѕС‡РµРµ",
+      calories: 160,
+      protein: 10,
+      fat: 5,
+      carbs: 17
+    })
+  });
+
+  assert.equal(updated.status, 403);
+
+  const deleted = await api(`/api/products/${productId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${userToken}`
+    }
+  });
+
+  assert.equal(deleted.status, 403);
+});
+
 test("creates meal for user and returns it in filtered list", async () => {
   const token = await login("demo@nutritrack.local", "Demo123!");
 
