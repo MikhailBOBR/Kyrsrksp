@@ -2,7 +2,7 @@ const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "NutriTrack API",
-    version: "1.1.0",
+    version: "1.2.0",
     description:
       "API клиент-серверного приложения для персонального дневника питания с анализом КБЖУ."
   },
@@ -24,7 +24,9 @@ const openApiDocument = {
     { name: "Checkins" },
     { name: "Metrics" },
     { name: "Planner" },
-    { name: "Shopping" }
+    { name: "Shopping" },
+    { name: "Day Notes" },
+    { name: "Favorites" }
   ],
   components: {
     securitySchemes: {
@@ -75,6 +77,20 @@ const openApiDocument = {
       put: {
         tags: ["Goals"],
         summary: "Обновить цели по КБЖУ",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/goals/presets": {
+      get: {
+        tags: ["Goals"],
+        summary: "Получить список пресетов целей",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/goals/presets/{presetId}/apply": {
+      post: {
+        tags: ["Goals"],
+        summary: "Применить пресет целей",
         security: [{ bearerAuth: [] }]
       }
     },
@@ -297,6 +313,61 @@ const openApiDocument = {
       delete: {
         tags: ["Shopping"],
         summary: "Удалить позицию из списка покупок",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/day-notes": {
+      get: {
+        tags: ["Day Notes"],
+        summary: "Получить заметку дня",
+        security: [{ bearerAuth: [] }]
+      },
+      put: {
+        tags: ["Day Notes"],
+        summary: "Создать или обновить заметку дня",
+        security: [{ bearerAuth: [] }]
+      },
+      delete: {
+        tags: ["Day Notes"],
+        summary: "Удалить заметку дня",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/day-notes/recent": {
+      get: {
+        tags: ["Day Notes"],
+        summary: "Получить последние заметки дня",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/favorites": {
+      get: {
+        tags: ["Favorites"],
+        summary: "Получить избранные продукты и шаблоны",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/favorites/products/{productId}": {
+      post: {
+        tags: ["Favorites"],
+        summary: "Добавить продукт в избранное",
+        security: [{ bearerAuth: [] }]
+      },
+      delete: {
+        tags: ["Favorites"],
+        summary: "Убрать продукт из избранного",
+        security: [{ bearerAuth: [] }]
+      }
+    },
+    "/api/favorites/templates/{templateId}": {
+      post: {
+        tags: ["Favorites"],
+        summary: "Добавить шаблон в избранное",
+        security: [{ bearerAuth: [] }]
+      },
+      delete: {
+        tags: ["Favorites"],
+        summary: "Убрать шаблон из избранного",
         security: [{ bearerAuth: [] }]
       }
     }

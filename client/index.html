@@ -114,8 +114,12 @@
           <nav class="sidebar-card sidebar-nav">
             <p class="sidebar-title">Навигация</p>
             <a class="sidebar-link" href="#analytics-panel">Обзор дня</a>
+            <a class="sidebar-link" href="#comparison-panel">Сравнение</a>
+            <a class="sidebar-link" href="#controls-panel">Контроль дня</a>
             <a class="sidebar-link" href="#wellbeing-panel">Самочувствие</a>
+            <a class="sidebar-link" href="#day-note-panel">Заметка дня</a>
             <a class="sidebar-link" href="#planner-panel">План питания</a>
+            <a class="sidebar-link" href="#favorites-panel">Избранное</a>
             <a class="sidebar-link" href="#journal-panel">Журнал</a>
             <a class="sidebar-link" href="#products-panel">Каталог</a>
             <a class="sidebar-link" href="#shopping-panel">Покупки</a>
@@ -277,6 +281,31 @@
                 <button class="quick-water-button" type="button" data-water="500">+500 мл</button>
               </div>
               <div id="hydration-list" class="stack-list"></div>
+            </section>
+
+            <section class="panel" id="comparison-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Сравнение</p>
+                  <h2>Сравнение с предыдущим днем</h2>
+                </div>
+              </div>
+              <div id="comparison-cards" class="comparison-grid"></div>
+              <div id="comparison-summary" class="comparison-summary"></div>
+            </section>
+
+            <section class="panel" id="controls-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Контроль дня</p>
+                  <h2>Чек-лист текущего режима</h2>
+                </div>
+              </div>
+              <div class="wellbeing-highlight">
+                <strong id="daily-controls-score">0%</strong>
+                <p id="daily-controls-caption" class="dashboard-note">Данные загружаются...</p>
+              </div>
+              <div id="daily-controls-list" class="stack-list"></div>
             </section>
 
             <section class="panel wide-panel" id="insights-panel">
@@ -570,6 +599,7 @@
                   <h2>Дневные цели по КБЖУ</h2>
                 </div>
               </div>
+              <div id="goal-presets-list" class="preset-grid"></div>
               <form id="goals-form" class="grid-form">
                 <label>
                   Калории
@@ -700,6 +730,92 @@
                   </form>
                 </div>
                 <div id="templates-list" class="stack-list"></div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="favorites-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Избранное</p>
+                  <h2>Быстрый доступ к любимым продуктам и шаблонам</h2>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Продукты</p>
+                      <h2>Избранные продукты</h2>
+                    </div>
+                  </div>
+                  <div id="favorite-products-list" class="stack-list"></div>
+                </div>
+
+                <div class="subsection-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Шаблоны</p>
+                      <h2>Избранные шаблоны</h2>
+                    </div>
+                  </div>
+                  <div id="favorite-templates-list" class="stack-list"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel wide-panel" id="day-note-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Заметка дня</p>
+                  <h2>Рабочий комментарий и выводы по выбранной дате</h2>
+                </div>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card">
+                  <form id="day-note-form" class="grid-form">
+                    <label>
+                      Заголовок
+                      <input name="title" type="text" maxlength="80" />
+                    </label>
+                    <label>
+                      Фокус дня
+                      <input name="focus" type="text" maxlength="140" />
+                    </label>
+                    <label class="wide-field">
+                      Что удалось
+                      <input name="wins" type="text" maxlength="180" />
+                    </label>
+                    <label class="wide-field">
+                      Что улучшить
+                      <input name="improvements" type="text" maxlength="180" />
+                    </label>
+                    <label class="wide-field">
+                      Комментарий
+                      <textarea name="notes" rows="5" maxlength="400"></textarea>
+                    </label>
+                    <button class="primary-button" type="submit">Сохранить заметку</button>
+                  </form>
+                </div>
+
+                <div class="subsection-card day-note-side">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Просмотр</p>
+                      <h2>Текущая заметка</h2>
+                    </div>
+                  </div>
+                  <div id="day-note-preview" class="stack-list"></div>
+
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Архив</p>
+                      <h2>Последние заметки</h2>
+                    </div>
+                  </div>
+                  <div id="recent-day-notes" class="stack-list"></div>
+                </div>
               </div>
             </section>
 

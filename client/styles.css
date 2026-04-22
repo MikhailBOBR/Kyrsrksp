@@ -510,6 +510,7 @@ body[data-theme="dark"] .hero {
 .date-toolbar input,
 .grid-form input,
 .grid-form select,
+.grid-form textarea,
 .toolbar-form input {
   width: 100%;
   min-height: 44px;
@@ -529,6 +530,7 @@ body[data-theme="dark"] .hero {
 
 .grid-form input:focus,
 .grid-form select:focus,
+.grid-form textarea:focus,
 .toolbar-form input:focus,
 .date-toolbar input:focus {
   outline: none;
@@ -539,6 +541,7 @@ body[data-theme="dark"] .hero {
 body[data-theme="dark"] .date-toolbar input,
 body[data-theme="dark"] .grid-form input,
 body[data-theme="dark"] .grid-form select,
+body[data-theme="dark"] .grid-form textarea,
 body[data-theme="dark"] .toolbar-form input {
   background: rgba(13, 20, 31, 0.92);
   border-color: rgba(147, 163, 187, 0.2);
@@ -550,8 +553,16 @@ body[data-theme="dark"] .toolbar-form input {
 body:not([data-theme="dark"]) .date-toolbar input,
 body:not([data-theme="dark"]) .grid-form input,
 body:not([data-theme="dark"]) .grid-form select,
+body:not([data-theme="dark"]) .grid-form textarea,
 body:not([data-theme="dark"]) .toolbar-form input {
   color-scheme: light;
+}
+
+.grid-form textarea {
+  min-height: 128px;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.55;
 }
 
 .grid-form {
@@ -715,7 +726,9 @@ body[data-theme="dark"] #session-badge {
 #score-panel,
 #hydration-panel,
 #goals-panel,
-#meal-panel {
+#meal-panel,
+#comparison-panel,
+#controls-panel {
   grid-column: span 6;
 }
 
@@ -735,6 +748,23 @@ body[data-theme="dark"] #session-badge {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.comparison-summary {
+  margin-top: 14px;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .metric-card,
@@ -948,6 +978,84 @@ body[data-theme="dark"] #session-badge {
   padding-top: 2px;
 }
 
+.goal-preset-chip {
+  min-height: 78px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.goal-preset-chip strong {
+  font-size: 0.96rem;
+}
+
+.goal-preset-chip span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.comparison-card {
+  gap: 10px;
+}
+
+.delta-pill,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  font-size: 0.8rem;
+  width: fit-content;
+}
+
+.delta-up {
+  color: #876140;
+  border-color: rgba(175, 138, 96, 0.32);
+  background: rgba(175, 138, 96, 0.1);
+}
+
+.delta-down {
+  color: #4e6a5e;
+  border-color: rgba(111, 143, 130, 0.32);
+  background: rgba(111, 143, 130, 0.1);
+}
+
+.delta-neutral {
+  color: var(--muted);
+}
+
+.comparison-summary-card {
+  display: grid;
+  gap: 10px;
+}
+
+.control-card-complete {
+  border-color: rgba(111, 143, 130, 0.3);
+}
+
+.status-badge-ok {
+  color: #4e6a5e;
+  border-color: rgba(111, 143, 130, 0.32);
+  background: rgba(111, 143, 130, 0.1);
+}
+
+.status-badge-pending {
+  color: var(--muted);
+}
+
+.day-note-side {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
 .filter-row {
   display: flex;
   flex-wrap: wrap;
@@ -1061,7 +1169,9 @@ body[data-theme="dark"] #session-badge {
   .recommendations-grid,
   .score-grid,
   .wellbeing-grid,
-  .stats-grid {
+  .stats-grid,
+  .comparison-grid,
+  .preset-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1136,6 +1246,8 @@ body[data-theme="dark"] #session-badge {
   .score-grid,
   .wellbeing-grid,
   .stats-grid,
+  .comparison-grid,
+  .preset-grid,
   .grid-form,
   .layout {
     grid-template-columns: 1fr;

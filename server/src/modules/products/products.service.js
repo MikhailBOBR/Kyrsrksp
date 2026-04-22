@@ -132,6 +132,7 @@ function deleteProduct(id) {
 module.exports = {
   createProduct,
   deleteProduct,
+  getProductById,
   listProducts,
   updateProduct
 };

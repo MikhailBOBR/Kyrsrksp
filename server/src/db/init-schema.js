@@ -148,6 +148,73 @@ function ensureSchema() {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS daily_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      entry_date TEXT NOT NULL,
+      title TEXT DEFAULT '',
+      focus TEXT DEFAULT '',
+      wins TEXT DEFAULT '',
+      improvements TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(user_id, entry_date),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS favorite_products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(user_id, product_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS favorite_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      template_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(user_id, template_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (template_id) REFERENCES meal_templates(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS recipes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      meal_type TEXT NOT NULL,
+      total_grams REAL NOT NULL,
+      calories REAL NOT NULL,
+      protein REAL NOT NULL,
+      fat REAL NOT NULL,
+      carbs REAL NOT NULL,
+      notes TEXT DEFAULT '',
+      instructions TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS recipe_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recipe_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      product_name TEXT NOT NULL,
+      grams REAL NOT NULL,
+      calories REAL NOT NULL,
+      protein REAL NOT NULL,
+      fat REAL NOT NULL,
+      carbs REAL NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
   `);
 }
 
@@ -616,6 +683,219 @@ function seedShopping() {
   });
 }
 
+function seedDailyNotes() {
+  const existingCount = db.prepare(`SELECT COUNT(*) AS count FROM daily_notes`).get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const today = getLocalDate();
+  const yesterday = getLocalDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const now = getTimestamp();
+  const insertNote = db.prepare(`
+    INSERT INTO daily_notes (
+      user_id, entry_date, title, focus, wins, improvements, notes, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  [
+    {
+      date: today,
+      title: "Рабочий ритм дня",
+      focus: "Удержать ровный набор приемов пищи и не провалиться по воде.",
+      wins: "Хорошо зашел структурный завтрак и заранее собранный обед.",
+      improvements: "Добрать белок вечером и закрыть список покупок.",
+      notes: "День подходит для спокойного режима без тяжелых решений по еде."
+    },
+    {
+      date: yesterday,
+      title: "Спокойный день",
+      focus: "Соблюдать план и держать ритм перекусов.",
+      wins: "Удалось не выйти за калорийность и удержать воду.",
+      improvements: "Нужно больше белка в первой половине дня.",
+      notes: "Шаблоны завтраков хорошо экономят время."
+    }
+  ].forEach((note) => {
+    insertNote.run(
+      demoUserId,
+      note.date,
+      note.title,
+      note.focus,
+      note.wins,
+      note.improvements,
+      note.notes,
+      now,
+      now
+    );
+  });
+}
+
+function seedFavorites() {
+  const productsCount = db.prepare(`SELECT COUNT(*) AS count FROM favorite_products`).get().count;
+  const templatesCount = db.prepare(`SELECT COUNT(*) AS count FROM favorite_templates`).get().count;
+
+  if (productsCount > 0 || templatesCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const now = getTimestamp();
+  const products = db
+    .prepare(`SELECT id FROM products ORDER BY calories DESC, protein DESC LIMIT 4`)
+    .all();
+  const templates = db
+    .prepare(`SELECT id FROM meal_templates WHERE user_id = ? ORDER BY usage_count DESC LIMIT 3`)
+    .all(demoUserId);
+
+  const favoriteProductStatement = db.prepare(`
+    INSERT OR IGNORE INTO favorite_products (user_id, product_id, created_at)
+    VALUES (?, ?, ?)
+  `);
+  const favoriteTemplateStatement = db.prepare(`
+    INSERT OR IGNORE INTO favorite_templates (user_id, template_id, created_at)
+    VALUES (?, ?, ?)
+  `);
+
+  products.forEach((product) => {
+    favoriteProductStatement.run(demoUserId, product.id, now);
+  });
+
+  templates.forEach((template) => {
+    favoriteTemplateStatement.run(demoUserId, template.id, now);
+  });
+}
+
+function seedRecipes() {
+  const existingCount = db.prepare(`SELECT COUNT(*) AS count FROM recipes`).get().count;
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  const demoUserId = db
+    .prepare(`SELECT id FROM users WHERE email = ?`)
+    .get(demoUser.email)?.id;
+  const now = getTimestamp();
+  const productMap = new Map(
+    db
+      .prepare(
+        `
+          SELECT id, name, calories, protein, fat, carbs
+          FROM products
+        `
+      )
+      .all()
+      .map((item) => [item.name, item])
+  );
+  const insertRecipe = db.prepare(`
+    INSERT INTO recipes (
+      user_id, title, meal_type, total_grams, calories, protein, fat, carbs, notes, instructions, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertItem = db.prepare(`
+    INSERT INTO recipe_items (
+      recipe_id, product_id, product_name, grams, calories, protein, fat, carbs, created_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  [
+    {
+      title: "Боул с курицей и рисом",
+      mealType: "Обед",
+      notes: "Универсальный базовый обед.",
+      instructions: "Отварить рис, обжарить курицу без лишнего масла, добавить брокколи.",
+      ingredients: [
+        { productName: "Куриная грудка", grams: 180 },
+        { productName: "Рис басмати", grams: 160 },
+        { productName: "Брокколи", grams: 120 }
+      ]
+    },
+    {
+      title: "Йогуртовый перекус с фруктами",
+      mealType: "Перекус",
+      notes: "Легкий вариант между основными приемами пищи.",
+      instructions: "Смешать йогурт с нарезанным бананом и ягодами.",
+      ingredients: [
+        { productName: "Греческий йогурт", grams: 180 },
+        { productName: "Банан", grams: 120 },
+        { productName: "Клубника", grams: 80 }
+      ]
+    }
+  ].forEach((recipe) => {
+    const items = recipe.ingredients
+      .map((ingredient) => {
+        const product = productMap.get(ingredient.productName);
+
+        if (!product) {
+          return null;
+        }
+
+        const ratio = ingredient.grams / 100;
+
+        return {
+          productId: product.id,
+          productName: product.name,
+          grams: ingredient.grams,
+          calories: Number((product.calories * ratio).toFixed(1)),
+          protein: Number((product.protein * ratio).toFixed(1)),
+          fat: Number((product.fat * ratio).toFixed(1)),
+          carbs: Number((product.carbs * ratio).toFixed(1))
+        };
+      })
+      .filter(Boolean);
+
+    const totals = items.reduce(
+      (accumulator, item) => {
+        accumulator.grams += item.grams;
+        accumulator.calories += item.calories;
+        accumulator.protein += item.protein;
+        accumulator.fat += item.fat;
+        accumulator.carbs += item.carbs;
+        return accumulator;
+      },
+      { grams: 0, calories: 0, protein: 0, fat: 0, carbs: 0 }
+    );
+
+    const result = insertRecipe.run(
+      demoUserId,
+      recipe.title,
+      recipe.mealType,
+      totals.grams,
+      totals.calories,
+      totals.protein,
+      totals.fat,
+      totals.carbs,
+      recipe.notes,
+      recipe.instructions,
+      now,
+      now
+    );
+
+    items.forEach((item) => {
+      insertItem.run(
+        result.lastInsertRowid,
+        item.productId,
+        item.productName,
+        item.grams,
+        item.calories,
+        item.protein,
+        item.fat,
+        item.carbs,
+        now
+      );
+    });
+  });
+}
+
 function initializeDatabase() {
   ensureSchema();
   seedUsers();
@@ -628,6 +908,9 @@ function initializeDatabase() {
   seedBodyMetrics();
   seedPlanner();
   seedShopping();
+  seedDailyNotes();
+  seedFavorites();
+  seedRecipes();
 }
 
 module.exports = {

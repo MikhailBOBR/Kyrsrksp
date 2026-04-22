@@ -23,6 +23,7 @@ const state = {
   selectedDate: getTodayDate(),
   user: null,
   dashboard: null,
+  goalPresets: [],
   meals: [],
   products: [],
   templates: [],
@@ -57,15 +58,26 @@ const templateForm = document.querySelector("#template-form");
 const productForm = document.querySelector("#product-form");
 const productSearchForm = document.querySelector("#product-search-form");
 const productSearchInput = document.querySelector("#product-search-input");
+const dayNoteForm = document.querySelector("#day-note-form");
 const checkinForm = document.querySelector("#checkin-form");
 const bodyMetricForm = document.querySelector("#body-metric-form");
 const plannerForm = document.querySelector("#planner-form");
 const shoppingForm = document.querySelector("#shopping-form");
 
+const goalPresetsList = document.querySelector("#goal-presets-list");
 const productAdminPanel = document.querySelector("#product-admin-panel");
 const productsMeta = document.querySelector("#products-meta");
 const productsList = document.querySelector("#products-list");
 const templatesList = document.querySelector("#templates-list");
+const favoriteProductsList = document.querySelector("#favorite-products-list");
+const favoriteTemplatesList = document.querySelector("#favorite-templates-list");
+const comparisonCards = document.querySelector("#comparison-cards");
+const comparisonSummary = document.querySelector("#comparison-summary");
+const dailyControlsScore = document.querySelector("#daily-controls-score");
+const dailyControlsCaption = document.querySelector("#daily-controls-caption");
+const dailyControlsList = document.querySelector("#daily-controls-list");
+const dayNotePreview = document.querySelector("#day-note-preview");
+const recentDayNotes = document.querySelector("#recent-day-notes");
 const summaryCards = document.querySelector("#summary-cards");
 const mealsList = document.querySelector("#meals-list");
 const mealCount = document.querySelector("#meal-count");
@@ -258,6 +270,18 @@ function formatTime(value) {
   return value?.slice(0, 5) || "--:--";
 }
 
+function formatDelta(value, unit = "") {
+  const numeric = Number(value || 0);
+  const sign = numeric > 0 ? "+" : numeric < 0 ? "−" : "";
+  const absolute = Math.abs(numeric);
+  const formatted = absolute >= 10 ? absolute.toFixed(0) : absolute.toFixed(1);
+  return `${sign}${formatted}${unit ? ` ${unit}` : ""}`;
+}
+
+function getFavoriteIds(type) {
+  return new Set((state.dashboard?.favorites?.[type] || []).map((item) => item.id));
+}
+
 function nowTime() {
   return new Date().toTimeString().slice(0, 5);
 }
@@ -289,7 +313,7 @@ function syncDateControls() {
 }
 
 function getFocus(dashboard) {
-  const { meals, goals, summary, insights, hydration, wellbeing, planner } = dashboard;
+  const { meals, goals, summary, insights, hydration, wellbeing, planner, dayNote } = dashboard;
 
   if (!meals.length) {
     return {
@@ -316,6 +340,13 @@ function getFocus(dashboard) {
     return {
       title: "Держать план",
       text: `В планере еще ${planner.totals.planned - planner.totals.completed} открытых слотов.`
+    };
+  }
+
+  if (dayNote?.focus) {
+    return {
+      title: "Фокус из заметки",
+      text: dayNote.focus
     };
   }
 
@@ -562,6 +593,59 @@ function renderWeeklyTrend(items) {
   });
 }
 
+function renderComparison(comparison) {
+  comparisonCards.innerHTML = "";
+
+  comparison.items.forEach((item) => {
+    const card = document.createElement("article");
+    const directionClass =
+      item.delta > 0 ? "delta-up" : item.delta < 0 ? "delta-down" : "delta-neutral";
+    card.className = "stack-card comparison-card";
+    card.innerHTML = `
+      <p class="dashboard-label">${escapeHtml(item.title)}</p>
+      <strong>${item.current.toFixed(item.unit === "ккал" || item.unit === "мл" ? 0 : 1)} ${escapeHtml(item.unit)}</strong>
+      <p class="dashboard-note">Вчера: ${item.previous.toFixed(item.unit === "ккал" || item.unit === "мл" ? 0 : 1)} ${escapeHtml(item.unit)}</p>
+      <span class="delta-pill ${directionClass}">${formatDelta(item.delta, item.unit)}</span>
+    `;
+    comparisonCards.append(card);
+  });
+
+  comparisonSummary.innerHTML = `
+    <article class="stack-card comparison-summary-card">
+      <strong>Средние значения за 7 дней</strong>
+      <p class="dashboard-note">
+        Калории ${comparison.weeklyAverage.calories.toFixed(0)} ккал · Белок ${comparison.weeklyAverage.protein.toFixed(1)} г ·
+        Вода ${comparison.weeklyAverage.hydrationMl.toFixed(0)} мл · Готовность ${comparison.weeklyAverage.readinessScore.toFixed(1)}
+      </p>
+      <p class="dashboard-note">Базовая точка сравнения: ${formatDate(comparison.previousDate)}</p>
+    </article>
+  `;
+}
+
+function renderDailyControls(controls) {
+  dailyControlsScore.textContent = `${Math.round(controls.adherence)}%`;
+  dailyControlsCaption.textContent =
+    `${controls.completed} из ${controls.total} контрольных точек закрыто на выбранную дату`;
+  dailyControlsList.innerHTML = "";
+
+  controls.items.forEach((item) => {
+    const node = document.createElement("article");
+    node.className = `stack-card control-card ${item.completed ? "control-card-complete" : ""}`;
+    node.innerHTML = `
+      <div class="stack-card-head">
+        <div>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p class="dashboard-note">${escapeHtml(item.description)}</p>
+        </div>
+        <span class="status-badge ${item.completed ? "status-badge-ok" : "status-badge-pending"}">
+          ${item.completed ? "Закрыто" : "Открыто"}
+        </span>
+      </div>
+    `;
+    dailyControlsList.append(node);
+  });
+}
+
 function renderHydration(hydration) {
   hydrationTotal.textContent = `${hydration.totalMl.toFixed(0)} мл`;
   hydrationCaption.textContent = `Цель ${hydration.targetMl} мл · ${Math.round(hydration.progress)}%`;
@@ -600,6 +684,7 @@ function renderHydration(hydration) {
 
 function renderTemplates(items) {
   templatesList.innerHTML = "";
+  const favoriteTemplateIds = getFavoriteIds("templates");
 
   if (!items.length) {
     templatesList.innerHTML =
@@ -617,6 +702,9 @@ function renderTemplates(items) {
           <p class="dashboard-note">${escapeHtml(template.mealType)} · использований: ${template.usageCount}</p>
         </div>
         <div class="stack-card-actions">
+          <button class="ghost-button small-button template-favorite-button" type="button">
+            ${favoriteTemplateIds.has(template.id) ? "Убрать из избранного" : "В избранное"}
+          </button>
           <button class="ghost-button small-button template-apply-button" type="button">Применить</button>
           <button class="ghost-button small-button template-plan-button" type="button">В план</button>
           <button class="danger-button small-button template-delete-button" type="button">Удалить</button>
@@ -627,6 +715,20 @@ function renderTemplates(items) {
       </p>
       <p class="dashboard-note">${escapeHtml(template.notes || "Без описания")}</p>
     `;
+
+    card.querySelector(".template-favorite-button").addEventListener("click", async () => {
+      const method = favoriteTemplateIds.has(template.id) ? "DELETE" : "POST";
+      await request(`/api/favorites/templates/${template.id}`, { method });
+      await loadDashboard();
+      renderTemplates(state.templates);
+      renderFavorites();
+      showFlash(
+        favoriteTemplateIds.has(template.id)
+          ? `Шаблон "${template.name}" убран из избранного`
+          : `Шаблон "${template.name}" добавлен в избранное`,
+        "success"
+      );
+    });
 
     card.querySelector(".template-apply-button").addEventListener("click", async () => {
       await request(`/api/templates/${template.id}/apply`, {
@@ -665,6 +767,7 @@ function renderTemplates(items) {
 function renderProducts(products) {
   productsList.innerHTML = "";
   productsMeta.textContent = `${products.length} продуктов в справочнике`;
+  const favoriteProductIds = getFavoriteIds("products");
 
   if (!products.length) {
     productsList.innerHTML =
@@ -707,6 +810,9 @@ function renderProducts(products) {
         </article>
       </div>
       <div class="product-actions">
+        <button class="ghost-button small-button product-favorite-button" type="button">
+          ${favoriteProductIds.has(product.id) ? "Убрать из избранного" : "В избранное"}
+        </button>
         <button class="ghost-button small-button product-fill-button" type="button">Заполнить форму</button>
         <button class="ghost-button small-button product-shopping-button" type="button">Добавить в покупки</button>
         ${
@@ -716,6 +822,22 @@ function renderProducts(products) {
         }
       </div>
     `;
+
+    productCard
+      .querySelector(".product-favorite-button")
+      .addEventListener("click", async () => {
+        const method = favoriteProductIds.has(product.id) ? "DELETE" : "POST";
+        await request(`/api/favorites/products/${product.id}`, { method });
+        await loadDashboard();
+        renderProducts(state.products);
+        renderFavorites();
+        showFlash(
+          favoriteProductIds.has(product.id)
+            ? `Продукт "${product.name}" убран из избранного`
+            : `Продукт "${product.name}" добавлен в избранное`,
+          "success"
+        );
+      });
 
     productCard.querySelector(".product-fill-button").addEventListener("click", () => {
       fillMealFormFromSource(
@@ -1062,6 +1184,186 @@ function renderShopping(shopping) {
   });
 }
 
+function renderGoalPresets() {
+  goalPresetsList.innerHTML = "";
+
+  state.goalPresets.forEach((preset) => {
+    const node = document.createElement("button");
+    node.className = "filter-chip goal-preset-chip";
+    node.type = "button";
+    node.innerHTML = `
+      <strong>${escapeHtml(preset.name)}</strong>
+      <span>${preset.calories} ккал · Б ${preset.protein} · Ж ${preset.fat} · У ${preset.carbs}</span>
+    `;
+    node.addEventListener("click", async () => {
+      await request(`/api/goals/presets/${preset.id}/apply`, {
+        method: "POST",
+        body: JSON.stringify({})
+      });
+      await loadDashboard();
+      showFlash(`Пресет "${preset.name}" применен`, "success");
+    });
+    goalPresetsList.append(node);
+  });
+}
+
+function renderFavorites() {
+  const favorites = state.dashboard?.favorites || { products: [], templates: [] };
+  favoriteProductsList.innerHTML = "";
+  favoriteTemplatesList.innerHTML = "";
+
+  if (!favorites.products.length) {
+    favoriteProductsList.innerHTML =
+      '<article class="stack-card"><p class="dashboard-note">Добавляйте продукты в избранное из каталога, чтобы собирать приемы пищи быстрее.</p></article>';
+  } else {
+    favorites.products.forEach((product) => {
+      const node = document.createElement("article");
+      node.className = "stack-card";
+      node.innerHTML = `
+        <div class="stack-card-head">
+          <div>
+            <strong>${escapeHtml(product.name)}</strong>
+            <p class="dashboard-note">${escapeHtml(product.brand || "Без бренда")} · ${escapeHtml(product.category)}</p>
+          </div>
+          <div class="stack-card-actions">
+            <button class="ghost-button small-button favorite-fill-button" type="button">В форму</button>
+            <button class="ghost-button small-button favorite-shopping-button" type="button">В покупки</button>
+            <button class="danger-button small-button favorite-remove-button" type="button">Убрать</button>
+          </div>
+        </div>
+      `;
+
+      node.querySelector(".favorite-fill-button").addEventListener("click", () => {
+        fillMealFormFromSource(
+          {
+            ...product,
+            grams: 100,
+            mealType: "Перекус",
+            notes: `Источник: избранное · ${product.name}`
+          },
+          product.name
+        );
+        showFlash(`Избранный продукт "${product.name}" перенесен в форму`, "success");
+      });
+      node.querySelector(".favorite-shopping-button").addEventListener("click", async () => {
+        await addProductToShopping(product.id, product.name, {
+          notes: "Добавлено из избранных продуктов"
+        });
+      });
+      node.querySelector(".favorite-remove-button").addEventListener("click", async () => {
+        await request(`/api/favorites/products/${product.id}`, { method: "DELETE" });
+        await loadDashboard();
+        renderProducts(state.products);
+        showFlash(`"${product.name}" убран из избранного`, "info");
+      });
+
+      favoriteProductsList.append(node);
+    });
+  }
+
+  if (!favorites.templates.length) {
+    favoriteTemplatesList.innerHTML =
+      '<article class="stack-card"><p class="dashboard-note">Любимые шаблоны помогут быстро собирать день и переносить слоты в план.</p></article>';
+  } else {
+    favorites.templates.forEach((template) => {
+      const node = document.createElement("article");
+      node.className = "stack-card";
+      node.innerHTML = `
+        <div class="stack-card-head">
+          <div>
+            <strong>${escapeHtml(template.name)}</strong>
+            <p class="dashboard-note">${escapeHtml(template.mealType)} · ${template.calories.toFixed(0)} ккал</p>
+          </div>
+          <div class="stack-card-actions">
+            <button class="ghost-button small-button favorite-template-apply" type="button">Применить</button>
+            <button class="ghost-button small-button favorite-template-plan" type="button">В план</button>
+            <button class="danger-button small-button favorite-template-remove" type="button">Убрать</button>
+          </div>
+        </div>
+        <p class="dashboard-note">${escapeHtml(template.notes || "Без описания")}</p>
+      `;
+
+      node.querySelector(".favorite-template-apply").addEventListener("click", async () => {
+        await request(`/api/templates/${template.id}/apply`, {
+          method: "POST",
+          body: JSON.stringify({
+            eatenAt: nowTime(),
+            date: state.selectedDate
+          })
+        });
+        await Promise.all([loadDashboard(), loadMeals(), loadTemplates()]);
+        showFlash(`Шаблон "${template.name}" применен из избранного`, "success");
+      });
+      node.querySelector(".favorite-template-plan").addEventListener("click", async () => {
+        await request(`/api/planner/from-template/${template.id}`, {
+          method: "POST",
+          body: JSON.stringify({
+            date: state.selectedDate,
+            plannedTime: "13:00"
+          })
+        });
+        await loadDashboard();
+        showFlash(`Шаблон "${template.name}" отправлен в план`, "success");
+      });
+      node.querySelector(".favorite-template-remove").addEventListener("click", async () => {
+        await request(`/api/favorites/templates/${template.id}`, { method: "DELETE" });
+        await loadDashboard();
+        renderTemplates(state.templates);
+        showFlash(`"${template.name}" убран из избранного`, "info");
+      });
+
+      favoriteTemplatesList.append(node);
+    });
+  }
+}
+
+function renderDayNote() {
+  const dayNote = state.dashboard?.dayNote;
+  const recentNotes = state.dashboard?.recentDayNotes || [];
+
+  if (!dayNote) {
+    return;
+  }
+
+  dayNoteForm.reset();
+  setFormValues(dayNoteForm, dayNote);
+  dayNotePreview.innerHTML = "";
+  recentDayNotes.innerHTML = "";
+
+  if (!dayNote.hasContent) {
+    dayNotePreview.innerHTML =
+      '<article class="stack-card"><strong>На дату пока нет заметки</strong><p class="dashboard-note">Добавьте фокус дня, выводы или организационные комментарии.</p></article>';
+  } else {
+    dayNotePreview.innerHTML = `
+      <article class="stack-card">
+        <p class="dashboard-label">${formatDate(dayNote.date)}</p>
+        <strong>${escapeHtml(dayNote.title || "Рабочая заметка")}</strong>
+        <p class="dashboard-note">${escapeHtml(dayNote.focus || "Фокус не указан")}</p>
+        <p class="dashboard-note">Что удалось: ${escapeHtml(dayNote.wins || "—")}</p>
+        <p class="dashboard-note">Что улучшить: ${escapeHtml(dayNote.improvements || "—")}</p>
+        <p class="dashboard-note">${escapeHtml(dayNote.notes || "Без комментария")}</p>
+      </article>
+    `;
+  }
+
+  if (!recentNotes.length) {
+    recentDayNotes.innerHTML =
+      '<article class="stack-card"><p class="dashboard-note">Архив заметок появится после нескольких заполненных дней.</p></article>';
+    return;
+  }
+
+  recentNotes.forEach((note) => {
+    const node = document.createElement("article");
+    node.className = "stack-card";
+    node.innerHTML = `
+      <p class="dashboard-label">${formatDate(note.date)}</p>
+      <strong>${escapeHtml(note.title || "Рабочая заметка")}</strong>
+      <p class="dashboard-note">${escapeHtml(note.focus || note.notes || "Без деталей")}</p>
+    `;
+    recentDayNotes.append(node);
+  });
+}
+
 function renderDashboardSnapshot() {
   if (!state.dashboard) {
     return;
@@ -1075,12 +1377,22 @@ function renderDashboardSnapshot() {
   renderSummary(state.dashboard.summary, state.dashboard.goals);
   renderInsights(state.dashboard);
   renderWeeklyTrend(state.dashboard.weeklyTrend);
+  renderComparison(state.dashboard.comparison);
+  renderDailyControls(state.dashboard.dailyControls);
   renderAchievements(state.dashboard.achievements);
   renderRecommendations(state.dashboard.recommendations);
   renderScoreBreakdown(state.dashboard.smartScore);
   renderHydration(state.dashboard.hydration);
   renderWellbeing(state.dashboard.wellbeing);
   renderPlanner(state.dashboard.planner);
+  renderDayNote();
+  renderFavorites();
+  if (state.products.length) {
+    renderProducts(state.products);
+  }
+  if (state.templates.length) {
+    renderTemplates(state.templates);
+  }
   productAdminPanel.classList.toggle("hidden", state.user.role !== "admin");
 }
 
@@ -1095,6 +1407,11 @@ async function loadProducts() {
 async function loadTemplates() {
   state.templates = await request("/api/templates");
   renderTemplates(state.templates);
+}
+
+async function loadGoalPresets() {
+  state.goalPresets = await request("/api/goals/presets");
+  renderGoalPresets();
 }
 
 async function loadMeals() {
@@ -1129,6 +1446,7 @@ async function loadShopping() {
 async function refreshWorkspace() {
   await Promise.all([
     loadDashboard(),
+    loadGoalPresets(),
     loadMeals(),
     loadProducts(),
     loadTemplates(),
@@ -1439,6 +1757,25 @@ shoppingForm.addEventListener("submit", async (event) => {
   shoppingForm.elements.namedItem("unit").value = "шт";
   await Promise.all([loadShopping(), loadDashboard()]);
   showFlash("Позиция добавлена в список покупок", "success");
+});
+
+dayNoteForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  await request("/api/day-notes", {
+    method: "PUT",
+    body: JSON.stringify({
+      date: state.selectedDate,
+      title: dayNoteForm.elements.namedItem("title").value.trim(),
+      focus: dayNoteForm.elements.namedItem("focus").value.trim(),
+      wins: dayNoteForm.elements.namedItem("wins").value.trim(),
+      improvements: dayNoteForm.elements.namedItem("improvements").value.trim(),
+      notes: dayNoteForm.elements.namedItem("notes").value.trim()
+    })
+  });
+
+  await loadDashboard();
+  showFlash("Заметка дня сохранена", "success");
 });
 
 productSearchForm.addEventListener("submit", async (event) => {

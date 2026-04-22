@@ -160,5 +160,6 @@ module.exports = {
   createTemplate,
   createTemplateFromMeal,
   deleteTemplate,
+  getTemplateById,
   listTemplates
 };

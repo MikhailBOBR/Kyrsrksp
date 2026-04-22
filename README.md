@@ -27,6 +27,11 @@
 - shopping board для списка покупок с быстрым добавлением из каталога продуктов;
 - трекер воды и быстрые кнопки hydration;
 - шаблоны приёмов пищи с применением в один клик;
+- избранные продукты и шаблоны для быстрого доступа;
+- заметка дня с фокусом, выводами и кратким архивом по датам;
+- пресеты целей по КБЖУ: поддержание, снижение, высокий белок, набор массы;
+- сравнение с предыдущим днем и средними значениями недели;
+- блок контроля дня с чек-листом ключевых действий;
 - отправка шаблонов и записей в планер;
 - рекомендации по добору КБЖУ на основе каталога продуктов;
 - экспорт отчёта за день в `JSON` и `CSV`;
@@ -57,12 +62,17 @@
 |   |   |-- modules/
 |   |   |   |-- auth/
 |   |   |   |-- dashboard/
+|   |   |   |-- day-notes/
 |   |   |   |-- docs/
 |   |   |   |-- exports/
+|   |   |   |-- favorites/
 |   |   |   |-- goals/
 |   |   |   |-- hydration/
 |   |   |   |-- meals/
+|   |   |   |-- metrics/
+|   |   |   |-- planner/
 |   |   |   |-- products/
+|   |   |   |-- shopping/
 |   |   |   `-- templates/
 |   |   |-- app.js
 |   |   `-- index.js
@@ -126,6 +136,8 @@ npm test
 - `GET /api/auth/me`
 - `GET /api/goals`
 - `PUT /api/goals`
+- `GET /api/goals/presets`
+- `POST /api/goals/presets/:presetId/apply`
 - `GET /api/products`
 - `POST /api/products`
 - `PUT /api/products/:id`
@@ -150,6 +162,12 @@ npm test
 - `GET /api/templates`
 - `POST /api/templates`
 - `POST /api/templates/:id/apply`
+- `GET /api/favorites`
+- `POST /api/favorites/products/:productId`
+- `POST /api/favorites/templates/:templateId`
+- `GET /api/day-notes`
+- `PUT /api/day-notes`
+- `GET /api/day-notes/recent`
 - `GET /api/exports/daily-report`
 - `GET /api/openapi.json`
 
