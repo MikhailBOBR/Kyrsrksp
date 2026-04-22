@@ -54,6 +54,7 @@ const refreshButton = document.querySelector("#refresh-button");
 const themeToggle = document.querySelector("#theme-toggle");
 const exportJsonButton = document.querySelector("#export-json-button");
 const exportCsvButton = document.querySelector("#export-csv-button");
+const exportPdfButton = document.querySelector("#export-pdf-button");
 const globalMessage = document.querySelector("#global-message");
 const previousDateButton = document.querySelector("#previous-date-button");
 const nextDateButton = document.querySelector("#next-date-button");
@@ -191,6 +192,45 @@ function showFlash(message, type = "info") {
   }, 3500);
 }
 
+function reportClientError(error, fallbackMessage = "Не удалось выполнить действие.") {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : fallbackMessage;
+
+  if (
+    reportClientError.lastMessage === message &&
+    Date.now() - (reportClientError.lastAt || 0) < 500
+  ) {
+    return;
+  }
+
+  reportClientError.lastMessage = message;
+  reportClientError.lastAt = Date.now();
+  showFlash(message || fallbackMessage, "error");
+}
+
+function setApiStatus(text) {
+  apiStatus.textContent = text;
+}
+
+window.addEventListener("unhandledrejection", (event) => {
+  event.preventDefault();
+  console.error(event.reason);
+  reportClientError(event.reason);
+});
+
+window.addEventListener("error", (event) => {
+  if (!event.error) {
+    return;
+  }
+
+  console.error(event.error);
+  reportClientError(event.error, "Ошибка в интерфейсе.");
+});
+
 function showAuth(message = "После входа откроется рабочая панель пользователя.") {
   authShell.classList.remove("hidden");
   appShell.classList.add("hidden");
@@ -198,6 +238,8 @@ function showAuth(message = "После входа откроется рабоч
   logoutButton.classList.add("hidden");
   exportJsonButton.classList.add("hidden");
   exportCsvButton.classList.add("hidden");
+  exportPdfButton.classList.add("hidden");
+  setApiStatus("Нужен вход");
   authMessage.textContent = message;
 }
 
@@ -208,6 +250,8 @@ function showApp() {
   logoutButton.classList.remove("hidden");
   exportJsonButton.classList.remove("hidden");
   exportCsvButton.classList.remove("hidden");
+  exportPdfButton.classList.remove("hidden");
+  setApiStatus("Система онлайн");
 }
 
 async function request(path, options = {}, authRequired = true) {
@@ -247,13 +291,27 @@ async function request(path, options = {}, authRequired = true) {
   return payload;
 }
 
+function setFieldValue(form, key, value) {
+  const input = form?.elements?.namedItem(key);
+
+  if (input && value !== undefined && value !== null) {
+    input.value = value;
+  }
+}
+
+function focusField(form, key) {
+  form?.elements?.namedItem(key)?.focus?.();
+}
+
+function revealSection(node) {
+  node
+    ?.closest(".panel, .hero, .sidebar-card, .auth-panel")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function setFormValues(form, values) {
   Object.entries(values).forEach(([key, value]) => {
-    const input = form.elements.namedItem(key);
-
-    if (input && value !== undefined && value !== null) {
-      input.value = value;
-    }
+    setFieldValue(form, key, value);
   });
 }
 
@@ -449,9 +507,453 @@ function downloadTextFile(filename, content, mimeType) {
   URL.revokeObjectURL(url);
 }
 
+function formatPrintableMetric(value, unit, digits = 0) {
+  const numeric = Number(value || 0);
+  return `${numeric.toLocaleString("ru-RU", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  })} ${unit}`;
+}
+
+async function fetchDailyReport() {
+  return request(`/api/exports/daily-report?date=${encodeURIComponent(state.selectedDate)}`);
+}
+
+function buildPrintableReportMarkup(report) {
+  const metrics = [
+    {
+      label: "Калории",
+      total: report.totals.calories,
+      goal: report.goals.calories,
+      unit: "ккал",
+      digits: 0
+    },
+    {
+      label: "Белки",
+      total: report.totals.protein,
+      goal: report.goals.protein,
+      unit: "г",
+      digits: 1
+    },
+    {
+      label: "Жиры",
+      total: report.totals.fat,
+      goal: report.goals.fat,
+      unit: "г",
+      digits: 1
+    },
+    {
+      label: "Углеводы",
+      total: report.totals.carbs,
+      goal: report.goals.carbs,
+      unit: "г",
+      digits: 1
+    }
+  ];
+
+  const summaryCards = [
+    {
+      label: "Приемов пищи",
+      value: String(report.meals.length)
+    },
+    {
+      label: "Вода",
+      value: formatPrintableMetric(report.hydration.totalMl, "мл", 0)
+    },
+    {
+      label: "Цель по воде",
+      value: formatPrintableMetric(report.hydration.targetMl, "мл", 0)
+    },
+    {
+      label: "Профиль",
+      value: escapeHtml(report.user.name || report.user.email)
+    }
+  ]
+    .map(
+      (item) => `
+        <article class="report-card">
+          <span>${item.label}</span>
+          <strong>${item.value}</strong>
+        </article>
+      `
+    )
+    .join("");
+
+  const goalRows = metrics
+    .map((metric) => {
+      const progress = metric.goal > 0 ? Math.min((metric.total / metric.goal) * 100, 100) : 0;
+      return `
+        <article class="goal-row">
+          <div class="goal-row-head">
+            <strong>${metric.label}</strong>
+            <span>${formatPrintableMetric(metric.total, metric.unit, metric.digits)} из ${formatPrintableMetric(
+              metric.goal,
+              metric.unit,
+              metric.digits
+            )}</span>
+          </div>
+          <div class="goal-row-track">
+            <div class="goal-row-fill" style="width:${progress}%"></div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  const mealRows = report.meals.length
+    ? report.meals
+        .map(
+          (meal) => `
+            <tr>
+              <td>${escapeHtml(formatTime(meal.eatenAt))}</td>
+              <td>${escapeHtml(meal.mealType)}</td>
+              <td>
+                <strong>${escapeHtml(meal.title)}</strong>
+                <div class="table-note">${escapeHtml(meal.notes || "Без комментария")}</div>
+              </td>
+              <td>${formatPrintableMetric(meal.grams, "г", 0)}</td>
+              <td>${formatPrintableMetric(meal.calories, "ккал", 0)}</td>
+              <td>${formatPrintableMetric(meal.protein, "г", 1)}</td>
+              <td>${formatPrintableMetric(meal.fat, "г", 1)}</td>
+              <td>${formatPrintableMetric(meal.carbs, "г", 1)}</td>
+            </tr>
+          `
+        )
+        .join("")
+    : `
+      <tr>
+        <td colspan="8" class="empty-state">На выбранную дату записи отсутствуют.</td>
+      </tr>
+    `;
+
+  return `<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Рацион — отчет за ${escapeHtml(report.date)}</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #ffffff;
+        --paper-soft: #f4f8f7;
+        --line: #d6e0df;
+        --text: #1b2430;
+        --muted: #667787;
+        --accent: #6d8c98;
+        --accent-soft: #dce9e6;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: #e9f0ee;
+        color: var(--text);
+        font-family: "Segoe UI", "Segoe UI Variable Text", sans-serif;
+      }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(233, 240, 238, 0.92);
+        backdrop-filter: blur(8px);
+      }
+
+      .toolbar button {
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1px solid #c9d7d4;
+        border-radius: 999px;
+        background: white;
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .report-shell {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 18px 42px;
+      }
+
+      .report-page {
+        padding: 34px;
+        border-radius: 28px;
+        background: var(--paper);
+        box-shadow: 0 18px 44px rgba(44, 63, 71, 0.08);
+      }
+
+      .report-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 20px;
+        margin-bottom: 26px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .report-title {
+        margin: 0;
+        font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+        font-size: 46px;
+        line-height: 1;
+      }
+
+      .report-subtitle {
+        margin: 12px 0 0;
+        max-width: 42ch;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .report-meta-card {
+        padding: 18px 20px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--paper-soft);
+      }
+
+      .report-meta-card strong,
+      .report-card strong,
+      .goal-row strong,
+      td strong {
+        display: block;
+      }
+
+      .report-meta-card span,
+      .report-card span,
+      .goal-row span,
+      .table-note,
+      .report-footer {
+        color: var(--muted);
+      }
+
+      .report-meta-card + .report-meta-card {
+        margin-top: 12px;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+
+      .report-card {
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper-soft);
+      }
+
+      .report-card strong {
+        margin-top: 10px;
+        font-size: 24px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .goals-panel,
+      .meals-panel {
+        padding: 22px 24px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: white;
+      }
+
+      .goals-panel { margin-bottom: 20px; }
+
+      .goals-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .goal-row-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 8px;
+      }
+
+      .goal-row-track {
+        height: 10px;
+        border-radius: 999px;
+        background: #e7efed;
+        overflow: hidden;
+      }
+
+      .goal-row-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #87a7ab, #6d8c98);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+        font-size: 14px;
+      }
+
+      th {
+        color: var(--accent);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .table-note {
+        margin-top: 6px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .empty-state {
+        color: var(--muted);
+        text-align: center;
+        padding: 24px;
+      }
+
+      .report-footer {
+        margin-top: 18px;
+        font-size: 12px;
+        text-align: right;
+      }
+
+      @media print {
+        @page {
+          size: A4;
+          margin: 14mm;
+        }
+
+        body {
+          background: white;
+        }
+
+        .toolbar {
+          display: none;
+        }
+
+        .report-shell {
+          max-width: none;
+          padding: 0;
+        }
+
+        .report-page {
+          box-shadow: none;
+          border-radius: 0;
+          padding: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button onclick="window.print()">Сохранить как PDF</button>
+      <button onclick="window.close()">Закрыть</button>
+    </div>
+    <main class="report-shell">
+      <section class="report-page">
+        <header class="report-header">
+          <div>
+            <p class="eyebrow">Персональный дневник питания</p>
+            <h1 class="report-title">Рацион</h1>
+            <p class="report-subtitle">
+              Отчет по рациону за ${escapeHtml(formatDate(report.date))}. Сводка по КБЖУ, воде и журналу приемов пищи за выбранный день.
+            </p>
+          </div>
+          <div>
+            <article class="report-meta-card">
+              <span>Профиль</span>
+              <strong>${escapeHtml(report.user.name || report.user.email)}</strong>
+            </article>
+            <article class="report-meta-card">
+              <span>Почта</span>
+              <strong>${escapeHtml(report.user.email)}</strong>
+            </article>
+            <article class="report-meta-card">
+              <span>Дата отчета</span>
+              <strong>${escapeHtml(formatDate(report.date))}</strong>
+            </article>
+          </div>
+        </header>
+
+        <section class="summary-grid">
+          ${summaryCards}
+        </section>
+
+        <section class="goals-panel">
+          <p class="eyebrow">Сводка по целям</p>
+          <div class="goals-grid">
+            ${goalRows}
+          </div>
+        </section>
+
+        <section class="meals-panel">
+          <p class="eyebrow">Журнал приемов пищи</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Время</th>
+                <th>Тип</th>
+                <th>Блюдо</th>
+                <th>Вес</th>
+                <th>Ккал</th>
+                <th>Б</th>
+                <th>Ж</th>
+                <th>У</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mealRows}
+            </tbody>
+          </table>
+        </section>
+
+        <p class="report-footer">Сформировано в системе «Рацион»</p>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
+function openPrintableReport(report) {
+  const popup = window.open("", "_blank", "width=1100,height=900");
+
+  if (!popup) {
+    throw new Error("Браузер заблокировал окно отчета. Разрешите всплывающие окна.");
+  }
+
+  popup.document.write(buildPrintableReportMarkup(report));
+  popup.document.close();
+  popup.focus();
+  popup.setTimeout(() => {
+    popup.print();
+  }, 280);
+}
+
 function syncDateControls() {
   datePickerInput.value = state.selectedDate;
-  plannerForm.elements.namedItem("date").value = state.selectedDate;
+  setFieldValue(plannerForm, "date", state.selectedDate);
 }
 
 function getFocus(dashboard) {
@@ -513,27 +1015,29 @@ function getFocus(dashboard) {
 }
 
 function fillMealFormFromSource(source, titleOverride) {
-  mealForm.elements.namedItem("title").value = titleOverride || source.name || source.title;
-  mealForm.elements.namedItem("mealType").value = source.mealType || "Перекус";
-  mealForm.elements.namedItem("grams").value = source.grams || 100;
-  mealForm.elements.namedItem("calories").value = source.calories;
-  mealForm.elements.namedItem("protein").value = source.protein;
-  mealForm.elements.namedItem("fat").value = source.fat;
-  mealForm.elements.namedItem("carbs").value = source.carbs;
-  mealForm.elements.namedItem("notes").value = source.notes || "";
-  mealForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  setFieldValue(mealForm, "title", titleOverride || source.name || source.title);
+  setFieldValue(mealForm, "mealType", source.mealType || "Перекус");
+  setFieldValue(mealForm, "grams", source.grams || 100);
+  setFieldValue(mealForm, "calories", source.calories);
+  setFieldValue(mealForm, "protein", source.protein);
+  setFieldValue(mealForm, "fat", source.fat);
+  setFieldValue(mealForm, "carbs", source.carbs);
+  setFieldValue(mealForm, "notes", source.notes || "");
+  revealSection(mealForm);
+  focusField(mealForm, "title");
 }
 
 function fillPlannerFormFromSource(source, titleOverride) {
-  plannerForm.elements.namedItem("title").value = titleOverride || source.name || source.title;
-  plannerForm.elements.namedItem("mealType").value = source.mealType || "Обед";
-  plannerForm.elements.namedItem("date").value = state.selectedDate;
-  plannerForm.elements.namedItem("plannedTime").value = source.eatenAt || "13:00";
-  plannerForm.elements.namedItem("targetCalories").value = source.calories || 0;
-  plannerForm.elements.namedItem("targetProtein").value = source.protein || 0;
-  plannerForm.elements.namedItem("targetFat").value = source.fat || 0;
-  plannerForm.elements.namedItem("targetCarbs").value = source.carbs || 0;
-  plannerForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  setFieldValue(plannerForm, "title", titleOverride || source.name || source.title);
+  setFieldValue(plannerForm, "mealType", source.mealType || "Обед");
+  setFieldValue(plannerForm, "date", state.selectedDate);
+  setFieldValue(plannerForm, "plannedTime", source.eatenAt || "13:00");
+  setFieldValue(plannerForm, "targetCalories", source.calories || 0);
+  setFieldValue(plannerForm, "targetProtein", source.protein || 0);
+  setFieldValue(plannerForm, "targetFat", source.fat || 0);
+  setFieldValue(plannerForm, "targetCarbs", source.carbs || 0);
+  revealSection(plannerForm);
+  focusField(plannerForm, "title");
 }
 
 function renderSummary(summary, goals) {
@@ -618,8 +1122,7 @@ async function addProductToShopping(productId, productName, overrides = {}) {
       notes: overrides.notes || ""
     })
   });
-  await loadShopping();
-  await loadDashboard();
+  await Promise.all([loadShopping(), loadDashboard()]);
   showFlash(`"${productName}" добавлен в список покупок`, "success");
 }
 
@@ -964,7 +1467,7 @@ function renderRecipes(items) {
 
     node.querySelector(".recipe-delete-button").addEventListener("click", async () => {
       await request(`/api/recipes/${recipe.id}`, { method: "DELETE" });
-      await loadRecipes();
+      await Promise.all([loadRecipes(), loadDashboard()]);
       showFlash(`Рецепт "${recipe.title}" удален`, "success");
     });
 
@@ -1192,7 +1695,7 @@ function renderMeals(meals) {
           name: `${meal.title} шаблон`
         })
       });
-      await loadTemplates();
+      await Promise.all([loadTemplates(), loadDashboard()]);
       showFlash(`Запись "${meal.title}" сохранена в шаблоны`, "success");
     });
 
@@ -1380,13 +1883,13 @@ function renderPlanner(planner) {
           completed: !item.completed
         })
       });
-      await loadDashboard();
+      await Promise.all([loadDashboard(), loadWeeklyPlans()]);
       showFlash("Статус плана обновлен", "success");
     });
 
     node.querySelector(".planner-delete-button").addEventListener("click", async () => {
       await request(`/api/planner/${item.id}`, { method: "DELETE" });
-      await loadDashboard();
+      await Promise.all([loadDashboard(), loadWeeklyPlans()]);
       showFlash("Позиция плана удалена", "success");
     });
 
@@ -1732,14 +2235,15 @@ async function refreshWorkspace() {
     loadShopping(),
     loadWeeklyPlans()
   ]);
+  setApiStatus("Система онлайн");
 }
 
 async function bootstrapSession() {
   setTheme(state.theme);
-  apiStatus.textContent = "Система онлайн";
+  setApiStatus("Проверка системы...");
   syncDateControls();
-  mealForm.elements.namedItem("eatenAt").value = nowTime();
-  weeklyPlanForm.elements.namedItem("startDate").value = state.weeklyPlanStart;
+  setFieldValue(mealForm, "eatenAt", nowTime());
+  setFieldValue(weeklyPlanForm, "startDate", state.weeklyPlanStart);
 
   if (!state.token) {
     showAuth();
@@ -1751,12 +2255,28 @@ async function bootstrapSession() {
     showApp();
     await refreshWorkspace();
   } catch (error) {
-    apiStatus.textContent = "Нужен вход";
+    setApiStatus("Нужен вход");
     showAuth(error.message);
   }
 }
 
 async function exportReport(format) {
+  if (format === "json") {
+    const report = await fetchDailyReport();
+    downloadTextFile(
+      `ration-report-${state.selectedDate}.json`,
+      `${JSON.stringify(report, null, 2)}\n`,
+      "application/json;charset=utf-8"
+    );
+    return;
+  }
+
+  if (format === "pdf") {
+    const report = await fetchDailyReport();
+    openPrintableReport(report);
+    return;
+  }
+
   const response = await fetch(
     `/api/exports/daily-report?format=${format}&date=${encodeURIComponent(state.selectedDate)}`,
     {
@@ -1772,16 +2292,7 @@ async function exportReport(format) {
   }
 
   const content = await response.text();
-
-  if (format === "csv") {
-    downloadTextFile(`nutrition-report-${state.selectedDate}.csv`, content, "text/csv;charset=utf-8");
-  } else {
-    downloadTextFile(
-      `nutrition-report-${state.selectedDate}.json`,
-      content,
-      "application/json;charset=utf-8"
-    );
-  }
+  downloadTextFile(`ration-report-${state.selectedDate}.csv`, content, "text/csv;charset=utf-8");
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -1858,6 +2369,15 @@ exportCsvButton.addEventListener("click", async () => {
   try {
     await exportReport("csv");
     showFlash("CSV-отчет выгружен", "success");
+  } catch (error) {
+    showFlash(error.message, "error");
+  }
+});
+
+exportPdfButton.addEventListener("click", async () => {
+  try {
+    await exportReport("pdf");
+    showFlash("Открыт печатный отчет. Его можно сохранить как PDF.", "success");
   } catch (error) {
     showFlash(error.message, "error");
   }
@@ -2174,15 +2694,15 @@ refreshButton.addEventListener("click", async () => {
   showFlash("Данные обновлены", "info");
 });
 
-mealForm.elements.namedItem("eatenAt").value = nowTime();
-plannerForm.elements.namedItem("date").value = state.selectedDate;
-plannerForm.elements.namedItem("plannedTime").value = "13:00";
-weeklyPlanForm.elements.namedItem("startDate").value = state.weeklyPlanStart;
-shoppingForm.elements.namedItem("unit").value = "шт";
+setFieldValue(mealForm, "eatenAt", nowTime());
+setFieldValue(plannerForm, "date", state.selectedDate);
+setFieldValue(plannerForm, "plannedTime", "13:00");
+setFieldValue(weeklyPlanForm, "startDate", state.weeklyPlanStart);
+setFieldValue(shoppingForm, "unit", "шт");
 setTheme(state.theme);
 resetRecipeDraft();
 
 bootstrapSession().catch((error) => {
-  apiStatus.textContent = "Ошибка подключения";
+  setApiStatus("Ошибка подключения");
   showAuth(error.message);
 });

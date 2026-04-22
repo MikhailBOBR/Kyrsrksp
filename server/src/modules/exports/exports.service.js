@@ -30,6 +30,7 @@ function buildReport(user, date = getLocalDate()) {
 
 function buildCsvReport(report) {
   const lines = [
+    ["nutrition_report", "Рацион"],
     ["date", report.date],
     ["user", report.user.email],
     ["goal_calories", report.goals.calories],
@@ -60,13 +61,13 @@ function buildCsvReport(report) {
     ]);
   });
 
-  return lines
+  return `\uFEFF${lines
     .map((row) =>
       row
         .map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`)
         .join(",")
     )
-    .join("\n");
+    .join("\n")}`;
 }
 
 module.exports = {

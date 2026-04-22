@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Дневник питания | NutriTrack</title>
-    <meta name="theme-color" content="#536883" />
+    <title>Рацион | Персональный дневник питания</title>
+    <meta name="theme-color" content="#6f93a0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -12,19 +12,20 @@
     <div class="page-shell">
       <header class="topbar">
         <div class="topbar-brand-block">
-          <p class="brand-kicker">Персональный дневник питания</p>
-          <a class="brand" href="/">Дневник питания</a>
-          <p class="topbar-subtitle">NutriTrack · контроль КБЖУ, самочувствия и режима дня</p>
+          <a class="brand" href="/">Рацион</a>
         </div>
 
         <div class="topbar-actions">
-          <a class="topbar-chip" href="/api/docs" target="_blank" rel="noreferrer">API-документация</a>
+          <a class="topbar-chip" href="/api/docs" target="_blank" rel="noreferrer">Схема API</a>
           <button id="theme-toggle" class="topbar-chip" type="button">Темная тема</button>
           <button id="export-json-button" class="topbar-chip hidden" type="button">
             Экспорт JSON
           </button>
           <button id="export-csv-button" class="topbar-chip hidden" type="button">
             Экспорт CSV
+          </button>
+          <button id="export-pdf-button" class="topbar-chip hidden" type="button">
+            Экспорт PDF
           </button>
           <div class="topbar-chip topbar-chip-status">
             <span class="status-dot"></span>
@@ -41,7 +42,7 @@
         <article class="panel auth-panel auth-panel-primary">
           <div class="auth-panel-copy">
             <p class="section-label">Вход</p>
-            <h2>Рабочая панель питания</h2>
+            <h2>Дневник питания и режима дня</h2>
             <p class="panel-text">
               Войдите в систему, чтобы открыть дневник питания, аналитику КБЖУ, планер приемов
               пищи, оценку самочувствия, замеры тела и список покупок.
@@ -70,7 +71,7 @@
         <article class="panel auth-panel">
           <div class="auth-panel-copy">
             <p class="section-label">Регистрация</p>
-            <h2>Создать новый профиль</h2>
+            <h2>Создать рабочий профиль</h2>
             <p class="panel-text">
               После регистрации система подготовит базовые цели по КБЖУ и персональное рабочее
               пространство для контроля рациона по дням.
@@ -102,12 +103,12 @@
       <div id="app-shell" class="workspace-shell hidden">
         <aside class="workspace-sidebar">
           <section class="sidebar-card sidebar-brand">
-            <p class="sidebar-kicker">Система</p>
-            <h2>Панель питания</h2>
-            <p class="sidebar-product-name">NutriTrack</p>
+            <p class="sidebar-kicker">Рабочая среда</p>
+            <h2>Рацион</h2>
+            <p class="sidebar-product-name">персональный дневник питания</p>
             <p class="sidebar-copy">
-              Рабочая область для учета приемов пищи, контроля целей и планирования рациона по
-              дням.
+              Спокойный рабочий контур для ежедневного учета приемов пищи, целей по КБЖУ и режима
+              дня.
             </p>
           </section>
 
@@ -142,18 +143,18 @@
           <section class="hero">
             <div class="hero-header">
               <div class="hero-copy">
-                <p class="eyebrow">Рабочая панель</p>
-                <h1>Дневник питания и контроль КБЖУ без перегруженного интерфейса.</h1>
+                <p class="eyebrow">Ежедневная работа</p>
+                <h1>Спокойная панель для рациона, КБЖУ и привычек дня.</h1>
                 <p class="hero-text">
-                  Здесь собраны сводка по дню, журнал приема пищи, план питания, вода,
-                  самочувствие и каталог продуктов.
+                  Здесь собраны дневная сводка, журнал приемов пищи, вода, самочувствие, план
+                  питания и рабочий каталог продуктов без лишнего визуального шума.
                 </p>
               </div>
 
               <div class="hero-side">
                 <div class="hero-actions">
-                  <a class="primary-link" href="#meal-panel">Добавить прием пищи</a>
-                  <a class="ghost-link" href="#planner-panel">Открыть план питания</a>
+                  <a class="primary-link" href="#meal-panel">Новая запись</a>
+                  <a class="ghost-link" href="#planner-panel">План на день</a>
                 </div>
 
                 <div class="hero-points">
