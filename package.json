@@ -7,7 +7,9 @@
     "start": "node server/src/index.js",
     "dev": "node --watch server/src/index.js",
     "seed:large": "node server/src/db/seed-large-data.js",
+    "check:client": "node scripts/check-client.js",
     "test": "node --test --test-reporter=spec server/tests/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-reporter=spec server/tests/*.test.js",
     "test:fuzz": "node --test --test-reporter=spec server/tests/fuzz.test.js",
     "test:tap": "node --test server/tests/*.test.js",
     "test:watch": "node --test --watch --test-reporter=spec server/tests/*.test.js"

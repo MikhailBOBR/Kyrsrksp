@@ -162,7 +162,9 @@ http://localhost:8080/api/docs
 npm start
 npm run dev
 npm run seed:large
+npm run check:client
 npm test
+npm run test:coverage
 npm run test:fuzz
 docker compose up --build
 ```
@@ -190,6 +192,8 @@ docker compose up --build
 - методология Twelve-Factor: [docs/06-twelve-factor.md](./docs/06-twelve-factor.md)
 
 ## CI/CD
+- актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary и docker validation
+- актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance` и опциональный deploy hook для Render
 
 - [ci.yml](./.github/workflows/ci.yml) — тесты и docker build smoke check
 - [cd.yml](./.github/workflows/cd.yml) — публикация Docker image в `GHCR`
