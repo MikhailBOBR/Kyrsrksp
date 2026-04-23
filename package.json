@@ -11,11 +11,11 @@
     "seed:large": "node server/src/db/seed-large-data.js",
     "check:client": "node scripts/check-client.js",
     "pre-release": "node scripts/pre-release.js",
-    "test": "node --test --experimental-test-isolation=none --test-concurrency=1 --test-reporter=spec server/tests/*.test.js",
-    "test:coverage": "node --test --experimental-test-isolation=none --test-concurrency=1 --experimental-test-coverage --test-reporter=spec server/tests/*.test.js",
-    "test:fuzz": "node --test --experimental-test-isolation=none --test-concurrency=1 --test-reporter=spec server/tests/fuzz.test.js",
-    "test:tap": "node --test --experimental-test-isolation=none --test-concurrency=1 server/tests/*.test.js",
-    "test:watch": "node --test --experimental-test-isolation=none --test-concurrency=1 --watch --test-reporter=spec server/tests/*.test.js"
+    "test": "node --test --test-concurrency=1 --test-reporter=spec server/tests/*.test.js",
+    "test:coverage": "node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=spec server/tests/*.test.js",
+    "test:fuzz": "node --test --test-concurrency=1 --test-reporter=spec server/tests/fuzz.test.js",
+    "test:tap": "node --test --test-concurrency=1 server/tests/*.test.js",
+    "test:watch": "node --test --test-concurrency=1 --watch --test-reporter=spec server/tests/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
