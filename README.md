@@ -29,7 +29,8 @@
 - генерация недельного плана питания;
 - трекер воды, самочувствие, замеры тела;
 - список покупок;
-- заметка дня и дневная аналитика;
+- заметка дня, дневная аналитика и визуальные SVG-графики;
+- импорт данных из `JSON`, `CSV` и `TSV` с предпросмотром и шаблонами файлов;
 - экспорт отчета в `JSON`, `CSV` и `PDF`;
 - Swagger по `/api/docs`;
 - seed-данные для демонстрации;
@@ -187,6 +188,8 @@ docker compose up --build
 
 - OpenAPI JSON: `GET /api/openapi.json`
 - Swagger UI: `GET /api/docs`
+- Import template: `GET /api/imports/template`
+- Import preview/apply: `POST /api/imports/preview`, `POST /api/imports/apply`
 
 ## Wiki и проектные материалы
 
