@@ -35,6 +35,8 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
     /--sticky-top-offset:/,
     /--drawer-width:/,
     /position:\s*sticky/,
+    /visibility:\s*hidden/,
+    /isolation:\s*isolate/,
     /overflow-wrap:\s*anywhere/,
     /body\[data-theme="dark"\]/,
     /\.sidebar-backdrop/,
@@ -58,11 +60,14 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
   assert.match(appJs, /function updateActiveSectionLink/);
   assert.match(appJs, /function renderVisualizations/);
   assert.match(appJs, /function renderImportPreview/);
+  assert.match(appJs, /function refreshPlannerViews/);
   assert.match(appJs, /function downloadImportTemplate/);
   assert.match(appJs, /function buildPrintableReportMarkup/);
   assert.match(appJs, /function openPrintableReport/);
   assert.match(appJs, /registerViewPanels\(\)/);
   assert.match(appJs, /exportPdfButton\.addEventListener/);
+  assert.match(appJs, /navigationLinks\.forEach/);
+  assert.match(appJs, /quickWaterButtons\.forEach/);
 }
 
 module.exports = {

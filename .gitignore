@@ -46,6 +46,7 @@ venv/
 tmp/
 temp/
 *.tmp
+.tmp-edge-*/
 
 # Local databases and uploads
 *.db

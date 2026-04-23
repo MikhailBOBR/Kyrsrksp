@@ -254,6 +254,7 @@ body[data-theme="dark"] .topbar {
 .workspace-shell {
   position: relative;
   display: block;
+  isolation: isolate;
 }
 
 .sidebar-backdrop {
@@ -262,12 +263,14 @@ body[data-theme="dark"] .topbar {
   z-index: 28;
   border: 0;
   background: rgba(14, 22, 30, 0.18);
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transition: opacity 180ms ease;
 }
 
 .sidebar-backdrop.is-visible {
+  visibility: visible;
   opacity: 1;
   pointer-events: auto;
 }
@@ -289,13 +292,16 @@ body[data-theme="dark"] .topbar {
     linear-gradient(180deg, rgba(255, 255, 255, 0.26), transparent 100%),
     var(--surface-strong);
   box-shadow: var(--shadow-lg);
+  visibility: hidden;
   transform: translateX(calc(-100% - 32px));
   opacity: 0;
   pointer-events: none;
+  overscroll-behavior: contain;
   transition: transform 220ms ease, opacity 220ms ease, border-color 180ms ease;
 }
 
 body.drawer-open .workspace-sidebar {
+  visibility: visible;
   transform: translateX(0);
   opacity: 1;
   pointer-events: auto;
@@ -472,9 +478,12 @@ body[data-theme="dark"] .page-footer span {
 }
 
 .workspace-main {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 20px;
   min-width: 0;
+  isolation: isolate;
   transition: margin-left 220ms ease;
 }
 
@@ -1009,6 +1018,17 @@ body[data-theme="dark"] #session-badge {
 
 [data-view-panel] {
   min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+[data-view-panel] button,
+[data-view-panel] a,
+[data-view-panel] input,
+[data-view-panel] select,
+[data-view-panel] textarea {
+  position: relative;
+  z-index: 1;
 }
 
 .summary-grid,
@@ -1744,6 +1764,7 @@ button:disabled {
   }
 
   body.drawer-open .sidebar-backdrop {
+    visibility: hidden;
     opacity: 0;
     pointer-events: none;
   }

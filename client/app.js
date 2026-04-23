@@ -1279,6 +1279,10 @@ async function refreshAfterImport(dataset) {
   }
 }
 
+async function refreshPlannerViews() {
+  await Promise.all([loadDashboard(), loadWeeklyPlans()]);
+}
+
 function formatPrintableMetric(value, unit, digits = 0) {
   const numeric = Number(value || 0);
   return `${numeric.toLocaleString("ru-RU", {
@@ -2167,7 +2171,7 @@ function renderTemplates(items) {
           plannedTime: "13:00"
         })
       });
-      await Promise.all([loadDashboard(), loadWeeklyPlans()]);
+      await refreshPlannerViews();
       showFlash(`Шаблон "${template.name}" отправлен в планер`, "success");
     });
 
@@ -2233,7 +2237,7 @@ function renderRecipes(items) {
           plannedTime: "13:00"
         })
       });
-      await Promise.all([loadDashboard(), loadWeeklyPlans()]);
+      await refreshPlannerViews();
       showFlash(`Рецепт "${recipe.title}" добавлен в план`, "success");
     });
 
@@ -2397,7 +2401,7 @@ function renderProducts(products) {
     if (state.user?.role === "admin") {
       productCard.querySelector(".product-delete-button").addEventListener("click", async () => {
         await request(`/api/products/${product.id}`, { method: "DELETE" });
-        await loadProducts();
+        await Promise.all([loadProducts(), loadDashboard()]);
         showFlash(`Продукт "${product.name}" удален`, "success");
       });
     }
@@ -2838,7 +2842,7 @@ function renderFavorites() {
             plannedTime: "13:00"
           })
         });
-        await loadDashboard();
+        await refreshPlannerViews();
         showFlash(`Шаблон "${template.name}" отправлен в план`, "success");
       });
       node.querySelector(".favorite-template-remove").addEventListener("click", async () => {
