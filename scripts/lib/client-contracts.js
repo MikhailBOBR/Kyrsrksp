@@ -14,10 +14,13 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
     /id="app-shell"/,
     /id="theme-toggle"/,
     /id="session-badge"/,
+    /id="sidebar-toggle"/,
+    /id="sidebar-backdrop"/,
     /id="export-json-button"/,
     /id="export-csv-button"/,
     /id="export-pdf-button"/,
-    /class="sidebar-card sidebar-nav"/
+    /class="sidebar-card sidebar-nav"/,
+    /data-view="overview"/
   ];
 
   requiredHtmlContracts.forEach((pattern) => {
@@ -27,9 +30,12 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
   const requiredStyleContracts = [
     /\.sidebar-nav\s*\{/,
     /--sticky-top-offset:/,
+    /--drawer-width:/,
     /position:\s*sticky/,
     /overflow-wrap:\s*anywhere/,
     /body\[data-theme="dark"\]/,
+    /\.sidebar-backdrop/,
+    /\.view-panel-hidden/,
     /\.topbar-chip-status/,
     /\.sidebar-link\.is-current/,
     /\.hero-copy-visual/
@@ -41,9 +47,12 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
 
   assert.doesNotThrow(() => new Function(appJs));
   assert.match(appJs, /function syncLayoutMetrics/);
+  assert.match(appJs, /function syncDrawerMode/);
+  assert.match(appJs, /function setActiveView/);
   assert.match(appJs, /function updateActiveSectionLink/);
   assert.match(appJs, /function buildPrintableReportMarkup/);
   assert.match(appJs, /function openPrintableReport/);
+  assert.match(appJs, /registerViewPanels\(\)/);
   assert.match(appJs, /exportPdfButton\.addEventListener/);
 }
 

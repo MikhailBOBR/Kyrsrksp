@@ -17,10 +17,34 @@ const metricLabels = {
   carbs: { title: "Углеводы", unit: "г" }
 };
 
+const viewPanelAssignments = {
+  overview: [
+    "analytics-panel",
+    "score-panel",
+    "hydration-panel",
+    "insights-panel",
+    "recommendations-panel",
+    "weekly-panel"
+  ],
+  comparison: ["comparison-panel"],
+  controls: ["controls-panel"],
+  wellbeing: ["wellbeing-panel", "body-metrics-panel"],
+  "day-note": ["day-note-panel"],
+  planner: ["planner-panel", "goals-panel", "templates-panel"],
+  week: ["weekly-planner-panel"],
+  recipes: ["recipes-panel"],
+  favorites: ["favorites-panel"],
+  journal: ["meal-panel", "journal-panel"],
+  catalog: ["products-panel"],
+  shopping: ["shopping-panel"]
+};
+
 const state = {
   token: localStorage.getItem(tokenStorageKey),
   theme: localStorage.getItem(themeStorageKey) || "light",
   selectedDate: getTodayDate(),
+  activeView: "overview",
+  drawerOpen: false,
   user: null,
   dashboard: null,
   goalPresets: [],
@@ -51,6 +75,11 @@ const sessionBadge = document.querySelector("#session-badge");
 const sessionUserName = document.querySelector("#session-user-name");
 const apiStatus = document.querySelector("#api-status");
 const topbar = document.querySelector(".topbar");
+const brandHomeButton = document.querySelector("#brand-home-button");
+const sidebarToggleButton = document.querySelector("#sidebar-toggle");
+const sidebarCloseButton = document.querySelector("#sidebar-close");
+const sidebarBackdrop = document.querySelector("#sidebar-backdrop");
+const workspaceSidebar = document.querySelector("#workspace-sidebar");
 const refreshButton = document.querySelector("#refresh-button");
 const themeToggle = document.querySelector("#theme-toggle");
 const exportJsonButton = document.querySelector("#export-json-button");
@@ -118,7 +147,10 @@ const plannerList = document.querySelector("#planner-list");
 const shoppingMeta = document.querySelector("#shopping-meta");
 const shoppingList = document.querySelector("#shopping-list");
 const clearCheckedShoppingButton = document.querySelector("#clear-checked-shopping-button");
-const navigationLinks = [...document.querySelectorAll(".sidebar-nav .sidebar-link[href^='#']")];
+const navigationLinks = [...document.querySelectorAll(".sidebar-nav .sidebar-link[data-view]")];
+const quickViewButtons = [...document.querySelectorAll("[data-view-target]")];
+const heroSection = document.querySelector(".hero");
+let viewPanels = [];
 
 const heroCalories = document.querySelector("#hero-calories");
 const heroCaloriesCaption = document.querySelector("#hero-calories-caption");
@@ -220,18 +252,80 @@ function setApiStatus(text) {
 
 function syncLayoutMetrics() {
   const compactLayout = window.matchMedia("(max-width: 820px)").matches;
-  const topbarHeight = compactLayout ? 0 : Math.ceil(topbar?.getBoundingClientRect().height || 0);
-  const stickyOffset = compactLayout ? 10 : topbarHeight + 24;
+  const topbarHeight = Math.ceil(topbar?.getBoundingClientRect().height || 0);
+  const stickyOffset = Math.max(compactLayout ? 12 : 24, topbarHeight + (compactLayout ? 8 : 24));
 
   document.documentElement.style.setProperty("--sticky-top-offset", `${stickyOffset}px`);
+  document.documentElement.style.setProperty("--topbar-height", `${topbarHeight}px`);
 }
 
-function setActiveSidebarLink(hash, { reveal = false } = {}) {
+function registerViewPanels() {
+  if (heroSection) {
+    heroSection.dataset.viewPanel = "overview";
+  }
+
+  Object.entries(viewPanelAssignments).forEach(([view, panelIds]) => {
+    panelIds.forEach((panelId) => {
+      const panel = document.getElementById(panelId);
+
+      if (panel) {
+        panel.dataset.viewPanel = view;
+      }
+    });
+  });
+
+  viewPanels = [...document.querySelectorAll("[data-view-panel]")];
+}
+
+function isDesktopDrawer() {
+  return window.matchMedia("(min-width: 1180px)").matches;
+}
+
+function parseViewFromHash() {
+  const hash = window.location.hash.replace(/^#/, "");
+  const normalized = hash.startsWith("view-") ? hash.slice(5) : hash;
+  return viewPanelAssignments[normalized] ? normalized : null;
+}
+
+function updateViewHash(view) {
+  const nextHash = view === "overview" ? "" : `#view-${view}`;
+  const nextUrl = `${window.location.pathname}${window.location.search}${nextHash}`;
+  window.history.replaceState(null, "", nextUrl);
+}
+
+function setDrawerOpen(open, { skipFocus = false } = {}) {
+  state.drawerOpen = Boolean(open);
+
+  document.body.classList.toggle("drawer-open", state.drawerOpen);
+  document.body.classList.toggle("drawer-modal-open", state.drawerOpen && !isDesktopDrawer());
+  sidebarToggleButton?.setAttribute("aria-expanded", String(state.drawerOpen));
+  workspaceSidebar?.setAttribute("aria-hidden", state.drawerOpen ? "false" : "true");
+  sidebarBackdrop?.classList.toggle("is-visible", state.drawerOpen && !isDesktopDrawer());
+
+  if (!state.drawerOpen && !skipFocus) {
+    sidebarToggleButton?.focus();
+  }
+}
+
+function syncDrawerMode() {
+  const desktopDrawer = isDesktopDrawer();
+
+  if (syncDrawerMode.wasDesktop === undefined) {
+    setDrawerOpen(desktopDrawer, { skipFocus: true });
+  } else if (syncDrawerMode.wasDesktop !== desktopDrawer) {
+    setDrawerOpen(desktopDrawer, { skipFocus: true });
+  }
+
+  syncDrawerMode.wasDesktop = desktopDrawer;
+}
+
+function setActiveSidebarLink(view, { reveal = false } = {}) {
   let activeLink = null;
 
   navigationLinks.forEach((link) => {
-    const isCurrent = link.getAttribute("href") === hash;
+    const isCurrent = link.dataset.view === view;
     link.classList.toggle("is-current", isCurrent);
+    link.setAttribute("aria-pressed", String(isCurrent));
 
     if (isCurrent) {
       activeLink = link;
@@ -242,7 +336,7 @@ function setActiveSidebarLink(hash, { reveal = false } = {}) {
     return;
   }
 
-  if (reveal && window.matchMedia("(max-width: 820px)").matches) {
+  if (reveal) {
     activeLink.scrollIntoView({
       block: "nearest",
       inline: "center"
@@ -255,41 +349,55 @@ function updateActiveSectionLink() {
     return;
   }
 
-  const stickyOffset =
-    (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sticky-top-offset")) ||
-      118) + 28;
+  setActiveSidebarLink(state.activeView, { reveal: !isDesktopDrawer() });
+}
 
-  let passedLink = null;
-  let nextLink = navigationLinks[0];
-  let nextDistance = Number.POSITIVE_INFINITY;
+function setActiveView(view, { closeDrawer, focusTarget, scrollToTop = true, updateHash = true } = {}) {
+  const nextView = viewPanelAssignments[view] ? view : "overview";
+  const shouldCloseDrawer = closeDrawer ?? !isDesktopDrawer();
+  const shouldScrollToTop = scrollToTop && !focusTarget;
 
-  navigationLinks.forEach((link) => {
-    const target = document.querySelector(link.getAttribute("href"));
+  state.activeView = nextView;
+  document.body.dataset.activeView = nextView;
 
-    if (!target) {
-      return;
-    }
-
-    const top = target.getBoundingClientRect().top;
-
-    if (top <= stickyOffset) {
-      passedLink = link;
-      return;
-    }
-
-    if (top < nextDistance) {
-      nextDistance = top;
-      nextLink = link;
-    }
+  viewPanels.forEach((panel) => {
+    panel.classList.toggle("view-panel-hidden", panel.dataset.viewPanel !== nextView);
   });
 
-  setActiveSidebarLink((passedLink || nextLink)?.getAttribute("href"));
+  updateActiveSectionLink();
+
+  if (updateHash) {
+    updateViewHash(nextView);
+  }
+
+  if (shouldCloseDrawer) {
+    setDrawerOpen(false, { skipFocus: true });
+  }
+
+  requestAnimationFrame(() => {
+    if (shouldScrollToTop) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    const targetNode =
+      typeof focusTarget === "string" ? document.querySelector(focusTarget) : focusTarget || null;
+
+    if (!targetNode) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      targetNode.scrollIntoView({ behavior: "smooth", block: "start" });
+      targetNode.focus?.();
+    });
+  });
 }
 
 function scheduleActiveSectionSync() {
   cancelAnimationFrame(scheduleActiveSectionSync.frameId);
   scheduleActiveSectionSync.frameId = requestAnimationFrame(() => {
     syncLayoutMetrics();
+    syncDrawerMode();
     updateActiveSectionLink();
   });
 }
@@ -317,6 +425,7 @@ function showAuth(message = "После входа откроется рабоч
   exportJsonButton.classList.add("hidden");
   exportCsvButton.classList.add("hidden");
   exportPdfButton.classList.add("hidden");
+  setDrawerOpen(false, { skipFocus: true });
   setApiStatus("Нужен вход");
   authMessage.textContent = message;
   syncLayoutMetrics();
@@ -331,7 +440,12 @@ function showApp() {
   exportCsvButton.classList.remove("hidden");
   exportPdfButton.classList.remove("hidden");
   syncLayoutMetrics();
-  updateActiveSectionLink();
+  syncDrawerMode();
+  setActiveView(state.activeView, {
+    closeDrawer: false,
+    scrollToTop: false,
+    updateHash: false
+  });
   setApiStatus("Система онлайн");
 }
 
@@ -385,9 +499,18 @@ function focusField(form, key) {
 }
 
 function revealSection(node) {
-  node
-    ?.closest(".panel, .hero, .sidebar-card, .auth-panel")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const targetNode = node?.closest("[data-view-panel], .auth-panel") || node;
+  const panelView = targetNode?.dataset?.viewPanel;
+
+  if (panelView) {
+    setActiveView(panelView, {
+      closeDrawer: !isDesktopDrawer(),
+      focusTarget: targetNode
+    });
+    return;
+  }
+
+  targetNode?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function setFormValues(form, values) {
@@ -2749,14 +2872,56 @@ clearCheckedShoppingButton.addEventListener("click", async () => {
 
 navigationLinks.forEach((link) => {
   link.addEventListener("click", () => {
-    setActiveSidebarLink(link.getAttribute("href"), { reveal: true });
-    scheduleActiveSectionSync();
+    setActiveView(link.dataset.view, {
+      closeDrawer: !isDesktopDrawer()
+    });
   });
 });
 
-window.addEventListener("scroll", scheduleActiveSectionSync, { passive: true });
+quickViewButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setActiveView(button.dataset.viewTarget, {
+      focusTarget: button.dataset.focusTarget || null
+    });
+  });
+});
+
+brandHomeButton?.addEventListener("click", () => {
+  setActiveView("overview", {
+    closeDrawer: !isDesktopDrawer()
+  });
+});
+
+sidebarToggleButton?.addEventListener("click", () => {
+  setDrawerOpen(!state.drawerOpen);
+});
+
+sidebarCloseButton?.addEventListener("click", () => {
+  setDrawerOpen(false);
+});
+
+sidebarBackdrop?.addEventListener("click", () => {
+  setDrawerOpen(false, { skipFocus: true });
+});
+
 window.addEventListener("resize", scheduleActiveSectionSync);
-window.addEventListener("hashchange", scheduleActiveSectionSync);
+window.addEventListener("hashchange", () => {
+  const hashView = parseViewFromHash() || (window.location.hash ? null : "overview");
+
+  if (hashView) {
+    setActiveView(hashView, {
+      closeDrawer: false,
+      scrollToTop: false,
+      updateHash: false
+    });
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.drawerOpen) {
+    setDrawerOpen(false);
+  }
+});
 
 previousDateButton.addEventListener("click", async () => {
   state.selectedDate = shiftDate(state.selectedDate, -1);
@@ -2792,9 +2957,16 @@ setFieldValue(plannerForm, "date", state.selectedDate);
 setFieldValue(plannerForm, "plannedTime", "13:00");
 setFieldValue(weeklyPlanForm, "startDate", state.weeklyPlanStart);
 setFieldValue(shoppingForm, "unit", "шт");
+registerViewPanels();
+state.activeView = parseViewFromHash() || "overview";
 setTheme(state.theme);
 syncLayoutMetrics();
-updateActiveSectionLink();
+syncDrawerMode();
+setActiveView(state.activeView, {
+  closeDrawer: false,
+  scrollToTop: false,
+  updateHash: false
+});
 resetRecipeDraft();
 
 bootstrapSession().catch((error) => {
