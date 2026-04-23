@@ -1,0 +1,17 @@
+APP_ENV: development
+RELEASE_VERSION: local-dev
+SERVER_HOST: 0.0.0.0
+SERVER_PORT: 8080
+JWT_SECRET: change_me
+DB_PROVIDER: sqlite
+DB_PATH: ./server/data/app.db
+DB_HOST: postgres
+DB_PORT: 5432
+DB_NAME: nutritrack
+DB_USER: nutritrack
+DB_PASSWORD: nutritrack
+REDIS_URL: redis://redis:6379
+LOG_LEVEL: info
+LOG_PRETTY: true
+AUTO_MIGRATE_ON_BOOT: true
+SEED_DEMO_DATA: true

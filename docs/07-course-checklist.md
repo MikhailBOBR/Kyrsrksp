@@ -13,7 +13,7 @@
 | 3. Выбор программного стека | Выполнено | [README.md](../README.md), [02-architecture.md](./02-architecture.md) |
 | 4. Клиент, сервер, auth, БД, seed, роли | Выполнено | [client](../client), [server/src](../server/src), [init-schema.js](../server/src/db/init-schema.js), [seed-large-data.js](../server/src/db/seed-large-data.js), [auth.js](../server/src/middlewares/auth.js) |
 | 5. Фаззинг-тестирование | Выполнено | [fuzz.test.js](../server/tests/fuzz.test.js), [05-testing-and-quality.md](./05-testing-and-quality.md) |
-| 6. Git, Dockerfile, README и структура проекта | Выполнено | [README.md](../README.md), [docker-compose.yml](../docker-compose.yml), [server.Dockerfile](../deploy/docker/server.Dockerfile), [deploy/README.md](../deploy/README.md) |
+| 6. Git, Dockerfile, README и структура проекта | Выполнено | [README.md](../README.md), [Dockerfile](../Dockerfile), [docker-compose.yml](../docker-compose.yml), [server.Dockerfile](../deploy/docker/server.Dockerfile), [deploy/README.md](../deploy/README.md) |
 | 7. Облачное развертывание | Готово к финальному внешнему запуску | [render.yaml](../render.yaml), [cd.yml](../.github/workflows/cd.yml), [deploy/README.md](../deploy/README.md) |
 
 ## Подробная Расшифровка
@@ -76,6 +76,7 @@
 - проект размещён в Git-структуре с разбиением на `client`, `server`, `docs`, `deploy`;
 - присутствуют `Dockerfile`, `docker-compose.yml`, `.dockerignore`;
 - главный README описывает стек, структуру, команды, тесты, деплой и покрытие требований;
+- добавлены one-off команды `migrate` и `create-admin`, а также runtime/ops checklist в [09-ops-and-runtime-checklist.md](./09-ops-and-runtime-checklist.md);
 - подготовлены дополнительные wiki-материалы в каталоге [wiki](../wiki).
 
 ### 7. Облачное развертывание

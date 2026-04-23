@@ -2,7 +2,7 @@
 
 ## Локальный контейнерный запуск
 
-Для локального запуска используется `docker-compose.yml` и серверный Dockerfile:
+Для локального запуска используется `docker-compose.yml`, корневой `Dockerfile` и серверный Dockerfile:
 
 ```bash
 docker compose up --build
@@ -22,7 +22,8 @@ http://localhost:8080/api/docs
 
 ## Что использует контейнер
 
-- [deploy/docker/server.Dockerfile](./docker/server.Dockerfile) — основной контейнер приложения;
+- [Dockerfile](../Dockerfile) — основной runtime-образ проекта;
+- [deploy/docker/server.Dockerfile](./docker/server.Dockerfile) — серверный Dockerfile для deploy-сценариев;
 - [deploy/docker/client.Dockerfile](./docker/client.Dockerfile) — заготовка для варианта с отделенным frontend;
 - [docker-compose.yml](../docker-compose.yml) — локальная оркестрация;
 - [render.yaml](../render.yaml) — deploy-ready конфигурация для облачного запуска.
@@ -35,13 +36,16 @@ http://localhost:8080/api/docs
 
 Для облака используются:
 
+- `APP_ENV`
+- `RELEASE_VERSION`
 - `SERVER_PORT`
 - `JWT_SECRET`
+- `DB_PROVIDER`
 - `DB_PATH`
 
 ### Постоянное хранилище
 
-Для SQLite требуется persistent disk. В конфигурации Render это уже отражено через `disk.mountPath=/var/data` и `DB_PATH=/var/data/app.db`.
+Для SQLite требуется persistent disk. В конфигурации Render это уже отражено через `disk.mountPath=/data` и `DB_PATH=/data/app.db`.
 
 ## Что важно для production
 
@@ -53,7 +57,7 @@ http://localhost:8080/api/docs
 ## CI/CD
 
 - [ci.yml](../.github/workflows/ci.yml) проверяет проект на каждом push и pull request.
-- [cd.yml](../.github/workflows/cd.yml) публикует Docker image в `GHCR` при push в `main`.
+- [cd.yml](../.github/workflows/cd.yml) публикует Docker image в `GHCR`, выполняет шаг `migrate` из опубликованного образа и затем может триггерить deploy hook.
 
 ## Ограничение текущей среды
 

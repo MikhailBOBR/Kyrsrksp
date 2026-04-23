@@ -1,8 +1,10 @@
 const path = require("node:path");
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
-const { clientRoot } = require("./config/env");
+const { appEnv, clientRoot, dbProvider, releaseVersion, serviceName } = require("./config/env");
 const { errorHandler } = require("./middlewares/error-handler");
+const { rejectWhenDraining, requestContext } = require("./middlewares/request-context");
+const { isDraining } = require("./runtime/state");
 const authRoutes = require("./modules/auth/auth.routes");
 const goalsRoutes = require("./modules/goals/goals.routes");
 const productsRoutes = require("./modules/products/products.routes");
@@ -27,14 +29,20 @@ function createApp() {
 
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: false, limit: "2mb" }));
+  app.use(requestContext);
 
   app.get("/api/health", (_req, res) => {
     res.json({
-      status: "ok",
-      service: "food-diary-app",
-      stack: "express + sqlite + swagger"
+      status: isDraining() ? "draining" : "ok",
+      ready: !isDraining(),
+      service: serviceName,
+      version: releaseVersion,
+      environment: appEnv,
+      stack: `express + ${dbProvider} + swagger`
     });
   });
+
+  app.use(rejectWhenDraining);
 
   app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument, swaggerUiOptions));
   app.get("/api/openapi.json", (_req, res) => {
@@ -66,7 +74,10 @@ function createApp() {
 
   app.use((req, res, next) => {
     if (req.path.startsWith("/api/")) {
-      res.status(404).json({ error: "Route not found" });
+      res.status(404).json({
+        error: "Route not found",
+        requestId: req.requestId
+      });
       return;
     }
 

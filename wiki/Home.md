@@ -8,6 +8,7 @@
 - [API и Swagger](./API.md)
 - [Тестирование и качество](./Testing-and-QA.md)
 - [Развертывание и CI/CD](./Deployment.md)
+- [Эксплуатация и runtime](./Operations.md)
 
 ## Основные Документы Репозитория
 
@@ -18,6 +19,7 @@
 - [Тестирование и fuzzing](../docs/05-testing-and-quality.md)
 - [Twelve-Factor](../docs/06-twelve-factor.md)
 - [Чек-лист требований курсовой](../docs/07-course-checklist.md)
+- [Ops и runtime checklist](../docs/09-ops-and-runtime-checklist.md)
 
 ## Что Уже Есть В Проекте
 

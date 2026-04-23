@@ -14,7 +14,10 @@ test.describe("application smoke checks", () => {
 
     assert.equal(response.status, 200);
     assert.equal(response.payload.status, "ok");
+    assert.equal(response.payload.ready, true);
+    assert.equal(response.payload.service, "food-diary-app");
     assert.match(response.payload.stack, /swagger/);
+    assert.match(String(response.headers.get("x-request-id")), /.+/);
   });
 
   test("serves openapi and swagger ui", async () => {
@@ -50,5 +53,6 @@ test.describe("application smoke checks", () => {
 
     assert.equal(response.status, 404);
     assert.equal(response.payload.error, "Route not found");
+    assert.match(String(response.payload.requestId), /.+/);
   });
 });

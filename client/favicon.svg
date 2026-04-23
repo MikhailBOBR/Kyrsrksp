@@ -1,18 +1,59 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" fill="none">
   <defs>
-    <linearGradient id="bg" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F6F9FD" />
-      <stop offset="1" stop-color="#D9E3F1" />
+    <linearGradient id="capsulePrimary" x1="8" y1="8" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#89A8C8" />
+      <stop offset="1" stop-color="#BFD0E2" />
     </linearGradient>
-    <linearGradient id="plate" x1="22" y1="20" x2="42" y2="44" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7E95B8" />
-      <stop offset="1" stop-color="#536883" />
+    <linearGradient id="capsuleSecondary" x1="56" y1="52" x2="92" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9AB4CF" />
+      <stop offset="1" stop-color="#C8D7E8" />
     </linearGradient>
+    <linearGradient id="orb" x1="54" y1="18" x2="78" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C5D4E5" />
+      <stop offset="1" stop-color="#91ABC5" />
+    </linearGradient>
+    <radialGradient id="surface" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(48 48) rotate(90) scale(58)">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="1" stop-color="#F2F6FB" />
+    </radialGradient>
   </defs>
-  <rect x="5" y="5" width="54" height="54" rx="15" fill="url(#bg)" />
-  <rect x="5" y="5" width="54" height="54" rx="15" stroke="#536883" stroke-width="2" />
-  <circle cx="32" cy="32" r="13" stroke="#2C3950" stroke-width="3" />
-  <circle cx="32" cy="32" r="7" fill="url(#plate)" />
-  <path d="M18 18v8M14.5 18v6.5M21.5 18v6.5M18 26v18" stroke="#2C3950" stroke-width="2.5" stroke-linecap="round" />
-  <path d="M45 18c-3.5 4.8-3.5 10.2 0 15.5M45 18v26" stroke="#2C3950" stroke-width="2.5" stroke-linecap="round" />
+  <rect width="96" height="96" rx="26" fill="url(#surface)" />
+  <rect x="2" y="2" width="92" height="92" rx="24" stroke="#D9E4EF" stroke-width="2" />
+
+  <g opacity="0.96">
+    <rect
+      x="-8"
+      y="15"
+      width="46"
+      height="20"
+      rx="10"
+      transform="rotate(-34 -8 15)"
+      fill="url(#capsulePrimary)"
+    />
+    <rect
+      x="58"
+      y="64"
+      width="46"
+      height="20"
+      rx="10"
+      transform="rotate(-34 58 64)"
+      fill="url(#capsuleSecondary)"
+    />
+    <circle cx="71" cy="28" r="11" fill="url(#orb)" />
+    <circle cx="33" cy="66" r="12" fill="#F8FBFE" stroke="#E1EAF3" stroke-width="1.5" />
+    <path
+      d="M-2 39C9.4 31.3 18.9 24.8 28.8 18.4C35.4 14.1 41 13.7 47.2 18.4"
+      stroke="white"
+      stroke-width="2.4"
+      stroke-linecap="round"
+      opacity="0.88"
+    />
+    <path
+      d="M61.8 15.8C68.6 22.5 73.5 27.4 78.7 33.2C82.2 37 86.4 38.1 92.4 35.7"
+      stroke="white"
+      stroke-width="2.3"
+      stroke-linecap="round"
+      opacity="0.82"
+    />
+  </g>
 </svg>

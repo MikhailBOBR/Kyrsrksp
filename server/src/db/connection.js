@@ -9,6 +9,13 @@ const db = new Database(dbPath);
 db.pragma("foreign_keys = ON");
 db.pragma("journal_mode = WAL");
 
+function closeDatabase() {
+  if (db.open) {
+    db.close();
+  }
+}
+
 module.exports = {
+  closeDatabase,
   db
 };

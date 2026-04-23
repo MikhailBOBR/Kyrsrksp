@@ -80,6 +80,7 @@ UML-материалы:
 
 В репозитории присутствуют:
 
+- [Dockerfile](./Dockerfile)
 - [deploy/docker/server.Dockerfile](./deploy/docker/server.Dockerfile)
 - [deploy/docker/client.Dockerfile](./deploy/docker/client.Dockerfile)
 - [docker-compose.yml](./docker-compose.yml)
@@ -168,6 +169,8 @@ http://localhost:8080/api/docs
 ```bash
 npm start
 npm run dev
+npm run migrate
+npm run create-admin -- --email=admin@example.com --password=Admin123! --name="Admin User"
 npm run seed:large
 npm run check:client
 npm run pre-release
@@ -175,6 +178,7 @@ npm test
 npm run test:coverage
 npm run test:fuzz
 docker compose up --build
+docker compose --profile ops run --rm migrate
 ```
 
 ## Docker и deploy
@@ -213,8 +217,10 @@ docker compose up --build
 - методология Twelve-Factor: [docs/06-twelve-factor.md](./docs/06-twelve-factor.md)
 
 ## CI/CD
-- актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary и docker validation
-- актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance` и опциональный deploy hook для Render
+- актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary, docker validation и smoke-проверка одноразовых команд контейнера
+- актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance`, отдельный шаг `migrate` из опубликованного образа и опциональный deploy hook для Render
 
 - [ci.yml](./.github/workflows/ci.yml) — матричный CI, coverage и docker validation
 - [cd.yml](./.github/workflows/cd.yml) — multi-platform publish в `GHCR` и deploy hook для Render
+- [docs/09-ops-and-runtime-checklist.md](./docs/09-ops-and-runtime-checklist.md) — эксплуатационный checklist по Docker, env-конфигурации, логированию и runtime
+- [wiki/Operations.md](./wiki/Operations.md) — быстрые operational-команды проекта

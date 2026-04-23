@@ -1,6 +1,13 @@
 node_modules
 .git
 .github
+coverage
+docs
+wiki
+config/local.yaml
+tmp
+temp
+.tmp-edge-*
 server/data/*.db
 server/data/*.db-shm
 server/data/*.db-wal

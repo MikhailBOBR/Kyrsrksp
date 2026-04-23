@@ -1,4 +1,4 @@
-const { adminUser, demoUser } = require("../config/env");
+const { adminUser, demoUser, seedDemoData } = require("../config/env");
 const { db } = require("./connection");
 const { getLocalDate, getTimestamp } = require("../lib/date");
 const { hashPassword } = require("../lib/security");
@@ -896,10 +896,25 @@ function seedRecipes() {
   });
 }
 
-function initializeDatabase() {
+function runMigrations() {
   ensureSchema();
+  return {
+    provider: "sqlite",
+    migrated: true
+  };
+}
+
+function initializeDatabase(options = {}) {
+  const { withSeedData = seedDemoData } = options;
+
+  runMigrations();
   seedUsers();
   seedGoals();
+
+  if (!withSeedData) {
+    return;
+  }
+
   seedProducts();
   seedMeals();
   seedHydration();
@@ -914,5 +929,9 @@ function initializeDatabase() {
 }
 
 module.exports = {
-  initializeDatabase
+  ensureSchema,
+  initializeDatabase,
+  runMigrations,
+  seedGoals,
+  seedUsers
 };

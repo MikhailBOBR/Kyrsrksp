@@ -2,17 +2,23 @@ services:
   - type: web
     name: nutritrack-app
     runtime: docker
-    dockerfilePath: ./deploy/docker/server.Dockerfile
+    dockerfilePath: ./Dockerfile
     autoDeploy: true
     healthCheckPath: /api/health
     envVars:
+      - key: APP_ENV
+        value: production
+      - key: RELEASE_VERSION
+        value: render-release
       - key: SERVER_PORT
         value: 10000
       - key: JWT_SECRET
         generateValue: true
+      - key: DB_PROVIDER
+        value: sqlite
       - key: DB_PATH
-        value: /var/data/app.db
+        value: /data/app.db
     disk:
       name: nutritrack-data
-      mountPath: /var/data
+      mountPath: /data
       sizeGB: 1

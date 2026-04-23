@@ -4,7 +4,17 @@ const path = require("node:path");
 
 function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) {
   const dbPath = path.resolve(__dirname, "../../data", dbFileName);
+  const modulesToReset = [
+    "../../src/config/env",
+    "../../src/lib/logger",
+    "../../src/db/connection",
+    "../../src/db/init-schema",
+    "../../src/app"
+  ];
 
+  process.env.APP_ENV = "test";
+  process.env.NODE_ENV = "test";
+  process.env.LOG_LEVEL = "error";
   process.env.DB_PATH = dbPath;
   process.env.JWT_SECRET = jwtSecret;
 
@@ -14,6 +24,10 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
+  });
+
+  modulesToReset.forEach((modulePath) => {
+    delete require.cache[require.resolve(modulePath)];
   });
 
   const { initializeDatabase } = require("../../src/db/init-schema");
