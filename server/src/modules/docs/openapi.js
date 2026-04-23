@@ -28,7 +28,7 @@ const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "Рацион API",
-    version: "1.4.0",
+    version: "1.5.0",
     description: [
       "REST API для курсового проекта «Персональный дневник питания с анализом КБЖУ».",
       "",
@@ -36,7 +36,7 @@ const openApiDocument = {
       "- вести дневник питания и расчёт КБЖУ;",
       "- управлять целями, шаблонами, рецептами и недельным планом;",
       "- учитывать воду, самочувствие, замеры тела и список покупок;",
-      "- формировать ежедневную аналитику и экспортировать отчёты;",
+      "- формировать ежедневную аналитику, экспортировать отчёты и импортировать данные из внешних файлов;",
       "- обеспечивать ролевой доступ `user/admin` и JWT-аутентификацию.",
       "",
       "Для защищённых маршрутов используйте `Authorize` и передавайте JWT в формате `Bearer <token>`."
@@ -66,6 +66,7 @@ const openApiDocument = {
     { name: "Templates", description: "Шаблоны приёмов пищи для ускоренного повторного ввода." },
     { name: "Recipes", description: "Составные рецепты и сценарии применения в журнале и плане." },
     { name: "Exports", description: "Экспорт ежедневного отчёта в JSON и CSV." },
+    { name: "Imports", description: "Предпросмотр, шаблоны и импорт данных из JSON, CSV и TSV." },
     { name: "Checkins", description: "Самочувствие, readiness score и дневные check-in записи." },
     { name: "Metrics", description: "Замеры тела и прогресс физических показателей." },
     { name: "Planner", description: "Планировщик питания, ручные и автоматические недельные планы." },
@@ -187,6 +188,92 @@ const openApiDocument = {
           "fat",
           "carbs"
         ]
+      },
+      ImportRequest: {
+        type: "object",
+        properties: {
+          dataset: {
+            type: "string",
+            enum: ["meals", "templates", "hydration", "products"],
+            example: "meals"
+          },
+          format: {
+            type: "string",
+            enum: ["json", "csv", "tsv"],
+            example: "csv"
+          },
+          content: {
+            type: "string",
+            example: "title,meal_type,date,eaten_at,grams,calories,protein,fat,carbs\nОвсянка,Завтрак,2026-04-23,08:15,240,390,15,10,58"
+          }
+        },
+        required: ["dataset", "format", "content"]
+      },
+      ImportIssue: {
+        type: "object",
+        properties: {
+          rowNumber: { type: "integer", example: 3 },
+          message: { type: "string", example: "Field \"calories\" must be a non-negative number" }
+        },
+        required: ["rowNumber", "message"]
+      },
+      ImportPreviewResponse: {
+        type: "object",
+        properties: {
+          dataset: { type: "string", example: "meals" },
+          datasetLabel: { type: "string", example: "Приемы пищи" },
+          format: { type: "string", example: "csv" },
+          columns: {
+            type: "array",
+            items: { type: "string" }
+          },
+          summary: {
+            type: "object",
+            properties: {
+              totalRows: { type: "integer", example: 12 },
+              acceptedRows: { type: "integer", example: 10 },
+              invalidRows: { type: "integer", example: 2 }
+            }
+          },
+          previewItems: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: true
+            }
+          },
+          issues: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/ImportIssue"
+            }
+          }
+        },
+        required: ["dataset", "datasetLabel", "format", "columns", "summary", "previewItems", "issues"]
+      },
+      ImportApplyResponse: {
+        type: "object",
+        properties: {
+          dataset: { type: "string", example: "meals" },
+          datasetLabel: { type: "string", example: "Приемы пищи" },
+          format: { type: "string", example: "csv" },
+          imported: { type: "integer", example: 10 },
+          skipped: { type: "integer", example: 2 },
+          issues: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/ImportIssue"
+            }
+          },
+          importedItems: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: true
+            }
+          }
+        },
+        required: ["dataset", "datasetLabel", "format", "imported", "skipped", "issues", "importedItems"]
       },
       DashboardResponse: {
         type: "object",
@@ -521,6 +608,111 @@ const openApiDocument = {
           400: {
             $ref: "#/components/responses/ValidationError"
           }
+        }
+      })
+    },
+    "/api/imports/template": {
+      get: secured("Download import template", ["Imports"], {
+        description: "Возвращает шаблон файла для импорта выбранного набора данных в JSON, CSV или TSV.",
+        parameters: [
+          {
+            in: "query",
+            name: "dataset",
+            required: true,
+            schema: {
+              type: "string",
+              enum: ["meals", "templates", "hydration", "products"]
+            }
+          },
+          {
+            in: "query",
+            name: "format",
+            required: true,
+            schema: {
+              type: "string",
+              enum: ["json", "csv", "tsv"]
+            }
+          }
+        ],
+        responses: {
+          200: {
+            description: "Шаблон файла в выбранном формате.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "string",
+                  example: "{\"dataset\":\"meals\",\"items\":[...]}"
+                }
+              },
+              "text/csv": {
+                schema: {
+                  type: "string",
+                  example: "title,meal_type,date,eaten_at,..."
+                }
+              },
+              "text/tab-separated-values": {
+                schema: {
+                  type: "string",
+                  example: "title\tmeal_type\tdate\teaten_at\t..."
+                }
+              }
+            }
+          },
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          }
+        }
+      })
+    },
+    "/api/imports/preview": {
+      post: secured("Preview import payload", ["Imports"], {
+        description: "Проверяет содержимое файла, валидирует строки и возвращает предпросмотр без записи в БД.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ImportRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: jsonResponse("Предпросмотр импорта.", {
+            $ref: "#/components/schemas/ImportPreviewResponse"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          },
+          403: jsonResponse("Недостаточно прав для выбранного набора данных.", {
+            $ref: "#/components/schemas/ErrorResponse"
+          })
+        }
+      })
+    },
+    "/api/imports/apply": {
+      post: secured("Apply import payload", ["Imports"], {
+        description: "Импортирует валидные строки в выбранный модуль и возвращает итоговую сводку.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ImportRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          201: jsonResponse("Результат импорта.", {
+            $ref: "#/components/schemas/ImportApplyResponse"
+          }),
+          400: {
+            $ref: "#/components/responses/ValidationError"
+          },
+          403: jsonResponse("Недостаточно прав для выбранного набора данных.", {
+            $ref: "#/components/schemas/ErrorResponse"
+          })
         }
       })
     },

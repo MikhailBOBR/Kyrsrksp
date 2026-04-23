@@ -157,6 +157,7 @@
             <button class="sidebar-link" type="button" data-view="journal">Журнал</button>
             <button class="sidebar-link" type="button" data-view="catalog">Каталог</button>
             <button class="sidebar-link" type="button" data-view="shopping">Покупки</button>
+            <button class="sidebar-link" type="button" data-view="exchange">Импорт и выгрузка</button>
           </nav>
 
           <section class="sidebar-card sidebar-meta">
@@ -431,6 +432,60 @@
                 </div>
               </div>
               <div id="weekly-trend" class="weekly-grid"></div>
+            </section>
+
+            <section class="panel wide-panel" id="visuals-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Визуализация</p>
+                  <h2>Графики и визуальные сигналы по выбранной дате</h2>
+                </div>
+              </div>
+
+              <div class="visuals-grid">
+                <article class="visual-card visual-card-wide">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Тренд</p>
+                      <h2>14-дневная динамика калорий и состояния</h2>
+                    </div>
+                  </div>
+                  <div id="trend-combo-chart" class="chart-surface"></div>
+                  <div id="trend-combo-summary" class="chart-summary-list"></div>
+                </article>
+
+                <article class="visual-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Баланс макросов</p>
+                      <h2>Структура КБЖУ</h2>
+                    </div>
+                  </div>
+                  <div id="macro-donut-chart" class="chart-surface"></div>
+                  <div id="macro-donut-legend" class="chart-legend"></div>
+                </article>
+
+                <article class="visual-card">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Профиль дня</p>
+                      <h2>Радар самочувствия</h2>
+                    </div>
+                  </div>
+                  <div id="wellbeing-radar-chart" class="chart-surface"></div>
+                  <p id="wellbeing-radar-caption" class="dashboard-note">Данные появятся после загрузки.</p>
+                </article>
+
+                <article class="visual-card visual-card-wide">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Ритм приема пищи</p>
+                      <h2>Лента дня по времени и калорийности</h2>
+                    </div>
+                  </div>
+                  <div id="meal-timeline-chart" class="chart-surface"></div>
+                </article>
+              </div>
             </section>
 
             <section class="panel wide-panel" id="wellbeing-panel">
@@ -1029,6 +1084,132 @@
               </div>
 
               <div id="products-list" class="products-grid"></div>
+            </section>
+
+            <section class="panel wide-panel" id="imports-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Обмен данными</p>
+                  <h2>Импорт, шаблоны файлов и выгрузка отчета</h2>
+                </div>
+                <p id="import-file-meta" class="muted-text">Поддерживаются JSON, CSV и TSV.</p>
+              </div>
+
+              <div class="split-grid">
+                <div class="subsection-card import-side">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Импорт</p>
+                      <h2>Загрузка данных из файла или вставки</h2>
+                    </div>
+                  </div>
+
+                  <form id="import-form" class="grid-form">
+                    <label>
+                      Набор данных
+                      <select name="dataset" id="import-dataset-select" required>
+                        <option value="meals">Приемы пищи</option>
+                        <option value="templates">Шаблоны</option>
+                        <option value="hydration">Вода</option>
+                        <option value="products">Продукты</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      Формат
+                      <select name="format" id="import-format-select" required>
+                        <option value="json">JSON</option>
+                        <option value="csv">CSV</option>
+                        <option value="tsv">TSV</option>
+                      </select>
+                    </label>
+
+                    <label class="wide-field">
+                      Файл
+                      <input
+                        id="import-file-input"
+                        name="file"
+                        type="file"
+                        accept=".json,.csv,.tsv,.txt,application/json,text/csv,text/tab-separated-values,text/plain"
+                      />
+                    </label>
+
+                    <label class="wide-field">
+                      Или вставьте содержимое
+                      <textarea
+                        id="import-raw-input"
+                        name="content"
+                        rows="8"
+                        placeholder="Вставьте JSON-массив, CSV или TSV."
+                      ></textarea>
+                    </label>
+
+                    <div class="wide-field import-toolbar">
+                      <button id="download-import-template-button" class="ghost-button" type="button">
+                        Скачать шаблон
+                      </button>
+                      <button id="import-preview-button" class="ghost-button" type="submit">
+                        Предпросмотр
+                      </button>
+                      <button id="import-apply-button" class="primary-button" type="button" disabled>
+                        Импортировать
+                      </button>
+                    </div>
+                  </form>
+
+                  <div class="import-format-grid">
+                    <article class="stack-card">
+                      <strong>JSON</strong>
+                      <p class="dashboard-note">Подходит для структурированных пакетов и резервных копий.</p>
+                    </article>
+                    <article class="stack-card">
+                      <strong>CSV</strong>
+                      <p class="dashboard-note">Удобен для Excel и ручной подготовки таблиц.</p>
+                    </article>
+                    <article class="stack-card">
+                      <strong>TSV</strong>
+                      <p class="dashboard-note">Хорошо переносится через буфер обмена и табличные редакторы.</p>
+                    </article>
+                  </div>
+                </div>
+
+                <div class="subsection-card import-side">
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Предпросмотр</p>
+                      <h2>Проверка структуры перед импортом</h2>
+                    </div>
+                  </div>
+
+                  <div id="import-preview-summary" class="stats-grid"></div>
+                  <div id="import-preview-list" class="stack-list"></div>
+
+                  <div class="panel-head panel-head-compact">
+                    <div>
+                      <p class="section-label">Выгрузка</p>
+                      <h2>Экспорт отчета за выбранную дату</h2>
+                    </div>
+                  </div>
+                  <div class="import-toolbar">
+                    <button class="ghost-button" type="button" data-export-format="json">
+                      Скачать JSON
+                    </button>
+                    <button class="ghost-button" type="button" data-export-format="csv">
+                      Скачать CSV
+                    </button>
+                    <button class="ghost-button" type="button" data-export-format="pdf">
+                      Подготовить PDF
+                    </button>
+                  </div>
+                  <div class="stack-card import-note-card">
+                    <strong>Подсказка</strong>
+                    <p class="dashboard-note">
+                      Для продуктов импорт доступен администратору. Остальные наборы можно загружать
+                      в обычной пользовательской роли.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section class="panel wide-panel" id="journal-panel">

@@ -15,18 +15,24 @@ test.describe("frontend static contracts", () => {
     assert.match(artifacts.indexHtml, /id="app-shell"/);
     assert.match(artifacts.indexHtml, /id="session-badge"/);
     assert.match(artifacts.indexHtml, /id="export-pdf-button"/);
+    assert.match(artifacts.indexHtml, /id="visuals-panel"/);
+    assert.match(artifacts.indexHtml, /id="imports-panel"/);
   });
 
   test("keeps navigation and theme style rules in place", () => {
     assert.match(artifacts.stylesCss, /\.sidebar-nav\s*\{/);
     assert.match(artifacts.stylesCss, /body\[data-theme="dark"\]/);
     assert.match(artifacts.stylesCss, /overflow-wrap:\s*anywhere/);
+    assert.match(artifacts.stylesCss, /\.chart-surface/);
+    assert.match(artifacts.stylesCss, /\.import-toolbar/);
   });
 
   test("keeps client javascript valid and export flow wired", () => {
     assert.doesNotThrow(() => new Function(artifacts.appJs));
     assert.match(artifacts.appJs, /function openPrintableReport/);
     assert.match(artifacts.appJs, /exportPdfButton\.addEventListener/);
+    assert.match(artifacts.appJs, /function renderVisualizations/);
+    assert.match(artifacts.appJs, /importForm\?\.addEventListener/);
   });
 
   test("passes the shared client contract suite", () => {

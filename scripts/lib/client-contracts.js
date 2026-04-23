@@ -20,7 +20,10 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
     /id="export-csv-button"/,
     /id="export-pdf-button"/,
     /class="sidebar-card sidebar-nav"/,
-    /data-view="overview"/
+    /data-view="overview"/,
+    /id="visuals-panel"/,
+    /id="imports-panel"/,
+    /id="import-form"/
   ];
 
   requiredHtmlContracts.forEach((pattern) => {
@@ -36,6 +39,9 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
     /body\[data-theme="dark"\]/,
     /\.sidebar-backdrop/,
     /\.view-panel-hidden/,
+    /\.visuals-grid/,
+    /\.chart-surface/,
+    /\.import-toolbar/,
     /\.topbar-chip-status/,
     /\.sidebar-link\.is-current/,
     /\.hero-copy-visual/
@@ -50,6 +56,9 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
   assert.match(appJs, /function syncDrawerMode/);
   assert.match(appJs, /function setActiveView/);
   assert.match(appJs, /function updateActiveSectionLink/);
+  assert.match(appJs, /function renderVisualizations/);
+  assert.match(appJs, /function renderImportPreview/);
+  assert.match(appJs, /function downloadImportTemplate/);
   assert.match(appJs, /function buildPrintableReportMarkup/);
   assert.match(appJs, /function openPrintableReport/);
   assert.match(appJs, /registerViewPanels\(\)/);

@@ -721,4 +721,7 @@ test("exposes extended OpenAPI document", async () => {
   assert.ok(response.payload.paths["/api/recipes"]);
   assert.ok(response.payload.paths["/api/recipes/{id}/apply"]);
   assert.ok(response.payload.paths["/api/planner/generate-week"]);
+  assert.ok(response.payload.paths["/api/imports/preview"]);
+  assert.ok(response.payload.paths["/api/imports/apply"]);
+  assert.ok(response.payload.paths["/api/imports/template"]);
 });

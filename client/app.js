@@ -24,7 +24,8 @@ const viewPanelAssignments = {
     "hydration-panel",
     "insights-panel",
     "recommendations-panel",
-    "weekly-panel"
+    "weekly-panel",
+    "visuals-panel"
   ],
   comparison: ["comparison-panel"],
   controls: ["controls-panel"],
@@ -36,7 +37,8 @@ const viewPanelAssignments = {
   favorites: ["favorites-panel"],
   journal: ["meal-panel", "journal-panel"],
   catalog: ["products-panel"],
-  shopping: ["shopping-panel"]
+  shopping: ["shopping-panel"],
+  exchange: ["imports-panel"]
 };
 
 const state = {
@@ -45,6 +47,7 @@ const state = {
   selectedDate: getTodayDate(),
   activeView: "overview",
   drawerOpen: false,
+  importPreview: null,
   user: null,
   dashboard: null,
   goalPresets: [],
@@ -85,6 +88,7 @@ const themeToggle = document.querySelector("#theme-toggle");
 const exportJsonButton = document.querySelector("#export-json-button");
 const exportCsvButton = document.querySelector("#export-csv-button");
 const exportPdfButton = document.querySelector("#export-pdf-button");
+const panelExportButtons = [...document.querySelectorAll("[data-export-format]")];
 const globalMessage = document.querySelector("#global-message");
 const previousDateButton = document.querySelector("#previous-date-button");
 const nextDateButton = document.querySelector("#next-date-button");
@@ -104,6 +108,7 @@ const bodyMetricForm = document.querySelector("#body-metric-form");
 const plannerForm = document.querySelector("#planner-form");
 const weeklyPlanForm = document.querySelector("#weekly-plan-form");
 const shoppingForm = document.querySelector("#shopping-form");
+const importForm = document.querySelector("#import-form");
 
 const goalPresetsList = document.querySelector("#goal-presets-list");
 const productAdminPanel = document.querySelector("#product-admin-panel");
@@ -150,6 +155,23 @@ const clearCheckedShoppingButton = document.querySelector("#clear-checked-shoppi
 const navigationLinks = [...document.querySelectorAll(".sidebar-nav .sidebar-link[data-view]")];
 const quickViewButtons = [...document.querySelectorAll("[data-view-target]")];
 const heroSection = document.querySelector(".hero");
+const trendComboChart = document.querySelector("#trend-combo-chart");
+const trendComboSummary = document.querySelector("#trend-combo-summary");
+const macroDonutChart = document.querySelector("#macro-donut-chart");
+const macroDonutLegend = document.querySelector("#macro-donut-legend");
+const wellbeingRadarChart = document.querySelector("#wellbeing-radar-chart");
+const wellbeingRadarCaption = document.querySelector("#wellbeing-radar-caption");
+const mealTimelineChart = document.querySelector("#meal-timeline-chart");
+const importDatasetSelect = document.querySelector("#import-dataset-select");
+const importFormatSelect = document.querySelector("#import-format-select");
+const importFileInput = document.querySelector("#import-file-input");
+const importRawInput = document.querySelector("#import-raw-input");
+const importFileMeta = document.querySelector("#import-file-meta");
+const importPreviewButton = document.querySelector("#import-preview-button");
+const importApplyButton = document.querySelector("#import-apply-button");
+const downloadImportTemplateButton = document.querySelector("#download-import-template-button");
+const importPreviewSummary = document.querySelector("#import-preview-summary");
+const importPreviewList = document.querySelector("#import-preview-list");
 let viewPanels = [];
 
 const heroCalories = document.querySelector("#hero-calories");
@@ -212,6 +234,7 @@ function setToken(token) {
 function clearSession() {
   state.token = null;
   state.user = null;
+  state.importPreview = null;
   localStorage.removeItem(tokenStorageKey);
 }
 
@@ -425,6 +448,7 @@ function showAuth(message = "После входа откроется рабоч
   exportJsonButton.classList.add("hidden");
   exportCsvButton.classList.add("hidden");
   exportPdfButton.classList.add("hidden");
+  clearImportPreview();
   setDrawerOpen(false, { skipFocus: true });
   setApiStatus("Нужен вход");
   authMessage.textContent = message;
@@ -709,6 +733,550 @@ function downloadTextFile(filename, content, mimeType) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function formatCompactNumber(value, digits = 0) {
+  return Number(value || 0).toLocaleString("ru-RU", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
+}
+
+function averageValue(items, key) {
+  if (!items.length) {
+    return 0;
+  }
+
+  return items.reduce((total, item) => total + Number(item[key] || 0), 0) / items.length;
+}
+
+function polarToCartesian(cx, cy, radius, angleInDegrees) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians)
+  };
+}
+
+function buildLinePath(points) {
+  if (!points.length) {
+    return "";
+  }
+
+  return points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(" ");
+}
+
+function buildClosedPath(points) {
+  if (!points.length) {
+    return "";
+  }
+
+  return `${buildLinePath(points)} Z`;
+}
+
+function renderChartPlaceholder(container, title, text) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="chart-empty">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(text)}</p>
+    </div>
+  `;
+}
+
+function renderMacroDonut(summary) {
+  if (!macroDonutChart || !macroDonutLegend) {
+    return;
+  }
+
+  const macroParts = [
+    {
+      key: "protein",
+      label: "Белки",
+      value: summary.totals.protein * 4,
+      grams: summary.totals.protein,
+      color: "#6f9d9b"
+    },
+    {
+      key: "fat",
+      label: "Жиры",
+      value: summary.totals.fat * 9,
+      grams: summary.totals.fat,
+      color: "#8aa8c1"
+    },
+    {
+      key: "carbs",
+      label: "Углеводы",
+      value: summary.totals.carbs * 4,
+      grams: summary.totals.carbs,
+      color: "#a7c9b5"
+    }
+  ];
+  const total = macroParts.reduce((sum, part) => sum + part.value, 0);
+
+  if (!total) {
+    renderChartPlaceholder(
+      macroDonutChart,
+      "Нет данных для структуры КБЖУ",
+      "Добавьте приемы пищи, и система построит кольцевую диаграмму по макросам."
+    );
+    macroDonutLegend.innerHTML = "";
+    return;
+  }
+
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const circles = macroParts
+    .map((part) => {
+      const dash = (part.value / total) * circumference;
+      const svg = `
+        <circle
+          cx="90"
+          cy="90"
+          r="${radius}"
+          fill="none"
+          stroke="${part.color}"
+          stroke-width="18"
+          stroke-linecap="round"
+          stroke-dasharray="${dash} ${circumference}"
+          stroke-dashoffset="${-offset}"
+          transform="rotate(-90 90 90)"
+        ></circle>
+      `;
+      offset += dash;
+      return svg;
+    })
+    .join("");
+
+  macroDonutChart.innerHTML = `
+    <svg class="chart-svg chart-svg-donut" viewBox="0 0 180 180" role="img" aria-label="Структура КБЖУ">
+      <circle cx="90" cy="90" r="${radius}" fill="none" stroke="rgba(126, 166, 165, 0.14)" stroke-width="18"></circle>
+      ${circles}
+      <text x="90" y="84" text-anchor="middle" class="chart-center-label">КБЖУ</text>
+      <text x="90" y="108" text-anchor="middle" class="chart-center-value">${formatCompactNumber(total, 0)}</text>
+      <text x="90" y="126" text-anchor="middle" class="chart-center-note">ккал из макросов</text>
+    </svg>
+  `;
+
+  macroDonutLegend.innerHTML = macroParts
+    .map((part) => {
+      const share = total ? (part.value / total) * 100 : 0;
+      return `
+        <article class="chart-legend-item">
+          <span class="chart-legend-dot" style="background:${part.color}"></span>
+          <div>
+            <strong>${escapeHtml(part.label)}</strong>
+            <p>${formatCompactNumber(part.grams, 1)} г · ${formatCompactNumber(share, 1)}%</p>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderTrendCombo(extendedTrend) {
+  if (!trendComboChart || !trendComboSummary) {
+    return;
+  }
+
+  const activeItems = extendedTrend.filter(
+    (item) => item.calories > 0 || item.protein > 0 || item.mood > 0 || item.energy > 0
+  );
+
+  if (!activeItems.length) {
+    renderChartPlaceholder(
+      trendComboChart,
+      "Недостаточно истории",
+      "Система покажет 14-дневный тренд после заполнения нескольких дней дневника."
+    );
+    trendComboSummary.innerHTML = "";
+    return;
+  }
+
+  const width = 860;
+  const height = 280;
+  const padding = { top: 20, right: 20, bottom: 44, left: 44 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const maxCalories = Math.max(...extendedTrend.map((item) => item.calories), 100);
+  const barWidth = chartWidth / Math.max(extendedTrend.length * 1.8, 1);
+  const moodEnergyPoints = extendedTrend.map((item, index) => {
+    const averageMoodEnergy =
+      item.mood || item.energy ? ((item.mood + item.energy) / 10) * 100 : 0;
+
+    return {
+      x:
+        padding.left +
+        (extendedTrend.length === 1 ? chartWidth / 2 : (chartWidth / (extendedTrend.length - 1)) * index),
+      y: padding.top + chartHeight - (averageMoodEnergy / 100) * chartHeight
+    };
+  });
+  const bars = extendedTrend
+    .map((item, index) => {
+      const x =
+        padding.left +
+        (extendedTrend.length === 1 ? chartWidth / 2 : (chartWidth / Math.max(extendedTrend.length - 1, 1)) * index) -
+        barWidth / 2;
+      const barHeight = (item.calories / maxCalories) * chartHeight;
+      const y = padding.top + chartHeight - barHeight;
+
+      return `
+        <g>
+          <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="10" fill="rgba(111, 157, 155, 0.28)"></rect>
+          <text x="${(x + barWidth / 2).toFixed(1)}" y="${(padding.top + chartHeight + 20).toFixed(1)}" text-anchor="middle" class="chart-axis-label">
+            ${escapeHtml(formatShortDate(item.date))}
+          </text>
+        </g>
+      `;
+    })
+    .join("");
+
+  const gridLines = [0, 0.25, 0.5, 0.75, 1]
+    .map((step) => {
+      const y = padding.top + chartHeight - chartHeight * step;
+      return `
+        <g>
+          <line x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" class="chart-grid-line"></line>
+          <text x="${padding.left - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-axis-label">
+            ${formatCompactNumber(maxCalories * step, 0)}
+          </text>
+        </g>
+      `;
+    })
+    .join("");
+
+  trendComboChart.innerHTML = `
+    <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="14-дневный тренд калорий и состояния">
+      ${gridLines}
+      ${bars}
+      <path d="${buildLinePath(moodEnergyPoints)}" fill="none" stroke="#5f7d92" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path>
+      ${moodEnergyPoints
+        .map(
+          (point) =>
+            `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4.5" fill="#5f7d92" stroke="var(--surface-strong)" stroke-width="2"></circle>`
+        )
+        .join("")}
+      <text x="${padding.left}" y="${padding.top - 4}" class="chart-caption">Калории</text>
+      <text x="${width - padding.right}" y="${padding.top - 4}" text-anchor="end" class="chart-caption">Линия — среднее настроение и энергия</text>
+    </svg>
+  `;
+
+  trendComboSummary.innerHTML = `
+    <article class="chart-summary-card">
+      <span>Средние калории</span>
+      <strong>${formatCompactNumber(averageValue(activeItems, "calories"), 0)} ккал</strong>
+    </article>
+    <article class="chart-summary-card">
+      <span>Средний белок</span>
+      <strong>${formatCompactNumber(averageValue(activeItems, "protein"), 1)} г</strong>
+    </article>
+    <article class="chart-summary-card">
+      <span>Настроение</span>
+      <strong>${formatCompactNumber(averageValue(activeItems, "mood"), 1)} / 5</strong>
+    </article>
+    <article class="chart-summary-card">
+      <span>Энергия</span>
+      <strong>${formatCompactNumber(averageValue(activeItems, "energy"), 1)} / 5</strong>
+    </article>
+  `;
+}
+
+function renderWellbeingRadar(wellbeing) {
+  if (!wellbeingRadarChart || !wellbeingRadarCaption) {
+    return;
+  }
+
+  if (!wellbeing.entry) {
+    renderChartPlaceholder(
+      wellbeingRadarChart,
+      "Нет check-in за дату",
+      "Заполните самочувствие, и система построит радар состояния дня."
+    );
+    wellbeingRadarCaption.textContent = "Радар строится по настроению, энергии, стрессу, аппетиту и сну.";
+    return;
+  }
+
+  const metrics = [
+    { label: "Настроение", value: wellbeing.entry.mood / 5 },
+    { label: "Энергия", value: wellbeing.entry.energy / 5 },
+    { label: "Стресс", value: (6 - wellbeing.entry.stress) / 5 },
+    { label: "Аппетит", value: wellbeing.entry.hunger / 5 },
+    { label: "Сон", value: Math.min(wellbeing.entry.sleepHours / 8, 1) }
+  ];
+  const center = 120;
+  const radius = 78;
+  const polygonPoints = metrics.map((metric, index) => {
+    const angle = (360 / metrics.length) * index;
+    return polarToCartesian(center, center, radius * metric.value, angle);
+  });
+  const axisMarks = metrics
+    .map((metric, index) => {
+      const outer = polarToCartesian(center, center, radius, (360 / metrics.length) * index);
+      return `
+        <g>
+          <line x1="${center}" y1="${center}" x2="${outer.x.toFixed(1)}" y2="${outer.y.toFixed(1)}" class="chart-grid-line"></line>
+          <text x="${outer.x.toFixed(1)}" y="${outer.y.toFixed(1)}" class="chart-axis-label chart-radar-label">
+            ${escapeHtml(metric.label)}
+          </text>
+        </g>
+      `;
+    })
+    .join("");
+  const rings = [0.25, 0.5, 0.75, 1]
+    .map((step) => {
+      const points = metrics.map((_metric, index) =>
+        polarToCartesian(center, center, radius * step, (360 / metrics.length) * index)
+      );
+      return `<path d="${buildClosedPath(points)}" class="chart-radar-ring"></path>`;
+    })
+    .join("");
+
+  wellbeingRadarChart.innerHTML = `
+    <svg class="chart-svg chart-svg-radar" viewBox="0 0 240 240" role="img" aria-label="Радар самочувствия">
+      ${rings}
+      ${axisMarks}
+      <path d="${buildClosedPath(polygonPoints)}" class="chart-radar-area"></path>
+      ${polygonPoints
+        .map(
+          (point) =>
+            `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4" class="chart-radar-point"></circle>`
+        )
+        .join("")}
+    </svg>
+  `;
+  wellbeingRadarCaption.textContent = `Готовность ${formatCompactNumber(wellbeing.readinessScore, 1)} · сон ${formatCompactNumber(wellbeing.entry.sleepHours, 1)} ч · стресс ${wellbeing.entry.stress}/5`;
+}
+
+function renderMealTimeline(meals) {
+  if (!mealTimelineChart) {
+    return;
+  }
+
+  if (!meals.length) {
+    renderChartPlaceholder(
+      mealTimelineChart,
+      "Нет временной ленты",
+      "После добавления приемов пищи появится лента дня с точками по времени."
+    );
+    return;
+  }
+
+  const width = 860;
+  const height = 220;
+  const padding = { left: 42, right: 34, top: 28, bottom: 32 };
+  const startMinutes = 5 * 60;
+  const endMinutes = 23 * 60;
+  const span = endMinutes - startMinutes;
+  const lineY = height - 74;
+  const axisLabels = [6, 9, 12, 15, 18, 21]
+    .map((hour) => {
+      const x = padding.left + (((hour * 60 - startMinutes) / span) * (width - padding.left - padding.right));
+      return `
+        <g>
+          <line x1="${x.toFixed(1)}" y1="${(lineY - 14).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(lineY + 14).toFixed(1)}" class="chart-grid-line"></line>
+          <text x="${x.toFixed(1)}" y="${(height - 24).toFixed(1)}" text-anchor="middle" class="chart-axis-label">${hour}:00</text>
+        </g>
+      `;
+    })
+    .join("");
+
+  const points = meals
+    .slice()
+    .sort((left, right) => left.eatenAt.localeCompare(right.eatenAt))
+    .map((meal, index) => {
+      const [hours, minutes] = meal.eatenAt.split(":").map(Number);
+      const currentMinutes = Math.min(Math.max(hours * 60 + minutes, startMinutes), endMinutes);
+      const x =
+        padding.left + (((currentMinutes - startMinutes) / span) * (width - padding.left - padding.right));
+      const y = index % 2 === 0 ? lineY - 44 : lineY + 44;
+      return { meal, x, y };
+    });
+
+  mealTimelineChart.innerHTML = `
+    <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Лента приемов пищи по времени">
+      <line x1="${padding.left}" y1="${lineY}" x2="${width - padding.right}" y2="${lineY}" class="chart-grid-line"></line>
+      ${axisLabels}
+      ${points
+        .map(
+          ({ meal, x, y }) => `
+            <g>
+              <line x1="${x.toFixed(1)}" y1="${lineY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(95, 125, 146, 0.36)" stroke-width="2"></line>
+              <circle cx="${x.toFixed(1)}" cy="${lineY}" r="6" fill="#6f9d9b"></circle>
+              <rect x="${(x - 66).toFixed(1)}" y="${(y - 22).toFixed(1)}" width="132" height="44" rx="14" fill="var(--surface-strong)" stroke="var(--line)"></rect>
+              <text x="${x.toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" class="chart-axis-label">${escapeHtml(meal.mealType)} · ${escapeHtml(formatTime(meal.eatenAt))}</text>
+              <text x="${x.toFixed(1)}" y="${(y + 14).toFixed(1)}" text-anchor="middle" class="chart-caption">${escapeHtml(meal.title)} · ${formatCompactNumber(meal.calories, 0)} ккал</text>
+            </g>
+          `
+        )
+        .join("")}
+    </svg>
+  `;
+}
+
+function renderVisualizations(dashboard) {
+  renderMacroDonut(dashboard.summary);
+  renderTrendCombo(dashboard.extendedTrend || []);
+  renderWellbeingRadar(dashboard.wellbeing);
+  renderMealTimeline(dashboard.meals);
+}
+
+function clearImportPreview() {
+  state.importPreview = null;
+  if (importPreviewSummary) {
+    importPreviewSummary.innerHTML = "";
+  }
+  if (importPreviewList) {
+    importPreviewList.innerHTML =
+      '<article class="stack-card"><p class="dashboard-note">Загрузите файл или вставьте данные, затем нажмите «Предпросмотр».</p></article>';
+  }
+  if (importApplyButton) {
+    importApplyButton.disabled = true;
+  }
+}
+
+async function readImportContent() {
+  const file = importFileInput?.files?.[0];
+
+  if (file) {
+    importFileMeta.textContent = `Файл: ${file.name} · ${(file.size / 1024).toFixed(1)} КБ`;
+    return file.text();
+  }
+
+  const raw = importRawInput?.value?.trim() || "";
+
+  if (!raw) {
+    throw new Error("Добавьте файл или вставьте данные для импорта.");
+  }
+
+  importFileMeta.textContent = `Вставка данных · ${raw.length} символов`;
+  return raw;
+}
+
+function buildImportPayload(content) {
+  return {
+    dataset: importDatasetSelect.value,
+    format: importFormatSelect.value,
+    content
+  };
+}
+
+function renderImportPreview(preview) {
+  state.importPreview = preview;
+  importApplyButton.disabled = preview.summary.acceptedRows === 0;
+
+  importPreviewSummary.innerHTML = `
+    <article class="stack-card">
+      <p class="dashboard-label">Набор</p>
+      <strong>${escapeHtml(preview.datasetLabel)}</strong>
+    </article>
+    <article class="stack-card">
+      <p class="dashboard-label">Всего строк</p>
+      <strong>${preview.summary.totalRows}</strong>
+    </article>
+    <article class="stack-card">
+      <p class="dashboard-label">Готово к импорту</p>
+      <strong>${preview.summary.acceptedRows}</strong>
+    </article>
+    <article class="stack-card">
+      <p class="dashboard-label">Ошибок</p>
+      <strong>${preview.summary.invalidRows}</strong>
+    </article>
+  `;
+
+  const previewRows = preview.previewItems.length
+    ? preview.previewItems
+        .map((item) => {
+          const fields = Object.entries(item)
+            .filter(([key]) => key !== "rowNumber")
+            .slice(0, 6)
+            .map(([key, value]) => `<span class="info-badge">${escapeHtml(key)}: ${escapeHtml(String(value))}</span>`)
+            .join("");
+
+          return `
+            <article class="stack-card">
+              <strong>Строка ${item.rowNumber}</strong>
+              <div class="import-preview-tags">${fields}</div>
+            </article>
+          `;
+        })
+        .join("")
+    : '<article class="stack-card"><p class="dashboard-note">Валидных строк пока нет.</p></article>';
+
+  const issues = preview.issues.length
+    ? `
+      <article class="stack-card">
+        <strong>Проблемные строки</strong>
+        <div class="stack-list">
+          ${preview.issues
+            .slice(0, 8)
+            .map(
+              (issue) =>
+                `<p class="dashboard-note">Строка ${issue.rowNumber}: ${escapeHtml(issue.message)}</p>`
+            )
+            .join("")}
+        </div>
+      </article>
+    `
+    : `
+      <article class="stack-card import-success-card">
+        <strong>Структура выглядит корректно</strong>
+        <p class="dashboard-note">Можно запускать импорт. Колонки: ${escapeHtml(preview.columns.join(", "))}</p>
+      </article>
+    `;
+
+  importPreviewList.innerHTML = `${previewRows}${issues}`;
+}
+
+async function downloadImportTemplate() {
+  const dataset = importDatasetSelect.value;
+  const format = importFormatSelect.value;
+  const response = await fetch(
+    `/api/imports/template?dataset=${encodeURIComponent(dataset)}&format=${encodeURIComponent(format)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${state.token}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Не удалось загрузить шаблон");
+  }
+
+  const content = await response.text();
+  const contentDisposition = response.headers.get("content-disposition") || "";
+  const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+  const filename = filenameMatch?.[1] || `ration-import-template.${format}`;
+  const mimeType = response.headers.get("content-type") || "text/plain;charset=utf-8";
+  downloadTextFile(filename, content, mimeType);
+}
+
+async function refreshAfterImport(dataset) {
+  if (dataset === "meals") {
+    await Promise.all([loadDashboard(), loadMeals()]);
+    return;
+  }
+
+  if (dataset === "templates") {
+    await Promise.all([loadTemplates(), loadDashboard()]);
+    return;
+  }
+
+  if (dataset === "hydration") {
+    await loadDashboard();
+    return;
+  }
+
+  if (dataset === "products") {
+    await Promise.all([loadProducts(), loadDashboard()]);
+  }
 }
 
 function formatPrintableMetric(value, unit, digits = 0) {
@@ -2350,6 +2918,7 @@ function renderDashboardSnapshot() {
   renderAchievements(state.dashboard.achievements);
   renderRecommendations(state.dashboard.recommendations);
   renderScoreBreakdown(state.dashboard.smartScore);
+  renderVisualizations(state.dashboard);
   renderHydration(state.dashboard.hydration);
   renderWellbeing(state.dashboard.wellbeing);
   renderPlanner(state.dashboard.planner);
@@ -2585,6 +3154,105 @@ exportPdfButton.addEventListener("click", async () => {
     showFlash("Открыт печатный отчет. Его можно сохранить как PDF.", "success");
   } catch (error) {
     showFlash(error.message, "error");
+  }
+});
+
+panelExportButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    try {
+      await exportReport(button.dataset.exportFormat);
+      const label =
+        button.dataset.exportFormat === "pdf"
+          ? "Открыт печатный отчет для PDF."
+          : `${button.dataset.exportFormat.toUpperCase()}-отчет подготовлен`;
+      showFlash(label, "success");
+    } catch (error) {
+      showFlash(error.message, "error");
+    }
+  });
+});
+
+if (importFileInput) {
+  importFileInput.addEventListener("change", () => {
+    const file = importFileInput.files?.[0];
+    importFileMeta.textContent = file
+      ? `Файл: ${file.name} · ${(file.size / 1024).toFixed(1)} КБ`
+      : "Поддерживаются JSON, CSV и TSV.";
+    clearImportPreview();
+  });
+}
+
+if (importRawInput) {
+  importRawInput.addEventListener("input", () => {
+    if (importRawInput.value.trim()) {
+      importFileMeta.textContent = `Вставка данных · ${importRawInput.value.trim().length} символов`;
+    }
+    clearImportPreview();
+  });
+}
+
+[importDatasetSelect, importFormatSelect].forEach((field) => {
+  field?.addEventListener("change", () => {
+    clearImportPreview();
+  });
+});
+
+downloadImportTemplateButton?.addEventListener("click", async () => {
+  try {
+    await downloadImportTemplate();
+    showFlash("Шаблон файла загружен", "success");
+  } catch (error) {
+    showFlash(error.message, "error");
+  }
+});
+
+importForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  try {
+    importPreviewButton.disabled = true;
+    const content = await readImportContent();
+    const preview = await request("/api/imports/preview", {
+      method: "POST",
+      body: JSON.stringify(buildImportPayload(content))
+    });
+    renderImportPreview(preview);
+    showFlash("Предпросмотр импорта готов", "success");
+  } catch (error) {
+    clearImportPreview();
+    showFlash(error.message, "error");
+  } finally {
+    importPreviewButton.disabled = false;
+  }
+});
+
+importApplyButton?.addEventListener("click", async () => {
+  try {
+    importApplyButton.disabled = true;
+    const content = await readImportContent();
+    const payload = buildImportPayload(content);
+    const result = await request("/api/imports/apply", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    await refreshAfterImport(payload.dataset);
+    clearImportPreview();
+    if (importRawInput) {
+      importRawInput.value = "";
+    }
+    if (importFileInput) {
+      importFileInput.value = "";
+    }
+    importFileMeta.textContent = "Поддерживаются JSON, CSV и TSV.";
+    showFlash(
+      `Импорт завершен: ${result.imported} строк загружено, ${result.skipped} пропущено.`,
+      "success"
+    );
+  } catch (error) {
+    showFlash(error.message, "error");
+  } finally {
+    importApplyButton.disabled = false;
   }
 });
 
@@ -2960,6 +3628,7 @@ setFieldValue(shoppingForm, "unit", "шт");
 registerViewPanels();
 state.activeView = parseViewFromHash() || "overview";
 setTheme(state.theme);
+clearImportPreview();
 syncLayoutMetrics();
 syncDrawerMode();
 setActiveView(state.activeView, {

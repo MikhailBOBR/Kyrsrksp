@@ -52,6 +52,15 @@
 - `GET /api/exports/daily-report?format=json` - выгрузка дневного отчёта в JSON.
 - `GET /api/exports/daily-report?format=csv` - выгрузка дневного отчёта в CSV.
 
+## Imports
+
+- `GET /api/imports/template?dataset=meals&format=json` - скачать шаблон импорта.
+- `POST /api/imports/preview` - проверить структуру импортируемого файла и получить предпросмотр.
+- `POST /api/imports/apply` - загрузить валидные строки в систему.
+  Поддерживаемые наборы: `meals`, `templates`, `hydration`, `products`.
+  Поддерживаемые форматы: `json`, `csv`, `tsv`.
+  Для `products` требуется роль `admin`.
+
 ## Docs
 
 - `GET /api/openapi.json` - OpenAPI-документ.
