@@ -45,13 +45,13 @@ http://localhost:8080/api/docs
 
 ### Постоянное хранилище
 
-Для SQLite требуется persistent disk. В конфигурации Render это уже отражено через `disk.mountPath=/data` и `DB_PATH=/data/app.db`.
+Основной production-friendly режим рассчитан на PostgreSQL. SQLite оставлен как легкий fallback для локальных тестов и изолированных запусков.
 
 ## Что важно для production
 
 1. Установить безопасный `JWT_SECRET`.
 2. Не коммитить production-базу данных в репозиторий.
-3. При росте нагрузки заменить SQLite на managed PostgreSQL.
+3. В production использовать managed PostgreSQL как основное хранилище.
 4. Использовать опубликованный образ из `GHCR` или прямую docker-сборку через cloud platform.
 
 ## CI/CD

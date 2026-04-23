@@ -23,25 +23,25 @@ function validateCheckinPayload(payload) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   if (req.query.date) {
     assertDate(req.query.date);
   }
 
-  res.json(getCheckinSummary(req.user.id, req.query.date));
+  res.json(await getCheckinSummary(req.user.id, req.query.date));
 });
 
-router.put("/", (req, res) => {
+router.put("/", async (req, res) => {
   validateCheckinPayload(req.body);
-  res.json(upsertCheckin(req.user.id, req.body));
+  res.json(await upsertCheckin(req.user.id, req.body));
 });
 
-router.delete("/", (req, res) => {
+router.delete("/", async (req, res) => {
   if (req.query.date) {
     assertDate(req.query.date);
   }
 
-  res.json(deleteCheckin(req.user.id, req.query.date));
+  res.json(await deleteCheckin(req.user.id, req.query.date));
 });
 
 module.exports = router;

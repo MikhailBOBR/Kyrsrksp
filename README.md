@@ -12,7 +12,7 @@
 
 - frontend: `HTML + CSS + JavaScript`
 - backend: `Node.js 22 + Express`
-- database: `SQLite`
+- database: `PostgreSQL` with `SQLite` fallback for isolated local tests
 - auth: `JWT + role-based access control`
 - docs: `OpenAPI + Swagger UI`
 - tests: `node:test`
@@ -144,7 +144,7 @@ UML-материалы:
 
 ```bash
 npm install
-npm start
+docker compose up --build
 ```
 
 Приложение:
@@ -167,7 +167,6 @@ http://localhost:8080/api/docs
 ## Полезные команды
 
 ```bash
-npm start
 npm run dev
 npm run migrate
 npm run create-admin -- --email=admin@example.com --password=Admin123! --name="Admin User"

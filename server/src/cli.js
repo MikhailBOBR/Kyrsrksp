@@ -42,7 +42,7 @@ function parseCliArgs(argv = process.argv.slice(2)) {
 
 async function runServerCommand() {
   if (autoMigrateOnBoot) {
-    initializeDatabase({ withSeedData: seedDemoData });
+    await initializeDatabase({ withSeedData: seedDemoData });
   } else {
     logger.info("database.bootstrap.skipped", {
       reason: "AUTO_MIGRATE_ON_BOOT=false"
@@ -55,17 +55,17 @@ async function runServerCommand() {
   return server;
 }
 
-function runMigrateCommand() {
-  const summary = runMigrations();
+async function runMigrateCommand() {
+  const summary = await runMigrations();
   logger.info("database.migrate.completed", summary);
-  closeDatabase();
+  await closeDatabase();
   return summary;
 }
 
-function runCreateAdminCommand(options) {
-  runMigrations();
+async function runCreateAdminCommand(options) {
+  await runMigrations();
 
-  const result = ensureAdminUser({
+  const result = await ensureAdminUser({
     email: String(options.email || adminUser.email),
     password: String(options.password || adminUser.password),
     name: String(options.name || adminUser.name)
@@ -76,7 +76,7 @@ function runCreateAdminCommand(options) {
     email: result.user.email
   });
 
-  closeDatabase();
+  await closeDatabase();
   return result;
 }
 
@@ -110,8 +110,9 @@ async function runCommand(argv = process.argv.slice(2)) {
 if (require.main === module) {
   runCommand().catch((error) => {
     logger.error("cli.command.failed", { error });
-    closeDatabase();
-    process.exitCode = 1;
+    closeDatabase().finally(() => {
+      process.exitCode = 1;
+    });
   });
 }
 

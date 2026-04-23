@@ -2,7 +2,7 @@ const { db } = require("../../db/connection");
 const { getLocalDate, getTimestamp } = require("../../lib/date");
 const { createHttpError } = require("../../lib/http");
 
-function listHydrationEntries(userId, date = getLocalDate()) {
+async function listHydrationEntries(userId, date = getLocalDate()) {
   return db
     .prepare(`
       SELECT
@@ -18,8 +18,8 @@ function listHydrationEntries(userId, date = getLocalDate()) {
     .all(userId, date);
 }
 
-function getHydrationSummary(userId, date = getLocalDate()) {
-  const entries = listHydrationEntries(userId, date);
+async function getHydrationSummary(userId, date = getLocalDate()) {
+  const entries = await listHydrationEntries(userId, date);
   const total = entries.reduce((sum, entry) => sum + entry.amountMl, 0);
   const target = 2400;
 
@@ -32,9 +32,9 @@ function getHydrationSummary(userId, date = getLocalDate()) {
   };
 }
 
-function addHydrationEntry(userId, amountMl, loggedAt, date = getLocalDate()) {
+async function addHydrationEntry(userId, amountMl, loggedAt, date = getLocalDate()) {
   const createdAt = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(`
       INSERT INTO hydration_logs (user_id, amount_ml, entry_date, logged_at, created_at)
       VALUES (?, ?, ?, ?, ?)
@@ -55,8 +55,8 @@ function addHydrationEntry(userId, amountMl, loggedAt, date = getLocalDate()) {
     .get(result.lastInsertRowid);
 }
 
-function deleteHydrationEntry(userId, entryId) {
-  const result = db
+async function deleteHydrationEntry(userId, entryId) {
+  const result = await db
     .prepare(`DELETE FROM hydration_logs WHERE id = ? AND user_id = ?`)
     .run(entryId, userId);
 

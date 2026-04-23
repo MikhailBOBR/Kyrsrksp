@@ -11,17 +11,17 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const date = req.query.date;
 
   if (date) {
     assertDate(date);
   }
 
-  res.json(getHydrationSummary(req.user.id, date));
+  res.json(await getHydrationSummary(req.user.id, date));
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { amountMl, loggedAt, date } = req.body;
 
   assertNumber(amountMl, "amountMl");
@@ -31,11 +31,11 @@ router.post("/", (req, res) => {
     assertDate(date);
   }
 
-  res.status(201).json(addHydrationEntry(req.user.id, amountMl, loggedAt, date));
+  res.status(201).json(await addHydrationEntry(req.user.id, amountMl, loggedAt, date));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deleteHydrationEntry(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deleteHydrationEntry(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

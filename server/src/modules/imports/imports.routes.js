@@ -27,8 +27,8 @@ router.post("/preview", (req, res) => {
   });
 });
 
-router.post("/apply", (req, res) => {
-  const result = applyImport(req.user, req.body);
+router.post("/apply", async (req, res) => {
+  const result = await applyImport(req.user, req.body);
   res.status(201).json(result);
 });
 

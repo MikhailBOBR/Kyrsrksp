@@ -29,26 +29,26 @@ function validateTemplatePayload(payload) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
-  res.json(listTemplates(req.user.id));
+router.get("/", async (req, res) => {
+  res.json(await listTemplates(req.user.id));
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   validateTemplatePayload(req.body);
-  res.status(201).json(createTemplate(req.user.id, req.body));
+  res.status(201).json(await createTemplate(req.user.id, req.body));
 });
 
-router.post("/from-meal/:mealId", (req, res) => {
+router.post("/from-meal/:mealId", async (req, res) => {
   if (req.body.name) {
     assertNonEmptyString(req.body.name, "name");
   }
 
   res
     .status(201)
-    .json(createTemplateFromMeal(req.user.id, Number(req.params.mealId), req.body.name));
+    .json(await createTemplateFromMeal(req.user.id, Number(req.params.mealId), req.body.name));
 });
 
-router.post("/:id/apply", (req, res) => {
+router.post("/:id/apply", async (req, res) => {
   if (req.body.date) {
     assertDate(req.body.date);
   }
@@ -65,11 +65,11 @@ router.post("/:id/apply", (req, res) => {
     assertMealType(req.body.mealType);
   }
 
-  res.status(201).json(applyTemplate(req.user.id, Number(req.params.id), req.body));
+  res.status(201).json(await applyTemplate(req.user.id, Number(req.params.id), req.body));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deleteTemplate(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deleteTemplate(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

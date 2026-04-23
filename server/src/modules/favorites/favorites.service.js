@@ -4,7 +4,7 @@ const { createHttpError } = require("../../lib/http");
 const { getProductById } = require("../products/products.service");
 const { getTemplateById } = require("../templates/templates.service");
 
-function listFavoriteProducts(userId) {
+async function listFavoriteProducts(userId) {
   return db
     .prepare(
       `
@@ -27,7 +27,7 @@ function listFavoriteProducts(userId) {
     .all(userId);
 }
 
-function listFavoriteTemplates(userId) {
+async function listFavoriteTemplates(userId) {
   return db
     .prepare(
       `
@@ -52,9 +52,11 @@ function listFavoriteTemplates(userId) {
     .all(userId);
 }
 
-function listFavorites(userId) {
-  const products = listFavoriteProducts(userId);
-  const templates = listFavoriteTemplates(userId);
+async function listFavorites(userId) {
+  const [products, templates] = await Promise.all([
+    listFavoriteProducts(userId),
+    listFavoriteTemplates(userId)
+  ]);
 
   return {
     products,
@@ -63,10 +65,10 @@ function listFavorites(userId) {
   };
 }
 
-function addFavoriteProduct(userId, productId) {
-  getProductById(productId);
+async function addFavoriteProduct(userId, productId) {
+  await getProductById(productId);
 
-  db.prepare(
+  await db.prepare(
     `
       INSERT OR IGNORE INTO favorite_products (user_id, product_id, created_at)
       VALUES (?, ?, ?)
@@ -76,8 +78,8 @@ function addFavoriteProduct(userId, productId) {
   return listFavorites(userId);
 }
 
-function removeFavoriteProduct(userId, productId) {
-  const result = db
+async function removeFavoriteProduct(userId, productId) {
+  const result = await db
     .prepare(`DELETE FROM favorite_products WHERE user_id = ? AND product_id = ?`)
     .run(userId, productId);
 
@@ -88,10 +90,10 @@ function removeFavoriteProduct(userId, productId) {
   return listFavorites(userId);
 }
 
-function addFavoriteTemplate(userId, templateId) {
-  getTemplateById(userId, templateId);
+async function addFavoriteTemplate(userId, templateId) {
+  await getTemplateById(userId, templateId);
 
-  db.prepare(
+  await db.prepare(
     `
       INSERT OR IGNORE INTO favorite_templates (user_id, template_id, created_at)
       VALUES (?, ?, ?)
@@ -101,8 +103,8 @@ function addFavoriteTemplate(userId, templateId) {
   return listFavorites(userId);
 }
 
-function removeFavoriteTemplate(userId, templateId) {
-  const result = db
+async function removeFavoriteTemplate(userId, templateId) {
+  const result = await db
     .prepare(`DELETE FROM favorite_templates WHERE user_id = ? AND template_id = ?`)
     .run(userId, templateId);
 

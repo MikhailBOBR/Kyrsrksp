@@ -15,8 +15,8 @@ function normalizeMetric(entry) {
   };
 }
 
-function listBodyMetrics(userId, { limit = 12 } = {}) {
-  return db
+async function listBodyMetrics(userId, { limit = 12 } = {}) {
+  const rows = await db
     .prepare(
       `
         SELECT *
@@ -26,12 +26,13 @@ function listBodyMetrics(userId, { limit = 12 } = {}) {
         LIMIT ?
       `
     )
-    .all(userId, limit)
-    .map(normalizeMetric);
+    .all(userId, limit);
+
+  return rows.map(normalizeMetric);
 }
 
-function getMetricById(userId, metricId) {
-  const metric = db
+async function getMetricById(userId, metricId) {
+  const metric = await db
     .prepare(`SELECT * FROM body_metrics WHERE user_id = ? AND id = ?`)
     .get(userId, metricId);
 
@@ -42,9 +43,9 @@ function getMetricById(userId, metricId) {
   return normalizeMetric(metric);
 }
 
-function createBodyMetric(userId, payload) {
+async function createBodyMetric(userId, payload) {
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(
       `
         INSERT INTO body_metrics (
@@ -67,8 +68,8 @@ function createBodyMetric(userId, payload) {
   return getMetricById(userId, result.lastInsertRowid);
 }
 
-function deleteBodyMetric(userId, metricId) {
-  const result = db
+async function deleteBodyMetric(userId, metricId) {
+  const result = await db
     .prepare(`DELETE FROM body_metrics WHERE user_id = ? AND id = ?`)
     .run(userId, metricId);
 
@@ -79,8 +80,8 @@ function deleteBodyMetric(userId, metricId) {
   return { success: true };
 }
 
-function getBodyMetricsSummary(userId) {
-  const items = listBodyMetrics(userId, { limit: 8 });
+async function getBodyMetricsSummary(userId) {
+  const items = await listBodyMetrics(userId, { limit: 8 });
   const latest = items[0] || null;
   const previous = items[1] || null;
 

@@ -3,10 +3,12 @@ const { getGoals } = require("../goals/goals.service");
 const { listMeals } = require("../meals/meals.service");
 const { getHydrationSummary } = require("../hydration/hydration.service");
 
-function buildReport(user, date = getLocalDate()) {
-  const goals = getGoals(user.id);
-  const meals = listMeals(user.id, { date });
-  const hydration = getHydrationSummary(user.id, date);
+async function buildReport(user, date = getLocalDate()) {
+  const [goals, meals, hydration] = await Promise.all([
+    getGoals(user.id),
+    listMeals(user.id, { date }),
+    getHydrationSummary(user.id, date)
+  ]);
   const totals = meals.reduce(
     (accumulator, meal) => {
       accumulator.calories += meal.calories;

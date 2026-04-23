@@ -20,7 +20,7 @@ function normalizeMeal(meal) {
   };
 }
 
-function listMeals(userId, { date, mealType }) {
+async function listMeals(userId, { date, mealType }) {
   const conditions = [`user_id = ?`, `entry_date = ?`];
   const parameters = [userId, date || getLocalDate()];
 
@@ -29,19 +29,20 @@ function listMeals(userId, { date, mealType }) {
     parameters.push(mealType);
   }
 
-  return db
+  const rows = await db
     .prepare(`
       SELECT *
       FROM meals
       WHERE ${conditions.join(" AND ")}
       ORDER BY eaten_at ASC, created_at ASC
     `)
-    .all(...parameters)
-    .map(normalizeMeal);
+    .all(...parameters);
+
+  return rows.map(normalizeMeal);
 }
 
-function getMealById(userId, mealId) {
-  const meal = db
+async function getMealById(userId, mealId) {
+  const meal = await db
     .prepare(`
       SELECT *
       FROM meals
@@ -56,9 +57,9 @@ function getMealById(userId, mealId) {
   return normalizeMeal(meal);
 }
 
-function createMeal(userId, payload) {
+async function createMeal(userId, payload) {
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(`
       INSERT INTO meals (
         user_id, title, meal_type, entry_date, eaten_at, grams,
@@ -85,10 +86,10 @@ function createMeal(userId, payload) {
   return getMealById(userId, result.lastInsertRowid);
 }
 
-function updateMeal(userId, mealId, payload) {
-  getMealById(userId, mealId);
+async function updateMeal(userId, mealId, payload) {
+  await getMealById(userId, mealId);
 
-  db.prepare(`
+  await db.prepare(`
     UPDATE meals
     SET
       title = ?,
@@ -122,8 +123,8 @@ function updateMeal(userId, mealId, payload) {
   return getMealById(userId, mealId);
 }
 
-function deleteMeal(userId, mealId) {
-  const result = db
+async function deleteMeal(userId, mealId) {
+  const result = await db
     .prepare(`DELETE FROM meals WHERE id = ? AND user_id = ?`)
     .run(mealId, userId);
 

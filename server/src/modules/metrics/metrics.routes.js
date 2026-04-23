@@ -35,17 +35,17 @@ function validateMetricPayload(payload) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
-  res.json(getBodyMetricsSummary(req.user.id));
+router.get("/", async (req, res) => {
+  res.json(await getBodyMetricsSummary(req.user.id));
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   validateMetricPayload(req.body);
-  res.status(201).json(createBodyMetric(req.user.id, req.body));
+  res.status(201).json(await createBodyMetric(req.user.id, req.body));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deleteBodyMetric(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deleteBodyMetric(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

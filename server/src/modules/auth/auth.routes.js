@@ -5,14 +5,14 @@ const { requireAuth } = require("../../middlewares/auth");
 
 const router = express.Router();
 
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
   assertNonEmptyString(name, "name");
   assertEmail(email);
   assertPassword(password);
 
-  const payload = registerUser({
+  const payload = await registerUser({
     name,
     email,
     password
@@ -21,13 +21,13 @@ router.post("/register", (req, res) => {
   res.status(201).json(payload);
 });
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   assertEmail(email);
   assertPassword(password);
 
-  res.json(loginUser({ email, password }));
+  res.json(await loginUser({ email, password }));
 });
 
 router.get("/me", requireAuth, (req, res) => {

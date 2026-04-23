@@ -32,7 +32,7 @@ function normalizeRecipe(recipe, items = []) {
   };
 }
 
-function getRecipeItems(recipeId) {
+async function getRecipeItems(recipeId) {
   return db
     .prepare(
       `
@@ -45,8 +45,8 @@ function getRecipeItems(recipeId) {
     .all(recipeId);
 }
 
-function listRecipes(userId) {
-  return db
+async function listRecipes(userId) {
+  const rows = await db
     .prepare(
       `
         SELECT *
@@ -55,12 +55,17 @@ function listRecipes(userId) {
         ORDER BY updated_at DESC, id DESC
       `
     )
-    .all(userId)
-    .map((recipe) => normalizeRecipe(recipe, getRecipeItems(recipe.id)));
+    .all(userId);
+
+  const itemsByRecipe = await Promise.all(
+    rows.map(async (recipe) => normalizeRecipe(recipe, await getRecipeItems(recipe.id)))
+  );
+
+  return itemsByRecipe;
 }
 
-function getRecipeById(userId, recipeId) {
-  const recipe = db
+async function getRecipeById(userId, recipeId) {
+  const recipe = await db
     .prepare(
       `
         SELECT *
@@ -74,24 +79,26 @@ function getRecipeById(userId, recipeId) {
     throw createHttpError(404, "Recipe not found");
   }
 
-  return normalizeRecipe(recipe, getRecipeItems(recipe.id));
+  return normalizeRecipe(recipe, await getRecipeItems(recipe.id));
 }
 
-function buildRecipeIngredients(ingredients) {
-  return ingredients.map((item) => {
-    const product = getProductById(item.productId);
+async function buildRecipeIngredients(ingredients) {
+  return Promise.all(
+    ingredients.map(async (item) => {
+      const product = await getProductById(item.productId);
     const ratio = item.grams / 100;
 
-    return {
-      productId: product.id,
-      productName: product.name,
-      grams: item.grams,
-      calories: Number((product.calories * ratio).toFixed(1)),
-      protein: Number((product.protein * ratio).toFixed(1)),
-      fat: Number((product.fat * ratio).toFixed(1)),
-      carbs: Number((product.carbs * ratio).toFixed(1))
-    };
-  });
+      return {
+        productId: product.id,
+        productName: product.name,
+        grams: item.grams,
+        calories: Number((product.calories * ratio).toFixed(1)),
+        protein: Number((product.protein * ratio).toFixed(1)),
+        fat: Number((product.fat * ratio).toFixed(1)),
+        carbs: Number((product.carbs * ratio).toFixed(1))
+      };
+    })
+  );
 }
 
 function buildRecipeTotals(items) {
@@ -108,8 +115,8 @@ function buildRecipeTotals(items) {
   );
 }
 
-function createRecipe(userId, payload) {
-  const items = buildRecipeIngredients(payload.ingredients);
+async function createRecipe(userId, payload) {
+  const items = await buildRecipeIngredients(payload.ingredients);
 
   if (!items.length) {
     throw createHttpError(400, 'Field "ingredients" must contain at least one ingredient');
@@ -117,7 +124,7 @@ function createRecipe(userId, payload) {
 
   const totals = buildRecipeTotals(items);
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(
       `
         INSERT INTO recipes (
@@ -151,8 +158,8 @@ function createRecipe(userId, payload) {
     `
   );
 
-  items.forEach((item) => {
-    statement.run(
+  for (const item of items) {
+    await statement.run(
       recipeId,
       item.productId,
       item.productName,
@@ -163,13 +170,13 @@ function createRecipe(userId, payload) {
       item.carbs,
       now
     );
-  });
+  }
 
   return getRecipeById(userId, recipeId);
 }
 
-function applyRecipe(userId, recipeId, overrides = {}) {
-  const recipe = getRecipeById(userId, recipeId);
+async function applyRecipe(userId, recipeId, overrides = {}) {
+  const recipe = await getRecipeById(userId, recipeId);
   const multiplier = overrides.multiplier ?? 1;
 
   return createMeal(userId, {
@@ -186,8 +193,8 @@ function applyRecipe(userId, recipeId, overrides = {}) {
   });
 }
 
-function createPlanFromRecipe(userId, recipeId, overrides = {}) {
-  const recipe = getRecipeById(userId, recipeId);
+async function createPlanFromRecipe(userId, recipeId, overrides = {}) {
+  const recipe = await getRecipeById(userId, recipeId);
   const multiplier = overrides.multiplier ?? 1;
 
   return createPlan(userId, {
@@ -202,8 +209,8 @@ function createPlanFromRecipe(userId, recipeId, overrides = {}) {
   });
 }
 
-function deleteRecipe(userId, recipeId) {
-  const result = db.prepare(`DELETE FROM recipes WHERE user_id = ? AND id = ?`).run(userId, recipeId);
+async function deleteRecipe(userId, recipeId) {
+  const result = await db.prepare(`DELETE FROM recipes WHERE user_id = ? AND id = ?`).run(userId, recipeId);
 
   if (result.changes === 0) {
     throw createHttpError(404, "Recipe not found");

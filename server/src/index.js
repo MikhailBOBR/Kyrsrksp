@@ -36,9 +36,9 @@ function createHttpServer(app) {
     forceCloseTimer.unref();
 
     return new Promise((resolve) => {
-      server.close(() => {
+      server.close(async () => {
         clearTimeout(forceCloseTimer);
-        closeDatabase();
+        await closeDatabase();
         logger.info("runtime.shutdown.completed", { signal });
         resolve();
       });

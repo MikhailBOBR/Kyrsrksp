@@ -2,7 +2,7 @@ const { db } = require("../db/connection");
 const { createHttpError } = require("../lib/http");
 const { verifyAccessToken } = require("../lib/security");
 
-function requireAuth(req, _res, next) {
+async function requireAuth(req, _res, next) {
   const authorization = req.headers.authorization || "";
 
   if (!authorization.startsWith("Bearer ")) {
@@ -12,7 +12,7 @@ function requireAuth(req, _res, next) {
 
   try {
     const payload = verifyAccessToken(authorization.replace("Bearer ", ""));
-    const user = db
+    const user = await db
       .prepare(`
         SELECT id, name, email, role, created_at AS createdAt
         FROM users

@@ -340,7 +340,7 @@ const openApiDocument = {
             properties: {
               status: { type: "string", example: "ok" },
               service: { type: "string", example: "food-diary-app" },
-              stack: { type: "string", example: "express + sqlite + swagger" }
+              stack: { type: "string", example: "express + postgresql + swagger" }
             },
             required: ["status", "service", "stack"]
           })

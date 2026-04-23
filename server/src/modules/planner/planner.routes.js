@@ -35,10 +35,10 @@ function validatePlanPayload(payload) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   if (req.query.date) {
     assertDate(req.query.date);
-    res.json(getPlannerSummary(req.user.id, req.query.date));
+    res.json(await getPlannerSummary(req.user.id, req.query.date));
     return;
   }
 
@@ -51,19 +51,19 @@ router.get("/", (req, res) => {
   }
 
   res.json(
-    listPlans(req.user.id, {
+    await listPlans(req.user.id, {
       dateFrom: req.query.dateFrom,
       dateTo: req.query.dateTo
     })
   );
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   validatePlanPayload(req.body);
-  res.status(201).json(createPlan(req.user.id, req.body));
+  res.status(201).json(await createPlan(req.user.id, req.body));
 });
 
-router.post("/from-template/:templateId", (req, res) => {
+router.post("/from-template/:templateId", async (req, res) => {
   if (req.body.date) {
     assertDate(req.body.date);
   }
@@ -82,10 +82,10 @@ router.post("/from-template/:templateId", (req, res) => {
 
   res
     .status(201)
-    .json(createPlanFromTemplate(req.user.id, Number(req.params.templateId), req.body));
+    .json(await createPlanFromTemplate(req.user.id, Number(req.params.templateId), req.body));
 });
 
-router.post("/generate-week", (req, res) => {
+router.post("/generate-week", async (req, res) => {
   if (req.body.startDate) {
     assertDate(req.body.startDate, "startDate");
   }
@@ -95,7 +95,7 @@ router.post("/generate-week", (req, res) => {
   }
 
   res.status(201).json(
-    generateWeeklyPlan(req.user.id, {
+    await generateWeeklyPlan(req.user.id, {
       startDate: req.body.startDate,
       days: req.body.days,
       includeSnack: req.body.includeSnack !== false,
@@ -104,12 +104,12 @@ router.post("/generate-week", (req, res) => {
   );
 });
 
-router.patch("/:id/completion", (req, res) => {
-  res.json(setPlanCompletion(req.user.id, Number(req.params.id), Boolean(req.body.completed)));
+router.patch("/:id/completion", async (req, res) => {
+  res.json(await setPlanCompletion(req.user.id, Number(req.params.id), Boolean(req.body.completed)));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deletePlan(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deletePlan(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

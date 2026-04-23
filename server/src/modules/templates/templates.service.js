@@ -20,20 +20,21 @@ function normalizeTemplate(template) {
   };
 }
 
-function listTemplates(userId) {
-  return db
+async function listTemplates(userId) {
+  const rows = await db
     .prepare(`
       SELECT *
       FROM meal_templates
       WHERE user_id = ?
       ORDER BY usage_count DESC, updated_at DESC
     `)
-    .all(userId)
-    .map(normalizeTemplate);
+    .all(userId);
+
+  return rows.map(normalizeTemplate);
 }
 
-function getTemplateById(userId, templateId) {
-  const template = db
+async function getTemplateById(userId, templateId) {
+  const template = await db
     .prepare(`SELECT * FROM meal_templates WHERE id = ? AND user_id = ?`)
     .get(templateId, userId);
 
@@ -44,9 +45,9 @@ function getTemplateById(userId, templateId) {
   return normalizeTemplate(template);
 }
 
-function createTemplate(userId, payload) {
+async function createTemplate(userId, payload) {
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(`
       INSERT INTO meal_templates (
         user_id, name, meal_type, grams, calories, protein, fat, carbs, notes, usage_count, created_at, updated_at
@@ -70,8 +71,8 @@ function createTemplate(userId, payload) {
   return getTemplateById(userId, result.lastInsertRowid);
 }
 
-function createTemplateFromMeal(userId, mealId, name) {
-  const meal = getMealById(userId, mealId);
+async function createTemplateFromMeal(userId, mealId, name) {
+  const meal = await getMealById(userId, mealId);
 
   return createTemplate(userId, {
     name: name || meal.title,
@@ -85,13 +86,13 @@ function createTemplateFromMeal(userId, mealId, name) {
   });
 }
 
-function applyTemplate(userId, templateId, overrides = {}) {
-  const template = getTemplateById(userId, templateId);
+async function applyTemplate(userId, templateId, overrides = {}) {
+  const template = await getTemplateById(userId, templateId);
   const now = getTimestamp();
   const entryDate = overrides.date || getLocalDate();
   const eatenAt = overrides.eatenAt || "12:00";
 
-  const result = db
+  const result = await db
     .prepare(`
       INSERT INTO meals (
         user_id, title, meal_type, entry_date, eaten_at, grams,
@@ -115,7 +116,7 @@ function applyTemplate(userId, templateId, overrides = {}) {
       now
     );
 
-  db.prepare(`
+  await db.prepare(`
     UPDATE meal_templates
     SET usage_count = usage_count + 1, updated_at = ?
     WHERE id = ? AND user_id = ?
@@ -143,8 +144,8 @@ function applyTemplate(userId, templateId, overrides = {}) {
     .get(result.lastInsertRowid);
 }
 
-function deleteTemplate(userId, templateId) {
-  const result = db
+async function deleteTemplate(userId, templateId) {
+  const result = await db
     .prepare(`DELETE FROM meal_templates WHERE id = ? AND user_id = ?`)
     .run(templateId, userId);
 

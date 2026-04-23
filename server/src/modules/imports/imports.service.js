@@ -77,7 +77,7 @@ const datasetConfigs = {
         assertNonEmptyString(payload.notes, "notes");
       }
     },
-    apply(user, payload) {
+    async apply(user, payload) {
       return createMeal(user.id, payload);
     }
   },
@@ -132,7 +132,7 @@ const datasetConfigs = {
         assertNonEmptyString(payload.notes, "notes");
       }
     },
-    apply(user, payload) {
+    async apply(user, payload) {
       return createTemplate(user.id, payload);
     }
   },
@@ -165,7 +165,7 @@ const datasetConfigs = {
       assertTime(payload.loggedAt, "loggedAt");
       assertNumber(payload.amountMl, "amountMl");
     },
-    apply(user, payload) {
+    async apply(user, payload) {
       return addHydrationEntry(user.id, payload.amountMl, payload.loggedAt, payload.date);
     }
   },
@@ -217,7 +217,7 @@ const datasetConfigs = {
         assertNonEmptyString(payload.brand, "brand");
       }
     },
-    apply(user, payload) {
+    async apply(user, payload) {
       return createProduct(payload, user.id);
     }
   }
@@ -491,7 +491,7 @@ function previewImport(user, payload) {
   };
 }
 
-function applyImport(user, payload) {
+async function applyImport(user, payload) {
   const preview = previewImport(user, payload);
 
   if (!preview.validRows.length) {
@@ -499,7 +499,7 @@ function applyImport(user, payload) {
   }
 
   const config = datasetConfigs[preview.dataset];
-  const importedItems = preview.validRows.map((row) => config.apply(user, row));
+  const importedItems = await Promise.all(preview.validRows.map((row) => config.apply(user, row)));
 
   return {
     dataset: preview.dataset,

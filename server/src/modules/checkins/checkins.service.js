@@ -20,9 +20,9 @@ function normalizeCheckin(entry) {
   };
 }
 
-function getCheckin(userId, date = getLocalDate()) {
+async function getCheckin(userId, date = getLocalDate()) {
   return normalizeCheckin(
-    db
+    await db
       .prepare(
         `
           SELECT *
@@ -52,19 +52,21 @@ function buildReadinessScore(entry) {
   return Number(Math.min(Math.max(total, 0), 100).toFixed(1));
 }
 
-function getCheckinSummary(userId, date = getLocalDate()) {
-  const entry = getCheckin(userId, date);
-  const trend = getLastDates(date, 7).map((day) => {
-    const item = getCheckin(userId, day);
+async function getCheckinSummary(userId, date = getLocalDate()) {
+  const entry = await getCheckin(userId, date);
+  const trend = await Promise.all(
+    getLastDates(date, 7).map(async (day) => {
+      const item = await getCheckin(userId, day);
 
-    return {
-      date: day,
-      mood: item?.mood || 0,
-      energy: item?.energy || 0,
-      stress: item?.stress || 0,
-      readiness: buildReadinessScore(item)
-    };
-  });
+      return {
+        date: day,
+        mood: item?.mood || 0,
+        energy: item?.energy || 0,
+        stress: item?.stress || 0,
+        readiness: buildReadinessScore(item)
+      };
+    })
+  );
 
   return {
     date,
@@ -74,11 +76,11 @@ function getCheckinSummary(userId, date = getLocalDate()) {
   };
 }
 
-function upsertCheckin(userId, payload) {
+async function upsertCheckin(userId, payload) {
   const date = payload.date || getLocalDate();
   const now = getTimestamp();
 
-  db.prepare(
+  await db.prepare(
     `
       INSERT INTO daily_checkins (
         user_id, entry_date, mood, energy, stress, hunger, sleep_hours, notes, created_at, updated_at
@@ -109,8 +111,8 @@ function upsertCheckin(userId, payload) {
   return getCheckin(userId, date);
 }
 
-function deleteCheckin(userId, date = getLocalDate()) {
-  const result = db
+async function deleteCheckin(userId, date = getLocalDate()) {
+  const result = await db
     .prepare(`DELETE FROM daily_checkins WHERE user_id = ? AND entry_date = ?`)
     .run(userId, date);
 
@@ -128,6 +130,7 @@ function seedWellbeingRange(userId, baseDate = getLocalDate(), days = 10) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
   );
+  const operations = [];
 
   for (let index = days - 1; index >= 0; index -= 1) {
     const date = addDays(baseDate, -index);
@@ -138,18 +141,24 @@ function seedWellbeingRange(userId, baseDate = getLocalDate(), days = 10) {
     const sleepHours = 6.5 + ((userId + index) % 4) * 0.5;
     const now = `${date}T08:00:00.000Z`;
 
-    insert.run(
-      userId,
-      date,
-      Math.min(mood, 5),
-      Math.min(energy, 5),
-      Math.min(stress, 5),
-      Math.min(hunger, 5),
-      sleepHours,
-      "Автоматически подготовленная wellbeing-запись.",
-      now,
-      now
+    operations.push(
+      insert.run(
+        userId,
+        date,
+        Math.min(mood, 5),
+        Math.min(energy, 5),
+        Math.min(stress, 5),
+        Math.min(hunger, 5),
+        sleepHours,
+        "Автоматически подготовленная wellbeing-запись.",
+        now,
+        now
+      )
     );
+  }
+
+  if (operations.some((item) => item && typeof item.then === "function")) {
+    return Promise.all(operations);
   }
 }
 

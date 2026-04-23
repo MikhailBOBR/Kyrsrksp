@@ -7,19 +7,19 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
-  res.json(getGoals(req.user.id));
+router.get("/", async (req, res) => {
+  res.json(await getGoals(req.user.id));
 });
 
 router.get("/presets", (_req, res) => {
   res.json(listGoalPresets());
 });
 
-router.post("/presets/:presetId/apply", (req, res) => {
-  res.json(applyGoalPreset(req.user.id, req.params.presetId));
+router.post("/presets/:presetId/apply", async (req, res) => {
+  res.json(await applyGoalPreset(req.user.id, req.params.presetId));
 });
 
-router.put("/", (req, res) => {
+router.put("/", async (req, res) => {
   const { calories, protein, fat, carbs } = req.body;
 
   assertNumber(calories, "calories");
@@ -28,7 +28,7 @@ router.put("/", (req, res) => {
   assertNumber(carbs, "carbs");
 
   res.json(
-    updateGoals(req.user.id, {
+    await updateGoals(req.user.id, {
       calories,
       protein,
       fat,

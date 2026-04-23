@@ -1,9 +1,214 @@
-const { adminUser, demoUser, seedDemoData } = require("../config/env");
+const { adminUser, dbProvider, demoUser, seedDemoData } = require("../config/env");
 const { db } = require("./connection");
 const { getLocalDate, getTimestamp } = require("../lib/date");
 const { hashPassword } = require("../lib/security");
 
 function ensureSchema() {
+  if (dbProvider === "postgres") {
+    return db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id BIGSERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS goals (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        calories DOUBLE PRECISION NOT NULL,
+        protein DOUBLE PRECISION NOT NULL,
+        fat DOUBLE PRECISION NOT NULL,
+        carbs DOUBLE PRECISION NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS products (
+        id BIGSERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        brand TEXT,
+        category TEXT NOT NULL,
+        calories DOUBLE PRECISION NOT NULL,
+        protein DOUBLE PRECISION NOT NULL,
+        fat DOUBLE PRECISION NOT NULL,
+        carbs DOUBLE PRECISION NOT NULL,
+        created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS meals (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        meal_type TEXT NOT NULL,
+        entry_date TEXT NOT NULL,
+        eaten_at TEXT NOT NULL,
+        grams DOUBLE PRECISION NOT NULL,
+        calories DOUBLE PRECISION NOT NULL,
+        protein DOUBLE PRECISION NOT NULL,
+        fat DOUBLE PRECISION NOT NULL,
+        carbs DOUBLE PRECISION NOT NULL,
+        notes TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS hydration_logs (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount_ml DOUBLE PRECISION NOT NULL,
+        entry_date TEXT NOT NULL,
+        logged_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS meal_templates (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        meal_type TEXT NOT NULL,
+        grams DOUBLE PRECISION NOT NULL,
+        calories DOUBLE PRECISION NOT NULL,
+        protein DOUBLE PRECISION NOT NULL,
+        fat DOUBLE PRECISION NOT NULL,
+        carbs DOUBLE PRECISION NOT NULL,
+        notes TEXT DEFAULT '',
+        usage_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS daily_checkins (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        entry_date TEXT NOT NULL,
+        mood DOUBLE PRECISION NOT NULL,
+        energy DOUBLE PRECISION NOT NULL,
+        stress DOUBLE PRECISION NOT NULL,
+        hunger DOUBLE PRECISION NOT NULL,
+        sleep_hours DOUBLE PRECISION NOT NULL,
+        notes TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, entry_date)
+      );
+
+      CREATE TABLE IF NOT EXISTS body_metrics (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        entry_date TEXT NOT NULL,
+        weight_kg DOUBLE PRECISION NOT NULL,
+        body_fat DOUBLE PRECISION,
+        waist_cm DOUBLE PRECISION,
+        chest_cm DOUBLE PRECISION,
+        notes TEXT DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS meal_plans (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        entry_date TEXT NOT NULL,
+        meal_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        target_calories DOUBLE PRECISION NOT NULL,
+        target_protein DOUBLE PRECISION NOT NULL,
+        target_fat DOUBLE PRECISION NOT NULL,
+        target_carbs DOUBLE PRECISION NOT NULL,
+        planned_time TEXT NOT NULL,
+        completed INTEGER NOT NULL DEFAULT 0,
+        linked_template_id BIGINT REFERENCES meal_templates(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS shopping_items (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        quantity DOUBLE PRECISION NOT NULL DEFAULT 1,
+        unit TEXT NOT NULL DEFAULT 'шт',
+        planned_for TEXT,
+        source TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        is_checked INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS daily_notes (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        entry_date TEXT NOT NULL,
+        title TEXT DEFAULT '',
+        focus TEXT DEFAULT '',
+        wins TEXT DEFAULT '',
+        improvements TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, entry_date)
+      );
+
+      CREATE TABLE IF NOT EXISTS favorite_products (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL,
+        UNIQUE(user_id, product_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS favorite_templates (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        template_id BIGINT NOT NULL REFERENCES meal_templates(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL,
+        UNIQUE(user_id, template_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS recipes (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        meal_type TEXT NOT NULL,
+        total_grams DOUBLE PRECISION NOT NULL,
+        calories DOUBLE PRECISION NOT NULL,
+        protein DOUBLE PRECISION NOT NULL,
+        fat DOUBLE PRECISION NOT NULL,
+        carbs DOUBLE PRECISION NOT NULL,
+        notes TEXT DEFAULT '',
+        instructions TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS recipe_items (
+        id BIGSERIAL PRIMARY KEY,
+        recipe_id BIGINT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+        product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        product_name TEXT NOT NULL,
+        grams DOUBLE PRECISION NOT NULL,
+        calories DOUBLE PRECISION NOT NULL,
+        protein DOUBLE PRECISION NOT NULL,
+        fat DOUBLE PRECISION NOT NULL,
+        carbs DOUBLE PRECISION NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_meals_user_date ON meals(user_id, entry_date);
+      CREATE INDEX IF NOT EXISTS idx_hydration_user_date ON hydration_logs(user_id, entry_date);
+      CREATE INDEX IF NOT EXISTS idx_templates_user_updated ON meal_templates(user_id, updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_checkins_user_date ON daily_checkins(user_id, entry_date);
+      CREATE INDEX IF NOT EXISTS idx_plans_user_date ON meal_plans(user_id, entry_date);
+      CREATE INDEX IF NOT EXISTS idx_shopping_user_checked ON shopping_items(user_id, is_checked);
+      CREATE INDEX IF NOT EXISTS idx_recipes_user_updated ON recipes(user_id, updated_at DESC);
+    `);
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -896,36 +1101,271 @@ function seedRecipes() {
   });
 }
 
+async function upsertBootstrapUser({ email, name, password, role }) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const now = getTimestamp();
+  const existing = await db.prepare(`SELECT id FROM users WHERE email = ?`).get(normalizedEmail);
+
+  if (existing) {
+    await db.prepare(`
+      UPDATE users
+      SET name = ?, password_hash = ?, role = ?
+      WHERE id = ?
+    `).run(name.trim(), hashPassword(password), role, existing.id);
+
+    return existing.id;
+  }
+
+  const result = await db.prepare(`
+    INSERT INTO users (name, email, password_hash, role, created_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(name.trim(), normalizedEmail, hashPassword(password), role, now);
+
+  return result.lastInsertRowid;
+}
+
+async function ensureBootstrapGoal(userId) {
+  await db.prepare(`
+    INSERT OR IGNORE INTO goals (user_id, calories, protein, fat, carbs, updated_at)
+    VALUES (?, 2200, 140, 70, 240, ?)
+  `).run(userId, getTimestamp());
+}
+
+async function seedPostgresProducts(createdBy) {
+  const countRow = await db.prepare(`SELECT COUNT(*) AS count FROM products`).get();
+
+  if (countRow.count > 0) {
+    return;
+  }
+
+  const now = getTimestamp();
+  const insert = db.prepare(`
+    INSERT INTO products (
+      name, brand, category, calories, protein, fat, carbs, created_by, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const items = [
+    ["Овсяные хлопья", "Daily Grain", "Крупы и гарниры", 368, 12.3, 6.1, 61.8],
+    ["Куриная грудка", "Fresh Farm", "Белковые продукты", 165, 31, 3.6, 0],
+    ["Рис басмати", "Field Kitchen", "Крупы и гарниры", 120, 4.4, 1.9, 21.3],
+    ["Греческий йогурт", "NutriLab", "Белковые продукты", 95, 10.5, 4.1, 3.8],
+    ["Банан", "Nature Choice", "Фрукты", 89, 1.1, 0.3, 22.8],
+    ["Брокколи", "Fresh Garden", "Овощи", 34, 2.8, 0.4, 6.6],
+    ["Лосось", "Ocean Box", "Белковые продукты", 208, 20, 13, 0],
+    ["Миндаль", "Nut Basket", "Перекусы", 579, 21.2, 49.9, 21.6]
+  ];
+
+  for (const item of items) {
+    await insert.run(
+      item[0],
+      item[1],
+      item[2],
+      item[3],
+      item[4],
+      item[5],
+      item[6],
+      createdBy,
+      now,
+      now
+    );
+  }
+}
+
+async function seedPostgresWorkspace(userId) {
+  const now = getTimestamp();
+  const today = getLocalDate();
+  const mealCount = await db.prepare(`SELECT COUNT(*) AS count FROM meals WHERE user_id = ?`).get(userId);
+
+  if (mealCount.count === 0) {
+    const insertMeal = db.prepare(`
+      INSERT INTO meals (
+        user_id, title, meal_type, entry_date, eaten_at, grams,
+        calories, protein, fat, carbs, notes, created_at, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const meals = [
+      ["Овсянка с бананом", "Завтрак", "08:15", 280, 420, 16, 11, 67, "Хороший старт дня"],
+      ["Курица с рисом", "Обед", "13:10", 350, 610, 44, 18, 66, "Основной прием пищи"],
+      ["Йогурт и орехи", "Перекус", "17:20", 180, 290, 15, 17, 18, "Быстрый перекус"],
+      ["Рыба с брокколи", "Ужин", "20:05", 320, 472, 32.6, 12.2, 18.8, "Спокойный вечерний баланс"]
+    ];
+
+    for (const meal of meals) {
+      await insertMeal.run(
+        userId,
+        meal[0],
+        meal[1],
+        today,
+        meal[2],
+        meal[3],
+        meal[4],
+        meal[5],
+        meal[6],
+        meal[7],
+        meal[8],
+        now,
+        now
+      );
+    }
+  }
+
+  const hydrationCount = await db
+    .prepare(`SELECT COUNT(*) AS count FROM hydration_logs WHERE user_id = ?`)
+    .get(userId);
+
+  if (hydrationCount.count === 0) {
+    const insertHydration = db.prepare(`
+      INSERT INTO hydration_logs (user_id, amount_ml, entry_date, logged_at, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    for (const item of [["09:00", 350], ["12:40", 400], ["16:10", 500]]) {
+      await insertHydration.run(userId, item[1], today, item[0], now);
+    }
+  }
+
+  const templateCount = await db
+    .prepare(`SELECT COUNT(*) AS count FROM meal_templates WHERE user_id = ?`)
+    .get(userId);
+
+  if (templateCount.count === 0) {
+    const insertTemplate = db.prepare(`
+      INSERT INTO meal_templates (
+        user_id, name, meal_type, grams, calories, protein, fat, carbs, notes, usage_count, created_at, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+    `);
+
+    await insertTemplate.run(
+      userId,
+      "Легкий завтрак",
+      "Завтрак",
+      220,
+      320,
+      20,
+      8,
+      38,
+      "Быстрый утренний шаблон",
+      now,
+      now
+    );
+    await insertTemplate.run(
+      userId,
+      "Сбалансированный ужин",
+      "Ужин",
+      300,
+      470,
+      34,
+      14,
+      49,
+      "Шаблон под вечерний прием пищи",
+      now,
+      now
+    );
+  }
+
+  await db.prepare(`
+    INSERT INTO daily_checkins (
+      user_id, entry_date, mood, energy, stress, hunger, sleep_hours, notes, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, entry_date) DO UPDATE SET
+      mood = excluded.mood,
+      energy = excluded.energy,
+      stress = excluded.stress,
+      hunger = excluded.hunger,
+      sleep_hours = excluded.sleep_hours,
+      notes = excluded.notes,
+      updated_at = excluded.updated_at
+  `).run(userId, today, 4, 4, 2, 3, 7.5, "Базовый demo check-in для PostgreSQL режима.", now, now);
+
+  await db.prepare(`
+    INSERT INTO daily_notes (
+      user_id, entry_date, title, focus, wins, improvements, notes, created_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, entry_date) DO UPDATE SET
+      title = excluded.title,
+      focus = excluded.focus,
+      wins = excluded.wins,
+      improvements = excluded.improvements,
+      notes = excluded.notes,
+      updated_at = excluded.updated_at
+  `).run(
+    userId,
+    today,
+    "Фокус дня",
+    "Держать белок и воду в целевом коридоре",
+    "Все ключевые блоки базы уже готовы",
+    "Добавить больше приемов пищи в планер",
+    "PostgreSQL bootstrap-режим активен",
+    now,
+    now
+  );
+}
+
 function runMigrations() {
-  ensureSchema();
-  return {
-    provider: "sqlite",
+  return Promise.resolve(ensureSchema()).then(() => ({
+    provider: dbProvider,
     migrated: true
-  };
+  }));
 }
 
 function initializeDatabase(options = {}) {
   const { withSeedData = seedDemoData } = options;
 
-  runMigrations();
-  seedUsers();
-  seedGoals();
+  if (dbProvider !== "postgres") {
+    runMigrations();
+    seedUsers();
+    seedGoals();
 
-  if (!withSeedData) {
+    if (!withSeedData) {
+      return;
+    }
+
+    seedProducts();
+    seedMeals();
+    seedHydration();
+    seedTemplates();
+    seedCheckins();
+    seedBodyMetrics();
+    seedPlanner();
+    seedShopping();
+    seedDailyNotes();
+    seedFavorites();
+    seedRecipes();
     return;
   }
 
-  seedProducts();
-  seedMeals();
-  seedHydration();
-  seedTemplates();
-  seedCheckins();
-  seedBodyMetrics();
-  seedPlanner();
-  seedShopping();
-  seedDailyNotes();
-  seedFavorites();
-  seedRecipes();
+  return (async () => {
+    await runMigrations();
+    const adminId = await upsertBootstrapUser({
+      email: adminUser.email,
+      name: adminUser.name,
+      password: adminUser.password,
+      role: "admin"
+    });
+    const demoId = await upsertBootstrapUser({
+      email: demoUser.email,
+      name: demoUser.name,
+      password: demoUser.password,
+      role: "user"
+    });
+
+    await ensureBootstrapGoal(adminId);
+    await ensureBootstrapGoal(demoId);
+
+    if (!withSeedData) {
+      return;
+    }
+
+    await seedPostgresProducts(adminId);
+    await seedPostgresWorkspace(demoId);
+  })();
 }
 
 module.exports = {

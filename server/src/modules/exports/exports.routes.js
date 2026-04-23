@@ -5,7 +5,7 @@ const { buildCsvReport, buildReport } = require("./exports.service");
 
 const router = express.Router();
 
-router.get("/daily-report", requireAuth, (req, res) => {
+router.get("/daily-report", requireAuth, async (req, res) => {
   const format = req.query.format || "json";
   const date = req.query.date;
 
@@ -13,7 +13,7 @@ router.get("/daily-report", requireAuth, (req, res) => {
     assertDate(date);
   }
 
-  const report = buildReport(req.user, date);
+  const report = await buildReport(req.user, date);
 
   if (format === "csv") {
     res.setHeader("Content-Type", "text/csv; charset=utf-8");

@@ -13,33 +13,33 @@ function sanitizeUser(user) {
   };
 }
 
-function findUserByEmail(email) {
+async function findUserByEmail(email) {
   return db.prepare(`SELECT * FROM users WHERE email = ?`).get(email);
 }
 
-function createGoalsForUser(userId) {
-  db.prepare(`
+async function createGoalsForUser(userId) {
+  await db.prepare(`
     INSERT INTO goals (user_id, calories, protein, fat, carbs, updated_at)
     VALUES (?, 2200, 140, 70, 240, ?)
   `).run(userId, getTimestamp());
 }
 
-function registerUser({ name, email, password }) {
-  if (findUserByEmail(email)) {
+async function registerUser({ name, email, password }) {
+  if (await findUserByEmail(email)) {
     throw createHttpError(409, "User with this email already exists");
   }
 
   const createdAt = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(`
       INSERT INTO users (name, email, password_hash, role, created_at)
       VALUES (?, ?, ?, 'user', ?)
     `)
     .run(name.trim(), email.trim().toLowerCase(), hashPassword(password), createdAt);
 
-  createGoalsForUser(result.lastInsertRowid);
+  await createGoalsForUser(result.lastInsertRowid);
 
-  const user = db
+  const user = await db
     .prepare(`SELECT id, name, email, role, created_at FROM users WHERE id = ?`)
     .get(result.lastInsertRowid);
 
@@ -49,8 +49,8 @@ function registerUser({ name, email, password }) {
   };
 }
 
-function loginUser({ email, password }) {
-  const user = findUserByEmail(email.trim().toLowerCase());
+async function loginUser({ email, password }) {
+  const user = await findUserByEmail(email.trim().toLowerCase());
 
   if (!user || !verifyPassword(password, user.password_hash)) {
     throw createHttpError(401, "Invalid email or password");

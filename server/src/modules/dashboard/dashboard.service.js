@@ -47,12 +47,8 @@ function buildSummary(goals, meals) {
 }
 
 function buildInsights(meals, goals, summary) {
-  const topCalorieMeal = [...meals].sort(
-    (left, right) => right.calories - left.calories
-  )[0] || null;
-  const topProteinMeal = [...meals].sort(
-    (left, right) => right.protein - left.protein
-  )[0] || null;
+  const topCalorieMeal = [...meals].sort((left, right) => right.calories - left.calories)[0] || null;
+  const topProteinMeal = [...meals].sort((left, right) => right.protein - left.protein)[0] || null;
   const averageCalories = meals.length
     ? meals.reduce((total, meal) => total + meal.calories, 0) / meals.length
     : 0;
@@ -84,15 +80,15 @@ function buildInsights(meals, goals, summary) {
   };
 }
 
-function buildStreak(userId, baseDate) {
+async function buildStreak(userId, baseDate) {
   let streak = 0;
 
   for (const date of [...getLastDates(baseDate, 30)].reverse()) {
-    const count = db
+    const row = await db
       .prepare(`SELECT COUNT(*) AS count FROM meals WHERE user_id = ? AND entry_date = ?`)
-      .get(userId, date).count;
+      .get(userId, date);
 
-    if (count > 0) {
+    if (row.count > 0) {
       streak += 1;
       continue;
     }
@@ -103,69 +99,77 @@ function buildStreak(userId, baseDate) {
   return streak;
 }
 
-function buildWeeklyTrend(userId, baseDate) {
-  return getLastDates(baseDate, 7).map((date) => {
-    const mealTotals = db
-      .prepare(
-        `
-          SELECT
-            COALESCE(SUM(calories), 0) AS calories,
-            COALESCE(SUM(protein), 0) AS protein
-          FROM meals
-          WHERE user_id = ? AND entry_date = ?
-        `
-      )
-      .get(userId, date);
-    const hydrationTotals = db
-      .prepare(
-        `
-          SELECT COALESCE(SUM(amount_ml), 0) AS totalMl
-          FROM hydration_logs
-          WHERE user_id = ? AND entry_date = ?
-        `
-      )
-      .get(userId, date);
+async function buildWeeklyTrend(userId, baseDate) {
+  return Promise.all(
+    getLastDates(baseDate, 7).map(async (date) => {
+      const [mealTotals, hydrationTotals] = await Promise.all([
+        db
+          .prepare(
+            `
+              SELECT
+                COALESCE(SUM(calories), 0) AS calories,
+                COALESCE(SUM(protein), 0) AS protein
+              FROM meals
+              WHERE user_id = ? AND entry_date = ?
+            `
+          )
+          .get(userId, date),
+        db
+          .prepare(
+            `
+              SELECT COALESCE(SUM(amount_ml), 0) AS totalMl
+              FROM hydration_logs
+              WHERE user_id = ? AND entry_date = ?
+            `
+          )
+          .get(userId, date)
+      ]);
 
-    return {
-      date,
-      calories: mealTotals.calories,
-      protein: mealTotals.protein,
-      hydrationMl: hydrationTotals.totalMl
-    };
-  });
+      return {
+        date,
+        calories: mealTotals.calories,
+        protein: mealTotals.protein,
+        hydrationMl: hydrationTotals.totalMl
+      };
+    })
+  );
 }
 
-function buildExtendedTrend(userId, baseDate) {
-  return getLastDates(baseDate, 14).map((date) => {
-    const mealTotals = db
-      .prepare(
-        `
-          SELECT
-            COALESCE(SUM(calories), 0) AS calories,
-            COALESCE(SUM(protein), 0) AS protein
-          FROM meals
-          WHERE user_id = ? AND entry_date = ?
-        `
-      )
-      .get(userId, date);
-    const checkin = db
-      .prepare(
-        `
-          SELECT mood, energy
-          FROM daily_checkins
-          WHERE user_id = ? AND entry_date = ?
-        `
-      )
-      .get(userId, date);
+async function buildExtendedTrend(userId, baseDate) {
+  return Promise.all(
+    getLastDates(baseDate, 14).map(async (date) => {
+      const [mealTotals, checkin] = await Promise.all([
+        db
+          .prepare(
+            `
+              SELECT
+                COALESCE(SUM(calories), 0) AS calories,
+                COALESCE(SUM(protein), 0) AS protein
+              FROM meals
+              WHERE user_id = ? AND entry_date = ?
+            `
+          )
+          .get(userId, date),
+        db
+          .prepare(
+            `
+              SELECT mood, energy
+              FROM daily_checkins
+              WHERE user_id = ? AND entry_date = ?
+            `
+          )
+          .get(userId, date)
+      ]);
 
-    return {
-      date,
-      calories: mealTotals.calories,
-      protein: mealTotals.protein,
-      mood: checkin?.mood || 0,
-      energy: checkin?.energy || 0
-    };
-  });
+      return {
+        date,
+        calories: mealTotals.calories,
+        protein: mealTotals.protein,
+        mood: checkin?.mood || 0,
+        energy: checkin?.energy || 0
+      };
+    })
+  );
 }
 
 function buildAchievements({
@@ -193,7 +197,7 @@ function buildAchievements({
     achievements.push({
       id: "protein-master",
       title: "Protein Master",
-      description: "Дневная цель по белку достигнута."
+      description: "Цель по белку на выбранную дату достигнута."
     });
   }
 
@@ -201,7 +205,7 @@ function buildAchievements({
     achievements.push({
       id: "calorie-balance",
       title: "Calorie Balance",
-      description: "Калорийность удержана около дневной цели."
+      description: "Калорийность держится рядом с дневной целью."
     });
   }
 
@@ -209,7 +213,7 @@ function buildAchievements({
     achievements.push({
       id: "water-flow",
       title: "Water Flow",
-      description: "Дневная цель по воде закрыта."
+      description: "Дневная цель по воде полностью закрыта."
     });
   }
 
@@ -217,7 +221,7 @@ function buildAchievements({
     achievements.push({
       id: "steady-week",
       title: "Steady Week",
-      description: "Активность в дневнике минимум 5 дней за неделю."
+      description: "Активность в дневнике сохраняется минимум пять дней за неделю."
     });
   }
 
@@ -233,7 +237,7 @@ function buildAchievements({
     achievements.push({
       id: "plan-keeper",
       title: "Plan Keeper",
-      description: "Большая часть дневного плана уже выполнена."
+      description: "Большая часть дневного плана уже закрыта."
     });
   }
 
@@ -241,7 +245,7 @@ function buildAchievements({
     achievements.push({
       id: "body-progress",
       title: "Body Progress",
-      description: "Последний замер показывает позитивную динамику по весу."
+      description: "Последние замеры показывают положительную динамику."
     });
   }
 
@@ -249,15 +253,15 @@ function buildAchievements({
     achievements.push({
       id: "ready-pantry",
       title: "Ready Pantry",
-      description: "Список покупок почти закрыт и рацион проще поддерживать."
+      description: "Список покупок почти закрыт и поддерживать режим проще."
     });
   }
 
   return achievements;
 }
 
-function getProductSuggestions({ search, sortBy = "protein", limit = 3 }) {
-  const products = listProducts({ search }).slice();
+async function getProductSuggestions({ search, sortBy = "protein", limit = 3 }) {
+  const products = [...(await listProducts({ search }))];
 
   if (sortBy === "protein") {
     products.sort((left, right) => right.protein - left.protein);
@@ -270,7 +274,7 @@ function getProductSuggestions({ search, sortBy = "protein", limit = 3 }) {
   return products.slice(0, limit);
 }
 
-function buildRecommendations(summary, wellbeing, planner, shopping) {
+async function buildRecommendations(summary, wellbeing, planner, shopping) {
   const recommendations = [];
 
   if (summary.remaining.protein > 20) {
@@ -278,7 +282,7 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
       id: "protein-gap",
       title: "Добрать белок",
       text: `До цели по белку не хватает ${summary.remaining.protein.toFixed(1)} г.`,
-      suggestedProducts: getProductSuggestions({ sortBy: "protein" })
+      suggestedProducts: await getProductSuggestions({ sortBy: "protein" })
     });
   }
 
@@ -287,7 +291,7 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
       id: "carb-gap",
       title: "Добавить углеводы",
       text: `Для более ровного баланса можно добрать еще ${summary.remaining.carbs.toFixed(1)} г углеводов.`,
-      suggestedProducts: getProductSuggestions({ sortBy: "carbs" })
+      suggestedProducts: await getProductSuggestions({ sortBy: "carbs" })
     });
   }
 
@@ -296,7 +300,7 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
       id: "light-finish",
       title: "Завершить день легко",
       text: "Лучше выбирать легкие варианты, чтобы не выйти за дневной лимит.",
-      suggestedProducts: getProductSuggestions({ sortBy: "light" })
+      suggestedProducts: await getProductSuggestions({ sortBy: "light" })
     });
   }
 
@@ -304,8 +308,8 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
     recommendations.push({
       id: "stress-support",
       title: "Снизить пищевую нагрузку",
-      text: "При высоком уровне стресса сегодня лучше делать ставку на простые и предсказуемые приемы пищи.",
-      suggestedProducts: getProductSuggestions({ search: "йог" })
+      text: "При высоком уровне стресса лучше держать рацион простым и предсказуемым.",
+      suggestedProducts: await getProductSuggestions({ search: "йогурт" })
     });
   }
 
@@ -313,8 +317,8 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
     recommendations.push({
       id: "follow-plan",
       title: "Держать ритм плана",
-      text: `В плане осталось ${planner.totals.planned - planner.totals.completed} незакрытых слотов на сегодня.`,
-      suggestedProducts: getProductSuggestions({ sortBy: "protein" })
+      text: `В планере осталось ${planner.totals.planned - planner.totals.completed} незакрытых слотов.`,
+      suggestedProducts: await getProductSuggestions({ sortBy: "protein" })
     });
   }
 
@@ -322,8 +326,8 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
     recommendations.push({
       id: "shopping-focus",
       title: "Разгрузить список покупок",
-      text: "Список закупки разросся. Имеет смысл закрыть часть базовых позиций заранее.",
-      suggestedProducts: getProductSuggestions({ sortBy: "light" })
+      text: "Список закупки разросся. Есть смысл закрыть базовые позиции заранее.",
+      suggestedProducts: await getProductSuggestions({ sortBy: "light" })
     });
   }
 
@@ -332,7 +336,7 @@ function buildRecommendations(summary, wellbeing, planner, shopping) {
       id: "stable-plan",
       title: "План держится стабильно",
       text: "Сегодняшний рацион выглядит ровно. Можно сохранить удачные блюда в шаблоны и планер.",
-      suggestedProducts: getProductSuggestions({ sortBy: "protein" })
+      suggestedProducts: await getProductSuggestions({ sortBy: "protein" })
     });
   }
 
@@ -345,16 +349,9 @@ function buildSmartScore(summary, hydration, mealsCount, wellbeing, planner) {
   const hydrationScore = Math.min(hydration.progress, 100);
   const rhythmScore = mealsCount >= 3 ? 100 : mealsCount * 30;
   const wellbeingScore = wellbeing.entry ? wellbeing.readinessScore : 55;
-  const planningScore =
-    planner.totals.planned > 0 ? Math.min(planner.completionRate + 25, 100) : 60;
+  const planningScore = planner.totals.planned > 0 ? Math.min(planner.completionRate + 25, 100) : 60;
   const total =
-    (calorieScore +
-      proteinScore +
-      hydrationScore +
-      rhythmScore +
-      wellbeingScore +
-      planningScore) /
-    6;
+    (calorieScore + proteinScore + hydrationScore + rhythmScore + wellbeingScore + planningScore) / 6;
 
   return {
     total: Number(total.toFixed(1)),
@@ -369,18 +366,28 @@ function buildSmartScore(summary, hydration, mealsCount, wellbeing, planner) {
   };
 }
 
-function buildComparison(userId, date, summary, hydration, wellbeing, planner) {
+async function buildComparison(userId, date, summary, hydration, wellbeing, planner) {
   const previousDate = addDays(date, -1);
-  const previousGoals = getGoals(userId);
-  const previousMeals = listMeals(userId, { date: previousDate });
+  const [
+    previousGoals,
+    previousMeals,
+    previousHydration,
+    previousWellbeing,
+    previousPlanner,
+    weeklyTrend,
+    readinessEntries
+  ] = await Promise.all([
+    getGoals(userId),
+    listMeals(userId, { date: previousDate }),
+    getHydrationSummary(userId, previousDate),
+    getCheckinSummary(userId, previousDate),
+    getPlannerSummary(userId, previousDate),
+    buildWeeklyTrend(userId, date),
+    Promise.all(getLastDates(date, 7).map((entryDate) => getCheckinSummary(userId, entryDate)))
+  ]);
+
   const previousSummary = buildSummary(previousGoals, previousMeals);
-  const previousHydration = getHydrationSummary(userId, previousDate);
-  const previousWellbeing = getCheckinSummary(userId, previousDate);
-  const previousPlanner = getPlannerSummary(userId, previousDate);
-  const weeklyTrend = buildWeeklyTrend(userId, date);
-  const readinessValues = getLastDates(date, 7).map(
-    (entryDate) => getCheckinSummary(userId, entryDate).readinessScore
-  );
+  const readinessValues = readinessEntries.map((entry) => entry.readinessScore);
   const weeklyAverageReadiness = readinessValues.length
     ? readinessValues.reduce((total, value) => total + value, 0) / readinessValues.length
     : 0;
@@ -432,8 +439,7 @@ function buildComparison(userId, date, summary, hydration, wellbeing, planner) {
     weeklyAverage: {
       calories: weeklyTrend.reduce((total, item) => total + item.calories, 0) / weeklyTrend.length,
       protein: weeklyTrend.reduce((total, item) => total + item.protein, 0) / weeklyTrend.length,
-      hydrationMl:
-        weeklyTrend.reduce((total, item) => total + item.hydrationMl, 0) / weeklyTrend.length,
+      hydrationMl: weeklyTrend.reduce((total, item) => total + item.hydrationMl, 0) / weeklyTrend.length,
       readinessScore: weeklyAverageReadiness
     }
   };
@@ -473,7 +479,7 @@ function buildDailyControls(summary, hydration, meals, wellbeing, planner, dayNo
       title: "Самочувствие",
       completed: Boolean(wellbeing.entry),
       description: wellbeing.entry
-        ? "Оценка самочувствия заполнена."
+        ? "Дневная оценка самочувствия заполнена."
         : "Нет дневной оценки состояния."
     },
     {
@@ -504,8 +510,8 @@ function buildDailyControls(summary, hydration, meals, wellbeing, planner, dayNo
   };
 }
 
-function buildShoppingSnapshot(userId) {
-  const shopping = listShoppingItems(userId);
+async function buildShoppingSnapshot(userId) {
+  const shopping = await listShoppingItems(userId);
 
   return {
     ...shopping,
@@ -513,34 +519,45 @@ function buildShoppingSnapshot(userId) {
   };
 }
 
-function getDashboard(user, requestedDate = getLocalDate()) {
+async function getDashboard(user, requestedDate = getLocalDate()) {
   const date = requestedDate;
-  const goals = getGoals(user.id);
-  const meals = listMeals(user.id, { date });
-  const summary = buildSummary(goals, meals);
-  const hydration = getHydrationSummary(user.id, date);
-  const weeklyTrend = buildWeeklyTrend(user.id, date);
-  const extendedTrend = buildExtendedTrend(user.id, date);
-  const streak = buildStreak(user.id, date);
-  const wellbeing = getCheckinSummary(user.id, date);
-  const bodyMetrics = getBodyMetricsSummary(user.id);
-  const planner = getPlannerSummary(user.id, date);
-  const shopping = buildShoppingSnapshot(user.id);
-  const dayNote = getDayNote(user.id, date);
-  const recentDayNotes = listRecentDayNotes(user.id, 5);
-  const favorites = listFavorites(user.id);
-  const templates = listTemplates(user.id).slice(0, 6);
-  const recommendations = buildRecommendations(summary, wellbeing, planner, shopping);
-  const smartScore = buildSmartScore(summary, hydration, meals.length, wellbeing, planner);
-  const comparison = buildComparison(user.id, date, summary, hydration, wellbeing, planner);
-  const dailyControls = buildDailyControls(
-    summary,
-    hydration,
+  const [
+    goals,
     meals,
+    hydration,
+    weeklyTrend,
+    extendedTrend,
+    streak,
     wellbeing,
+    bodyMetrics,
     planner,
-    dayNote
-  );
+    shopping,
+    dayNote,
+    recentDayNotes,
+    favorites,
+    templates
+  ] = await Promise.all([
+    getGoals(user.id),
+    listMeals(user.id, { date }),
+    getHydrationSummary(user.id, date),
+    buildWeeklyTrend(user.id, date),
+    buildExtendedTrend(user.id, date),
+    buildStreak(user.id, date),
+    getCheckinSummary(user.id, date),
+    getBodyMetricsSummary(user.id),
+    getPlannerSummary(user.id, date),
+    buildShoppingSnapshot(user.id),
+    getDayNote(user.id, date),
+    listRecentDayNotes(user.id, 5),
+    listFavorites(user.id),
+    listTemplates(user.id)
+  ]);
+
+  const summary = buildSummary(goals, meals);
+  const recommendations = await buildRecommendations(summary, wellbeing, planner, shopping);
+  const smartScore = buildSmartScore(summary, hydration, meals.length, wellbeing, planner);
+  const comparison = await buildComparison(user.id, date, summary, hydration, wellbeing, planner);
+  const dailyControls = buildDailyControls(summary, hydration, meals, wellbeing, planner, dayNote);
 
   return {
     date,
@@ -573,7 +590,7 @@ function getDashboard(user, requestedDate = getLocalDate()) {
       shopping
     }),
     recommendations,
-    templates,
+    templates: templates.slice(0, 6),
     smartScore,
     metadata: {
       mealTypes,

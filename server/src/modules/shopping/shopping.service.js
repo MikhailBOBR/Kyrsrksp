@@ -18,7 +18,7 @@ function normalizeItem(item) {
   };
 }
 
-function listShoppingItems(userId, { checked } = {}) {
+async function listShoppingItems(userId, { checked } = {}) {
   const conditions = ["user_id = ?"];
   const parameters = [userId];
 
@@ -27,7 +27,7 @@ function listShoppingItems(userId, { checked } = {}) {
     parameters.push(checked ? 1 : 0);
   }
 
-  const items = db
+  const rows = await db
     .prepare(
       `
         SELECT *
@@ -36,8 +36,8 @@ function listShoppingItems(userId, { checked } = {}) {
         ORDER BY is_checked ASC, created_at DESC, id DESC
       `
     )
-    .all(...parameters)
-    .map(normalizeItem);
+    .all(...parameters);
+  const items = rows.map(normalizeItem);
 
   const checkedCount = items.filter((item) => item.checked).length;
 
@@ -51,8 +51,8 @@ function listShoppingItems(userId, { checked } = {}) {
   };
 }
 
-function getShoppingItemById(userId, itemId) {
-  const item = db
+async function getShoppingItemById(userId, itemId) {
+  const item = await db
     .prepare(`SELECT * FROM shopping_items WHERE user_id = ? AND id = ?`)
     .get(userId, itemId);
 
@@ -63,9 +63,9 @@ function getShoppingItemById(userId, itemId) {
   return normalizeItem(item);
 }
 
-function createShoppingItem(userId, payload) {
+async function createShoppingItem(userId, payload) {
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(
       `
         INSERT INTO shopping_items (
@@ -90,8 +90,8 @@ function createShoppingItem(userId, payload) {
   return getShoppingItemById(userId, result.lastInsertRowid);
 }
 
-function createShoppingItemFromProduct(userId, productId, overrides = {}) {
-  const product = db
+async function createShoppingItemFromProduct(userId, productId, overrides = {}) {
+  const product = await db
     .prepare(`SELECT id, name, category FROM products WHERE id = ?`)
     .get(productId);
 
@@ -110,10 +110,10 @@ function createShoppingItemFromProduct(userId, productId, overrides = {}) {
   });
 }
 
-function setShoppingItemChecked(userId, itemId, checked) {
-  getShoppingItemById(userId, itemId);
+async function setShoppingItemChecked(userId, itemId, checked) {
+  await getShoppingItemById(userId, itemId);
 
-  db.prepare(
+  await db.prepare(
     `
       UPDATE shopping_items
       SET is_checked = ?, updated_at = ?
@@ -124,8 +124,8 @@ function setShoppingItemChecked(userId, itemId, checked) {
   return getShoppingItemById(userId, itemId);
 }
 
-function deleteShoppingItem(userId, itemId) {
-  const result = db
+async function deleteShoppingItem(userId, itemId) {
+  const result = await db
     .prepare(`DELETE FROM shopping_items WHERE user_id = ? AND id = ?`)
     .run(userId, itemId);
 
@@ -136,8 +136,8 @@ function deleteShoppingItem(userId, itemId) {
   return { success: true };
 }
 
-function clearCheckedShoppingItems(userId) {
-  const result = db
+async function clearCheckedShoppingItems(userId) {
+  const result = await db
     .prepare(`DELETE FROM shopping_items WHERE user_id = ? AND is_checked = 1`)
     .run(userId);
 

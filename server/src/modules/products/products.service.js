@@ -2,7 +2,7 @@ const { db } = require("../../db/connection");
 const { getTimestamp } = require("../../lib/date");
 const { createHttpError } = require("../../lib/http");
 
-function listProducts({ search, category }) {
+async function listProducts({ search, category }) {
   const conditions = [];
   const parameters = [];
 
@@ -38,9 +38,9 @@ function listProducts({ search, category }) {
     .all(...parameters);
 }
 
-function createProduct(payload, createdBy) {
+async function createProduct(payload, createdBy) {
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(`
       INSERT INTO products (
         name, brand, category, calories, protein, fat, carbs, created_by, created_at, updated_at
@@ -63,8 +63,8 @@ function createProduct(payload, createdBy) {
   return getProductById(result.lastInsertRowid);
 }
 
-function getProductById(id) {
-  const product = db
+async function getProductById(id) {
+  const product = await db
     .prepare(`
       SELECT
         id,
@@ -89,10 +89,10 @@ function getProductById(id) {
   return product;
 }
 
-function updateProduct(id, payload) {
-  getProductById(id);
+async function updateProduct(id, payload) {
+  await getProductById(id);
 
-  db.prepare(`
+  await db.prepare(`
     UPDATE products
     SET
       name = ?,
@@ -119,8 +119,8 @@ function updateProduct(id, payload) {
   return getProductById(id);
 }
 
-function deleteProduct(id) {
-  const result = db.prepare(`DELETE FROM products WHERE id = ?`).run(id);
+async function deleteProduct(id) {
+  const result = await db.prepare(`DELETE FROM products WHERE id = ?`).run(id);
 
   if (result.changes === 0) {
     throw createHttpError(404, "Product not found");

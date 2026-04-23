@@ -12,20 +12,20 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   if (req.query.date) {
     assertDate(req.query.date);
   }
 
-  res.json(getDayNote(req.user.id, req.query.date));
+  res.json(await getDayNote(req.user.id, req.query.date));
 });
 
-router.get("/recent", (req, res) => {
+router.get("/recent", async (req, res) => {
   const limit = req.query.limit ? Number(req.query.limit) : 5;
-  res.json(listRecentDayNotes(req.user.id, Number.isNaN(limit) ? 5 : limit));
+  res.json(await listRecentDayNotes(req.user.id, Number.isNaN(limit) ? 5 : limit));
 });
 
-router.put("/", (req, res) => {
+router.put("/", async (req, res) => {
   if (req.body.date) {
     assertDate(req.body.date);
   }
@@ -36,15 +36,15 @@ router.put("/", (req, res) => {
     }
   });
 
-  res.json(upsertDayNote(req.user.id, req.body));
+  res.json(await upsertDayNote(req.user.id, req.body));
 });
 
-router.delete("/", (req, res) => {
+router.delete("/", async (req, res) => {
   if (req.query.date) {
     assertDate(req.query.date);
   }
 
-  res.json(deleteDayNote(req.user.id, req.query.date));
+  res.json(await deleteDayNote(req.user.id, req.query.date));
 });
 
 module.exports = router;

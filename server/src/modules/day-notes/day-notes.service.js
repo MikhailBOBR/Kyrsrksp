@@ -41,8 +41,8 @@ function normalizeDayNote(note, fallbackDate = getLocalDate()) {
   };
 }
 
-function getDayNote(userId, date = getLocalDate()) {
-  const note = db
+async function getDayNote(userId, date = getLocalDate()) {
+  const note = await db
     .prepare(
       `
         SELECT *
@@ -55,8 +55,8 @@ function getDayNote(userId, date = getLocalDate()) {
   return normalizeDayNote(note, date);
 }
 
-function listRecentDayNotes(userId, limit = 5) {
-  return db
+async function listRecentDayNotes(userId, limit = 5) {
+  const rows = await db
     .prepare(
       `
         SELECT *
@@ -66,16 +66,16 @@ function listRecentDayNotes(userId, limit = 5) {
         LIMIT ?
       `
     )
-    .all(userId, limit)
-    .map((note) => normalizeDayNote(note))
-    .filter((note) => note.hasContent);
+    .all(userId, limit);
+
+  return rows.map((note) => normalizeDayNote(note)).filter((note) => note.hasContent);
 }
 
-function upsertDayNote(userId, payload) {
+async function upsertDayNote(userId, payload) {
   const date = payload.date || getLocalDate();
   const now = getTimestamp();
 
-  db.prepare(
+  await db.prepare(
     `
       INSERT INTO daily_notes (
         user_id, entry_date, title, focus, wins, improvements, notes, created_at, updated_at
@@ -104,8 +104,8 @@ function upsertDayNote(userId, payload) {
   return getDayNote(userId, date);
 }
 
-function deleteDayNote(userId, date = getLocalDate()) {
-  db.prepare(`DELETE FROM daily_notes WHERE user_id = ? AND entry_date = ?`).run(userId, date);
+async function deleteDayNote(userId, date = getLocalDate()) {
+  await db.prepare(`DELETE FROM daily_notes WHERE user_id = ? AND entry_date = ?`).run(userId, date);
 
   return getDayNote(userId, date);
 }

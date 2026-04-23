@@ -32,7 +32,7 @@ function validateMealPayload(payload) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   if (req.query.date) {
     assertDate(req.query.date);
   }
@@ -42,25 +42,25 @@ router.get("/", (req, res) => {
   }
 
   res.json(
-    listMeals(req.user.id, {
+    await listMeals(req.user.id, {
       date: req.query.date,
       mealType: req.query.mealType
     })
   );
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   validateMealPayload(req.body);
-  res.status(201).json(createMeal(req.user.id, req.body));
+  res.status(201).json(await createMeal(req.user.id, req.body));
 });
 
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
   validateMealPayload(req.body);
-  res.json(updateMeal(req.user.id, Number(req.params.id), req.body));
+  res.json(await updateMeal(req.user.id, Number(req.params.id), req.body));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deleteMeal(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deleteMeal(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

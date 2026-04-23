@@ -4,6 +4,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 process.env.DB_PATH = path.resolve(__dirname, "../data/test.db");
+process.env.DB_PROVIDER = "sqlite";
+process.env.DATABASE_URL = "";
 process.env.JWT_SECRET = "test-secret";
 
 const dbFiles = [
@@ -27,7 +29,7 @@ let server;
 let baseUrl;
 
 test.before(async () => {
-  initializeDatabase();
+  await initializeDatabase();
 
   const app = createApp();
 
@@ -40,7 +42,7 @@ test.before(async () => {
 
 test.after(async () => {
   await new Promise((resolve) => server.close(resolve));
-  db.close();
+  await db.close();
 
   dbFiles.forEach((filePath) => {
     if (fs.existsSync(filePath)) {

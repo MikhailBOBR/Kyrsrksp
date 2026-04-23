@@ -20,7 +20,7 @@ function normalizePlan(plan) {
   };
 }
 
-function listPlans(userId, { date, dateFrom, dateTo } = {}) {
+async function listPlans(userId, { date, dateFrom, dateTo } = {}) {
   const conditions = ["user_id = ?"];
   const parameters = [userId];
 
@@ -39,7 +39,7 @@ function listPlans(userId, { date, dateFrom, dateTo } = {}) {
     parameters.push(dateTo);
   }
 
-  return db
+  const rows = await db
     .prepare(
       `
         SELECT *
@@ -48,12 +48,13 @@ function listPlans(userId, { date, dateFrom, dateTo } = {}) {
         ORDER BY entry_date ASC, planned_time ASC, id ASC
       `
     )
-    .all(...parameters)
-    .map(normalizePlan);
+    .all(...parameters);
+
+  return rows.map(normalizePlan);
 }
 
-function getPlanById(userId, planId) {
-  const plan = db
+async function getPlanById(userId, planId) {
+  const plan = await db
     .prepare(`SELECT * FROM meal_plans WHERE user_id = ? AND id = ?`)
     .get(userId, planId);
 
@@ -64,9 +65,9 @@ function getPlanById(userId, planId) {
   return normalizePlan(plan);
 }
 
-function createPlan(userId, payload) {
+async function createPlan(userId, payload) {
   const now = getTimestamp();
-  const result = db
+  const result = await db
     .prepare(
       `
         INSERT INTO meal_plans (
@@ -95,8 +96,8 @@ function createPlan(userId, payload) {
   return getPlanById(userId, result.lastInsertRowid);
 }
 
-function createPlanFromTemplate(userId, templateId, overrides = {}) {
-  const template = db
+async function createPlanFromTemplate(userId, templateId, overrides = {}) {
+  const template = await db
     .prepare(`SELECT * FROM meal_templates WHERE user_id = ? AND id = ?`)
     .get(userId, templateId);
 
@@ -117,10 +118,10 @@ function createPlanFromTemplate(userId, templateId, overrides = {}) {
   });
 }
 
-function setPlanCompletion(userId, planId, completed) {
-  getPlanById(userId, planId);
+async function setPlanCompletion(userId, planId, completed) {
+  await getPlanById(userId, planId);
 
-  db.prepare(
+  await db.prepare(
     `
       UPDATE meal_plans
       SET completed = ?, updated_at = ?
@@ -131,8 +132,8 @@ function setPlanCompletion(userId, planId, completed) {
   return getPlanById(userId, planId);
 }
 
-function deletePlan(userId, planId) {
-  const result = db
+async function deletePlan(userId, planId) {
+  const result = await db
     .prepare(`DELETE FROM meal_plans WHERE user_id = ? AND id = ?`)
     .run(userId, planId);
 
@@ -143,9 +144,11 @@ function deletePlan(userId, planId) {
   return { success: true };
 }
 
-function getPlannerSummary(userId, date = getLocalDate()) {
-  const items = listPlans(userId, { date });
-  const window = listPlans(userId, { dateFrom: date, dateTo: addDays(date, 6) });
+async function getPlannerSummary(userId, date = getLocalDate()) {
+  const [items, window] = await Promise.all([
+    listPlans(userId, { date }),
+    listPlans(userId, { dateFrom: date, dateTo: addDays(date, 6) })
+  ]);
   const completedCount = items.filter((item) => item.completed).length;
 
   return {
@@ -176,11 +179,12 @@ function getPlannedTimeByMealType(mealType) {
   return "16:30";
 }
 
-function buildGenerationPool(userId) {
+async function buildGenerationPool(userId) {
   const { listTemplates } = require("../templates/templates.service");
   const { listRecipes } = require("../recipes/recipes.service");
 
-  const templatePool = listTemplates(userId).map((item) => ({
+  const [templates, recipes] = await Promise.all([listTemplates(userId), listRecipes(userId)]);
+  const templatePool = templates.map((item) => ({
     sourceType: "template",
     id: item.id,
     title: item.name,
@@ -190,7 +194,7 @@ function buildGenerationPool(userId) {
     fat: item.fat,
     carbs: item.carbs
   }));
-  const recipePool = listRecipes(userId).map((item) => ({
+  const recipePool = recipes.map((item) => ({
     sourceType: "recipe",
     id: item.id,
     title: item.title,
@@ -219,13 +223,13 @@ function pickPlanSource(pool, mealType, index) {
   return targetPool[index % targetPool.length];
 }
 
-function generateWeeklyPlan(
+async function generateWeeklyPlan(
   userId,
   { startDate = getLocalDate(), days = 7, includeSnack = true, replaceExisting = true } = {}
 ) {
   const safeDays = Math.min(Math.max(Number(days) || 7, 1), 14);
   const endDate = addDays(startDate, safeDays - 1);
-  const pool = buildGenerationPool(userId);
+  const pool = await buildGenerationPool(userId);
 
   if (!pool.all.length) {
     throw createHttpError(
@@ -235,7 +239,7 @@ function generateWeeklyPlan(
   }
 
   if (replaceExisting) {
-    db.prepare(
+    await db.prepare(
       `
         DELETE FROM meal_plans
         WHERE user_id = ? AND entry_date >= ? AND entry_date <= ?
@@ -250,10 +254,10 @@ function generateWeeklyPlan(
   for (let dayIndex = 0; dayIndex < safeDays; dayIndex += 1) {
     const date = addDays(startDate, dayIndex);
 
-    slots.forEach((mealType, slotIndex) => {
+    for (const [slotIndex, mealType] of slots.entries()) {
       const source = pickPlanSource(pool, mealType, dayIndex + slotIndex);
 
-      createPlan(userId, {
+      await createPlan(userId, {
         date,
         title:
           source.sourceType === "recipe"
@@ -266,7 +270,7 @@ function generateWeeklyPlan(
         targetFat: source.fat,
         targetCarbs: source.carbs
       });
-    });
+    }
   }
 
   return {
@@ -274,7 +278,7 @@ function generateWeeklyPlan(
     endDate,
     days: safeDays,
     includeSnack,
-    items: listPlans(userId, {
+    items: await listPlans(userId, {
       dateFrom: startDate,
       dateTo: endDate
     })

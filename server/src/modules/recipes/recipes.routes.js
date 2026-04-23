@@ -67,31 +67,31 @@ function validateRecipeActionPayload(payload, timeField) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
-  res.json(listRecipes(req.user.id));
+router.get("/", async (req, res) => {
+  res.json(await listRecipes(req.user.id));
 });
 
-router.post("/", (req, res, next) => {
+router.post("/", async (req, res, next) => {
   try {
     validateRecipePayload(req.body);
-    res.status(201).json(createRecipe(req.user.id, req.body));
+    res.status(201).json(await createRecipe(req.user.id, req.body));
   } catch (error) {
     next(error);
   }
 });
 
-router.post("/:id/apply", (req, res) => {
+router.post("/:id/apply", async (req, res) => {
   validateRecipeActionPayload(req.body, "eatenAt");
-  res.status(201).json(applyRecipe(req.user.id, Number(req.params.id), req.body));
+  res.status(201).json(await applyRecipe(req.user.id, Number(req.params.id), req.body));
 });
 
-router.post("/:id/plan", (req, res) => {
+router.post("/:id/plan", async (req, res) => {
   validateRecipeActionPayload(req.body, "plannedTime");
-  res.status(201).json(createPlanFromRecipe(req.user.id, Number(req.params.id), req.body));
+  res.status(201).json(await createPlanFromRecipe(req.user.id, Number(req.params.id), req.body));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deleteRecipe(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deleteRecipe(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

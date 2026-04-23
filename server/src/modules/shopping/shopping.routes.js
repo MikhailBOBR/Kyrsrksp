@@ -45,19 +45,19 @@ function validateShoppingPayload(payload) {
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const checked =
     req.query.checked === undefined ? undefined : req.query.checked === "true";
 
-  res.json(listShoppingItems(req.user.id, { checked }));
+  res.json(await listShoppingItems(req.user.id, { checked }));
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   validateShoppingPayload(req.body);
-  res.status(201).json(createShoppingItem(req.user.id, req.body));
+  res.status(201).json(await createShoppingItem(req.user.id, req.body));
 });
 
-router.post("/from-product/:productId", (req, res) => {
+router.post("/from-product/:productId", async (req, res) => {
   if (req.body.quantity !== undefined && req.body.quantity !== null) {
     assertNumber(req.body.quantity, "quantity");
   }
@@ -76,19 +76,19 @@ router.post("/from-product/:productId", (req, res) => {
 
   res
     .status(201)
-    .json(createShoppingItemFromProduct(req.user.id, Number(req.params.productId), req.body));
+    .json(await createShoppingItemFromProduct(req.user.id, Number(req.params.productId), req.body));
 });
 
-router.patch("/:id/check", (req, res) => {
-  res.json(setShoppingItemChecked(req.user.id, Number(req.params.id), Boolean(req.body.checked)));
+router.patch("/:id/check", async (req, res) => {
+  res.json(await setShoppingItemChecked(req.user.id, Number(req.params.id), Boolean(req.body.checked)));
 });
 
-router.delete("/checked", (req, res) => {
-  res.json(clearCheckedShoppingItems(req.user.id));
+router.delete("/checked", async (req, res) => {
+  res.json(await clearCheckedShoppingItems(req.user.id));
 });
 
-router.delete("/:id", (req, res) => {
-  res.json(deleteShoppingItem(req.user.id, Number(req.params.id)));
+router.delete("/:id", async (req, res) => {
+  res.json(await deleteShoppingItem(req.user.id, Number(req.params.id)));
 });
 
 module.exports = router;

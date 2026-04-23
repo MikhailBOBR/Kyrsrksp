@@ -12,24 +12,24 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get("/", (req, res) => {
-  res.json(listFavorites(req.user.id));
+router.get("/", async (req, res) => {
+  res.json(await listFavorites(req.user.id));
 });
 
-router.post("/products/:productId", (req, res) => {
-  res.status(201).json(addFavoriteProduct(req.user.id, Number(req.params.productId)));
+router.post("/products/:productId", async (req, res) => {
+  res.status(201).json(await addFavoriteProduct(req.user.id, Number(req.params.productId)));
 });
 
-router.delete("/products/:productId", (req, res) => {
-  res.json(removeFavoriteProduct(req.user.id, Number(req.params.productId)));
+router.delete("/products/:productId", async (req, res) => {
+  res.json(await removeFavoriteProduct(req.user.id, Number(req.params.productId)));
 });
 
-router.post("/templates/:templateId", (req, res) => {
-  res.status(201).json(addFavoriteTemplate(req.user.id, Number(req.params.templateId)));
+router.post("/templates/:templateId", async (req, res) => {
+  res.status(201).json(await addFavoriteTemplate(req.user.id, Number(req.params.templateId)));
 });
 
-router.delete("/templates/:templateId", (req, res) => {
-  res.json(removeFavoriteTemplate(req.user.id, Number(req.params.templateId)));
+router.delete("/templates/:templateId", async (req, res) => {
+  res.json(await removeFavoriteTemplate(req.user.id, Number(req.params.templateId)));
 });
 
 module.exports = router;

@@ -38,7 +38,7 @@
 
 - frontend: `HTML + CSS + JavaScript`;
 - backend: `Node.js 22 + Express`;
-- database: `SQLite`;
+- database: `PostgreSQL` с локальным `SQLite` fallback для тестового режима;
 - auth: `JWT + RBAC`;
 - docs: `OpenAPI + Swagger UI`;
 - tests: `node:test`;

@@ -15,7 +15,9 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
   process.env.APP_ENV = "test";
   process.env.NODE_ENV = "test";
   process.env.LOG_LEVEL = "error";
+  process.env.DB_PROVIDER = "sqlite";
   process.env.DB_PATH = dbPath;
+  process.env.DATABASE_URL = "";
   process.env.JWT_SECRET = jwtSecret;
 
   const dbFiles = [dbPath, `${dbPath}-wal`, `${dbPath}-shm`];
@@ -38,7 +40,7 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
   let baseUrl = "";
 
   test.before(async () => {
-    initializeDatabase();
+    await initializeDatabase();
 
     const app = createApp();
 
@@ -51,7 +53,7 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
 
   test.after(async () => {
     await new Promise((resolve) => server.close(resolve));
-    db.close();
+    await db.close();
 
     dbFiles.forEach((filePath) => {
       if (fs.existsSync(filePath)) {

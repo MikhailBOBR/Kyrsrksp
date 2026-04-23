@@ -41,8 +41,8 @@ const goalPresets = [
   }
 ];
 
-function getGoals(userId) {
-  const goals = db
+async function getGoals(userId) {
+  const goals = await db
     .prepare(`
       SELECT calories, protein, fat, carbs, updated_at AS updatedAt
       FROM goals
@@ -57,8 +57,8 @@ function getGoals(userId) {
   return goals;
 }
 
-function updateGoals(userId, payload) {
-  db.prepare(`
+async function updateGoals(userId, payload) {
+  await db.prepare(`
     UPDATE goals
     SET calories = ?, protein = ?, fat = ?, carbs = ?, updated_at = ?
     WHERE user_id = ?
@@ -78,7 +78,7 @@ function listGoalPresets() {
   return goalPresets;
 }
 
-function applyGoalPreset(userId, presetId) {
+async function applyGoalPreset(userId, presetId) {
   const preset = goalPresets.find((item) => item.id === presetId);
 
   if (!preset) {
@@ -87,7 +87,7 @@ function applyGoalPreset(userId, presetId) {
 
   return {
     preset,
-    goals: updateGoals(userId, {
+    goals: await updateGoals(userId, {
       calories: preset.calories,
       protein: preset.protein,
       fat: preset.fat,

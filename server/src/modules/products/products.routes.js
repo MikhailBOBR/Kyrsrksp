@@ -27,27 +27,27 @@ function validateProductPayload(payload) {
   }
 }
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   res.json(
-    listProducts({
+    await listProducts({
       search: req.query.search?.trim(),
       category: req.query.category?.trim()
     })
   );
 });
 
-router.post("/", requireAuth, requireRole("admin"), (req, res) => {
+router.post("/", requireAuth, requireRole("admin"), async (req, res) => {
   validateProductPayload(req.body);
-  res.status(201).json(createProduct(req.body, req.user.id));
+  res.status(201).json(await createProduct(req.body, req.user.id));
 });
 
-router.put("/:id", requireAuth, requireRole("admin"), (req, res) => {
+router.put("/:id", requireAuth, requireRole("admin"), async (req, res) => {
   validateProductPayload(req.body);
-  res.json(updateProduct(Number(req.params.id), req.body));
+  res.json(await updateProduct(Number(req.params.id), req.body));
 });
 
-router.delete("/:id", requireAuth, requireRole("admin"), (req, res) => {
-  res.json(deleteProduct(Number(req.params.id)));
+router.delete("/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  res.json(await deleteProduct(Number(req.params.id)));
 });
 
 module.exports = router;
