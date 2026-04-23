@@ -2,15 +2,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
+function purgeSourceModules() {
+  const sourceRoot = path.resolve(__dirname, "../../src");
+
+  Object.keys(require.cache).forEach((modulePath) => {
+    if (modulePath.startsWith(sourceRoot)) {
+      delete require.cache[modulePath];
+    }
+  });
+}
+
 function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) {
   const dbPath = path.resolve(__dirname, "../../data", dbFileName);
-  const modulesToReset = [
-    "../../src/config/env",
-    "../../src/lib/logger",
-    "../../src/db/connection",
-    "../../src/db/init-schema",
-    "../../src/app"
-  ];
 
   process.env.APP_ENV = "test";
   process.env.NODE_ENV = "test";
@@ -28,9 +31,7 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
     }
   });
 
-  modulesToReset.forEach((modulePath) => {
-    delete require.cache[require.resolve(modulePath)];
-  });
+  purgeSourceModules();
 
   const { initializeDatabase } = require("../../src/db/init-schema");
   const { createApp } = require("../../src/app");

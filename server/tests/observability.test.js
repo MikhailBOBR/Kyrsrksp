@@ -1,13 +1,13 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { setDraining } = require("../src/runtime/state");
 const { createHttpTestContext } = require("./helpers/test-context");
 
 const { api } = createHttpTestContext(test, {
   dbFileName: "observability.db",
   jwtSecret: "observability-secret"
 });
+const { setDraining } = require("../src/runtime/state");
 
 test.describe("observability and runtime metadata", () => {
   test.after(() => {
