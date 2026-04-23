@@ -28,7 +28,7 @@ const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "Рацион API",
-    version: "1.5.0",
+    version: "1.5.0-rc.1",
     description: [
       "REST API для курсового проекта «Персональный дневник питания с анализом КБЖУ».",
       "",

@@ -6,6 +6,8 @@
 
 > «Персональный дневник питания с анализом КБЖУ»
 
+Текущий pre-release кандидат: `0.2.0-rc.1`
+
 ## Технологический стек
 
 - frontend: `HTML + CSS + JavaScript`
@@ -119,7 +121,8 @@ UML-материалы:
 |   |-- 04-backlog.md
 |   |-- 05-testing-and-quality.md
 |   |-- 06-twelve-factor.md
-|   `-- 07-course-checklist.md
+|   |-- 07-course-checklist.md
+|   `-- 08-pre-release-checklist.md
 |-- deploy/
 |   |-- docker/
 |   `-- README.md
@@ -127,6 +130,7 @@ UML-материалы:
 |-- .github/workflows/
 |-- .dockerignore
 |-- .env.example
+|-- CHANGELOG.md
 |-- docker-compose.yml
 |-- package.json
 |-- package-lock.json
@@ -166,6 +170,7 @@ npm start
 npm run dev
 npm run seed:large
 npm run check:client
+npm run pre-release
 npm test
 npm run test:coverage
 npm run test:fuzz
@@ -199,6 +204,8 @@ docker compose up --build
 - [wiki/Testing-and-QA.md](./wiki/Testing-and-QA.md)
 - [wiki/Deployment.md](./wiki/Deployment.md)
 - [docs/07-course-checklist.md](./docs/07-course-checklist.md)
+- [docs/08-pre-release-checklist.md](./docs/08-pre-release-checklist.md)
+- [CHANGELOG.md](./CHANGELOG.md)
 
 ## Качество и методология
 

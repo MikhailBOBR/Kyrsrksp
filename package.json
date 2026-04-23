@@ -1,6 +1,6 @@
 {
   "name": "food-diary-app",
-  "version": "0.1.0",
+  "version": "0.2.0-rc.1",
   "private": true,
   "description": "Client-server food diary application with KБЖУ analytics.",
   "scripts": {
@@ -8,6 +8,7 @@
     "dev": "node --watch server/src/index.js",
     "seed:large": "node server/src/db/seed-large-data.js",
     "check:client": "node scripts/check-client.js",
+    "pre-release": "node scripts/pre-release.js",
     "test": "node --test --test-reporter=spec server/tests/*.test.js",
     "test:coverage": "node --test --experimental-test-coverage --test-reporter=spec server/tests/*.test.js",
     "test:fuzz": "node --test --test-reporter=spec server/tests/fuzz.test.js",
