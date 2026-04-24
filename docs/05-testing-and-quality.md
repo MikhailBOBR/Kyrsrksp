@@ -16,6 +16,14 @@
 - экспорт отчетов;
 - публикацию OpenAPI-документа.
 
+Дополнительные наборы тестов:
+
+- [server/tests/openapi-docs.test.js](../server/tests/openapi-docs.test.js) — качество Swagger/OpenAPI, operationId, схемы, path-параметры и ссылки документации;
+- [server/tests/contracts.test.js](../server/tests/contracts.test.js) — негативные API-контракты;
+- [server/tests/imports.test.js](../server/tests/imports.test.js) — импорт `JSON/CSV/TSV`;
+- [server/tests/observability.test.js](../server/tests/observability.test.js) — health check, request id и runtime-состояние;
+- [server/tests/client-static.test.js](../server/tests/client-static.test.js) — статические контракты клиентского интерфейса.
+
 ### Фаззинг-тестирование
 
 Для проекта подготовлен отдельный фаззинг-тест в [server/tests/fuzz.test.js](../server/tests/fuzz.test.js). Он отправляет случайные и некорректные payload в наиболее критичные маршруты и проверяет, что система:
@@ -37,6 +45,7 @@
 ```bash
 npm test
 npm run test:fuzz
+npm run test:coverage
 ```
 
 ## Качество структуры проекта
@@ -56,6 +65,7 @@ Workflow [ci.yml](../.github/workflows/ci.yml):
 - устанавливает зависимости;
 - запускает автоматические тесты;
 - выполняет docker build smoke check.
+- проверяет Swagger/OpenAPI и документационные ссылки через `openapi-docs.test.js`.
 
 Workflow [cd.yml](../.github/workflows/cd.yml):
 

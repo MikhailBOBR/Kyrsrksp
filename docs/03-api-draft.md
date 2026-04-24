@@ -47,6 +47,50 @@
 - `POST /api/templates/{id}/apply` - создать приём пищи из шаблона.
 - `DELETE /api/templates/{id}` - удалить шаблон.
 
+## Recipes
+
+- `GET /api/recipes` - список составных рецептов.
+- `POST /api/recipes` - создать рецепт из ингредиентов каталога.
+- `POST /api/recipes/{id}/apply` - добавить рецепт в дневник питания.
+- `POST /api/recipes/{id}/plan` - отправить рецепт в план питания.
+- `DELETE /api/recipes/{id}` - удалить рецепт.
+
+## Planner
+
+- `GET /api/planner` - получить план питания за день или период.
+- `POST /api/planner` - создать позицию плана вручную.
+- `POST /api/planner/from-template/{templateId}` - добавить шаблон в план питания.
+- `POST /api/planner/generate-week` - автоматически сформировать недельный план питания.
+- `PATCH /api/planner/{id}/completion` - отметить позицию плана выполненной или невыполненной.
+- `DELETE /api/planner/{id}` - удалить позицию плана.
+
+## Wellbeing, Metrics и Day Notes
+
+- `GET /api/checkins` - получить дневной check-in и readiness-сводку.
+- `PUT /api/checkins` - создать или обновить check-in.
+- `DELETE /api/checkins` - удалить check-in за дату.
+- `GET /api/metrics` - получить историю замеров тела.
+- `POST /api/metrics` - добавить замер тела.
+- `DELETE /api/metrics/{id}` - удалить замер тела.
+- `GET /api/day-notes` - получить заметку дня.
+- `PUT /api/day-notes` - сохранить заметку дня.
+- `DELETE /api/day-notes` - удалить заметку дня.
+- `GET /api/day-notes/recent` - получить последние заметки.
+
+## Shopping и Favorites
+
+- `GET /api/shopping` - список покупок.
+- `POST /api/shopping` - создать позицию списка покупок.
+- `POST /api/shopping/from-product/{productId}` - добавить продукт в список покупок.
+- `PATCH /api/shopping/{id}/check` - отметить покупку выполненной.
+- `DELETE /api/shopping/checked` - очистить отмеченные покупки.
+- `DELETE /api/shopping/{id}` - удалить позицию списка покупок.
+- `GET /api/favorites` - получить избранные продукты и шаблоны.
+- `POST /api/favorites/products/{productId}` - добавить продукт в избранное.
+- `DELETE /api/favorites/products/{productId}` - убрать продукт из избранного.
+- `POST /api/favorites/templates/{templateId}` - добавить шаблон в избранное.
+- `DELETE /api/favorites/templates/{templateId}` - убрать шаблон из избранного.
+
 ## Exports
 
 - `GET /api/exports/daily-report?format=json` - выгрузка дневного отчёта в JSON.
@@ -66,6 +110,8 @@
 - `GET /api/openapi.json` - OpenAPI-документ.
 - `GET /api/docs` - Swagger UI.
 
-## Следующий шаг
+## Качество Swagger
 
-Следующим этапом этот draft можно расширить OpenAPI-схемами ответов, описанием кодов ошибок и вариантами облачного развёртывания.
+OpenAPI-схема расширена доменными схемами, `operationId`, path-параметрами, стандартными ответами ошибок и контрактами для ключевых пользовательских сценариев.
+
+Подробности по оформлению Swagger UI и автоматическим проверкам вынесены в [docs/10-swagger-and-api-quality.md](./10-swagger-and-api-quality.md).

@@ -27,4 +27,5 @@
 ## Подробности
 
 - [docs/03-api-draft.md](../docs/03-api-draft.md)
+- [docs/10-swagger-and-api-quality.md](../docs/10-swagger-and-api-quality.md)
 - [server/src/modules/docs/openapi.js](../server/src/modules/docs/openapi.js)

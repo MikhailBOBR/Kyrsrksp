@@ -15,6 +15,9 @@ const swaggerUiOptions = {
     }
 
     .swagger-ui .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
       padding: 14px 20px;
       background: linear-gradient(135deg, #21384b 0%, #5f7d92 100%);
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
@@ -112,6 +115,18 @@ const swaggerUiOptions = {
       align-items: center;
     }
 
+    .swagger-ui .opblock .opblock-summary-path {
+      color: #172333;
+      font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+      font-size: 0.95rem;
+      word-break: break-word;
+    }
+
+    .swagger-ui .opblock .opblock-summary-description {
+      color: #5d7180;
+      font-weight: 500;
+    }
+
     .swagger-ui .opblock .opblock-summary-method {
       min-width: 76px;
       border-radius: 999px;
@@ -173,6 +188,29 @@ const swaggerUiOptions = {
       color: #5f7d92;
     }
 
+    .swagger-ui .parameters-col_description input,
+    .swagger-ui .parameters-col_description select,
+    .swagger-ui textarea {
+      min-height: 42px;
+      border-color: rgba(95, 125, 146, 0.22);
+      background: rgba(255, 255, 255, 0.92);
+      color: #172333;
+    }
+
+    .swagger-ui table tbody tr td {
+      vertical-align: top;
+    }
+
+    .swagger-ui .response-col_status {
+      font-family: "Cascadia Code", Consolas, monospace;
+      color: #21384b;
+    }
+
+    .swagger-ui .highlight-code,
+    .swagger-ui .microlight {
+      border-radius: 14px;
+    }
+
     .swagger-ui .model-box {
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.7);
@@ -193,12 +231,22 @@ const swaggerUiOptions = {
     }
   `,
   swaggerOptions: {
+    deepLinking: true,
     defaultModelExpandDepth: 2,
     defaultModelsExpandDepth: 2,
+    defaultModelRendering: "model",
     displayRequestDuration: true,
     docExpansion: "list",
     filter: true,
+    operationsSorter: "method",
     persistAuthorization: true,
+    showCommonExtensions: true,
+    showExtensions: true,
+    syntaxHighlight: {
+      activated: true,
+      theme: "agate"
+    },
+    tagsSorter: "alpha",
     tryItOutEnabled: true
   }
 };

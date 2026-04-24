@@ -20,6 +20,7 @@
 - [Twelve-Factor](../docs/06-twelve-factor.md)
 - [Чек-лист требований курсовой](../docs/07-course-checklist.md)
 - [Ops и runtime checklist](../docs/09-ops-and-runtime-checklist.md)
+- [Swagger и качество API](../docs/10-swagger-and-api-quality.md)
 
 ## Что Уже Есть В Проекте
 

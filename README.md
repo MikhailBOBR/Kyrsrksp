@@ -223,3 +223,9 @@ docker compose up --build
 - [cd.yml](./.github/workflows/cd.yml) — multi-platform publish в `GHCR` и deploy hook для Render
 - [docs/09-ops-and-runtime-checklist.md](./docs/09-ops-and-runtime-checklist.md) — эксплуатационный checklist по Docker, env-конфигурации, логированию и runtime
 - [wiki/Operations.md](./wiki/Operations.md) — быстрые operational-команды проекта
+
+## Swagger и качество API
+
+Swagger UI доступен по адресу `http://localhost:8080/api/docs`, а исходная OpenAPI-схема доступна по `http://localhost:8080/api/openapi.json`.
+
+Подробное описание оформления Swagger, правил документирования маршрутов и автоматических проверок находится в [docs/10-swagger-and-api-quality.md](./docs/10-swagger-and-api-quality.md).
