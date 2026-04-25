@@ -1,4 +1,5 @@
 const { db } = require("../../db/connection");
+const { dbProvider } = require("../../config/env");
 const { addDays, getLastDates, getLocalDate } = require("../../lib/date");
 const { mealTypes } = require("../../lib/validation");
 const { getCheckinSummary } = require("../checkins/checkins.service");
@@ -593,6 +594,7 @@ async function getDashboard(user, requestedDate = getLocalDate()) {
     templates: templates.slice(0, 6),
     smartScore,
     metadata: {
+      dbProvider,
       mealTypes,
       totalMeals: meals.length,
       selectedDate: date,

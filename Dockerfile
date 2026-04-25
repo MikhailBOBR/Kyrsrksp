@@ -1,11 +1,4 @@
-FROM node:22 AS deps
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
-
-FROM node:22-slim
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -16,7 +9,7 @@ ENV NODE_ENV=production \
     DB_PATH=/data/app.db
 
 COPY package.json package-lock.json ./
-COPY --from=deps /app/node_modules ./node_modules
+RUN npm ci --omit=dev --omit=optional && npm cache clean --force
 
 COPY client ./client
 COPY server ./server

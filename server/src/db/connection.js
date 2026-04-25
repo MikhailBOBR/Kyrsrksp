@@ -1,11 +1,11 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { AsyncLocalStorage } = require("node:async_hooks");
-const Database = require("better-sqlite3");
 const { databaseUrl, dbPath, dbProvider } = require("../config/env");
 
 const transactionScope = new AsyncLocalStorage();
 
+let SqliteDatabase = null;
 let sqliteDb = null;
 let postgresPool = null;
 
@@ -118,8 +118,18 @@ function createSqliteDatabase() {
     return sqliteDb;
   }
 
+  if (!SqliteDatabase) {
+    try {
+      SqliteDatabase = require("better-sqlite3");
+    } catch (error) {
+      error.message =
+        "SQLite provider requires optional dependency better-sqlite3. Install optional dependencies or use DB_PROVIDER=postgres.";
+      throw error;
+    }
+  }
+
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  sqliteDb = new Database(dbPath);
+  sqliteDb = new SqliteDatabase(dbPath);
   sqliteDb.pragma("foreign_keys = ON");
   sqliteDb.pragma("journal_mode = WAL");
   return sqliteDb;

@@ -273,6 +273,54 @@ function setApiStatus(text) {
   apiStatus.textContent = text;
 }
 
+function getStorageLabel(metadata = {}) {
+  const provider = String(metadata.dbProvider || metadata.storage || "").toLowerCase();
+
+  if (provider.includes("postgres")) {
+    return "Хранилище: PostgreSQL";
+  }
+
+  if (provider.includes("sqlite")) {
+    return "Хранилище: SQLite";
+  }
+
+  return "Хранилище: серверная база данных";
+}
+
+function renderStackError(target, title, error) {
+  if (!target) {
+    return;
+  }
+
+  const details = error instanceof Error ? error.message : "Повторите загрузку или проверьте сервер.";
+  target.innerHTML = `
+    <article class="stack-card">
+      <strong>${escapeHtml(title)}</strong>
+      <p class="dashboard-note">${escapeHtml(details)}</p>
+    </article>
+  `;
+}
+
+function renderWorkspaceLoadError(error) {
+  const message = error instanceof Error ? error.message : "Не удалось получить данные с сервера.";
+
+  heroUpdatedAt.textContent = "Данные не синхронизированы";
+  heroStorage.textContent = "Хранилище: недоступно";
+  heroFocusTitle.textContent = "Ошибка загрузки";
+  heroFocusText.textContent = message;
+  dailyControlsCaption.textContent = "Не удалось загрузить контроль дня.";
+  wellbeingReadinessCaption.textContent = "Не удалось загрузить самочувствие.";
+  plannerMeta.textContent = "План недоступен";
+  weeklyPlanMeta.textContent = "Недельный план недоступен";
+  shoppingMeta.textContent = "Список покупок недоступен";
+
+  renderStackError(plannerList, "План не загрузился", error);
+  renderStackError(weeklyPlanList, "Недельный план не загрузился", error);
+  renderStackError(shoppingList, "Список покупок не загрузился", error);
+  renderStackError(productsList, "Каталог не загрузился", error);
+  renderStackError(mealsList, "Журнал не загрузился", error);
+}
+
 function syncLayoutMetrics() {
   const compactLayout = window.matchMedia("(max-width: 820px)").matches;
   const topbarHeight = Math.ceil(topbar?.getBoundingClientRect().height || 0);
@@ -2512,7 +2560,7 @@ function renderHero(dashboard) {
   heroFocusText.textContent = focus.text;
   heroUpdatedAt.textContent = "Данные синхронизированы с сервером";
   heroDateLabel.textContent = formatDate(dashboard.date);
-  heroStorage.textContent = "Хранилище: SQLite-база данных";
+  heroStorage.textContent = getStorageLabel(dashboard.metadata);
   heroUserName.textContent = dashboard.user.name;
   heroUserRole.textContent =
     dashboard.user.role === "admin" ? "Роль: администратор" : "Роль: пользователь";
@@ -3001,8 +3049,9 @@ async function loadWeeklyPlans() {
 }
 
 async function refreshWorkspace() {
-  await Promise.all([
-    loadDashboard(),
+  await loadDashboard();
+
+  const optionalSections = await Promise.allSettled([
     loadGoalPresets(),
     loadMeals(),
     loadProducts(),
@@ -3012,8 +3061,22 @@ async function refreshWorkspace() {
     loadShopping(),
     loadWeeklyPlans()
   ]);
+  const failedSections = optionalSections.filter((result) => result.status === "rejected");
+
+  failedSections.forEach((result) => {
+    console.error(result.reason);
+  });
+
   scheduleActiveSectionSync();
-  setApiStatus("Система онлайн");
+  setApiStatus(
+    failedSections.length
+      ? `Система онлайн · ${failedSections.length} раздел(ов) требуют обновления`
+      : "Система онлайн"
+  );
+
+  if (failedSections.length) {
+    showFlash("Часть разделов не загрузилась. Основная сводка доступна.", "error");
+  }
 }
 
 async function bootstrapSession() {
@@ -3091,8 +3154,14 @@ loginForm.addEventListener("submit", async (event) => {
 
     setToken(payload.token);
     showApp();
-    await refreshWorkspace();
-    showFlash("Вход выполнен", "success");
+    try {
+      await refreshWorkspace();
+      showFlash("Вход выполнен", "success");
+    } catch (error) {
+      setApiStatus("Ошибка загрузки данных");
+      renderWorkspaceLoadError(error);
+      reportClientError(error, "Вход выполнен, но данные не загрузились.");
+    }
   } catch (error) {
     authMessage.textContent = error.message;
   }
@@ -3117,8 +3186,14 @@ registerForm.addEventListener("submit", async (event) => {
 
     setToken(payload.token);
     showApp();
-    await refreshWorkspace();
-    showFlash("Аккаунт создан", "success");
+    try {
+      await refreshWorkspace();
+      showFlash("Аккаунт создан", "success");
+    } catch (error) {
+      setApiStatus("Ошибка загрузки данных");
+      renderWorkspaceLoadError(error);
+      reportClientError(error, "Аккаунт создан, но данные не загрузились.");
+    }
   } catch (error) {
     authMessage.textContent = error.message;
   }
