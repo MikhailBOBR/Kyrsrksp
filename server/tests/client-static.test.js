@@ -33,6 +33,13 @@ test.describe("frontend static contracts", () => {
     assert.match(artifacts.appJs, /exportPdfButton\.addEventListener/);
     assert.match(artifacts.appJs, /function renderVisualizations/);
     assert.match(artifacts.appJs, /importForm\?\.addEventListener/);
+    assert.match(artifacts.appJs, /function getStorageLabel/);
+    assert.match(artifacts.appJs, /Promise\.allSettled/);
+    assert.match(artifacts.appJs, /function renderWorkspaceLoadError/);
+    assert.doesNotMatch(
+      artifacts.appJs,
+      /heroStorage\.textContent\s*=\s*"Хранилище: SQLite-база данных"/
+    );
   });
 
   test("passes the shared client contract suite", () => {

@@ -124,6 +124,7 @@ test("allows demo user to access extended dashboard", async () => {
   assert.ok(dashboard.payload.dailyControls);
   assert.ok(dashboard.payload.dayNote);
   assert.ok(dashboard.payload.favorites);
+  assert.equal(dashboard.payload.metadata.dbProvider, "sqlite");
 });
 
 test("returns goal presets and applies selected preset", async () => {
