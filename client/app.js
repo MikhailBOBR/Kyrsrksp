@@ -219,6 +219,10 @@ function shiftDate(date, delta) {
   return adjusted.toISOString().slice(0, 10);
 }
 
+function addDays(date, delta) {
+  return shiftDate(date, delta);
+}
+
 function setTheme(theme) {
   state.theme = theme;
   document.body.dataset.theme = theme;
@@ -597,7 +601,12 @@ function toNumber(form, key) {
 }
 
 function formatMetricValue(metric, value) {
-  return metric === "calories" ? value.toFixed(0) : value.toFixed(1);
+  return metric === "calories" ? formatFixedNumber(value, 0) : formatFixedNumber(value, 1);
+}
+
+function formatFixedNumber(value, digits = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : (0).toFixed(digits);
 }
 
 function formatDate(dateString) {
@@ -2072,8 +2081,8 @@ function renderComparison(comparison) {
     card.className = "stack-card comparison-card";
     card.innerHTML = `
       <p class="dashboard-label">${escapeHtml(item.title)}</p>
-      <strong>${item.current.toFixed(item.unit === "ккал" || item.unit === "мл" ? 0 : 1)} ${escapeHtml(item.unit)}</strong>
-      <p class="dashboard-note">Вчера: ${item.previous.toFixed(item.unit === "ккал" || item.unit === "мл" ? 0 : 1)} ${escapeHtml(item.unit)}</p>
+      <strong>${formatFixedNumber(item.current, item.unit === "ккал" || item.unit === "мл" ? 0 : 1)} ${escapeHtml(item.unit)}</strong>
+      <p class="dashboard-note">Вчера: ${formatFixedNumber(item.previous, item.unit === "ккал" || item.unit === "мл" ? 0 : 1)} ${escapeHtml(item.unit)}</p>
       <span class="delta-pill ${directionClass}">${formatDelta(item.delta, item.unit)}</span>
     `;
     comparisonCards.append(card);
@@ -2083,8 +2092,8 @@ function renderComparison(comparison) {
     <article class="stack-card comparison-summary-card">
       <strong>Средние значения за 7 дней</strong>
       <p class="dashboard-note">
-        Калории ${comparison.weeklyAverage.calories.toFixed(0)} ккал · Белок ${comparison.weeklyAverage.protein.toFixed(1)} г ·
-        Вода ${comparison.weeklyAverage.hydrationMl.toFixed(0)} мл · Готовность ${comparison.weeklyAverage.readinessScore.toFixed(1)}
+        Калории ${formatFixedNumber(comparison.weeklyAverage.calories, 0)} ккал · Белок ${formatFixedNumber(comparison.weeklyAverage.protein, 1)} г ·
+        Вода ${formatFixedNumber(comparison.weeklyAverage.hydrationMl, 0)} мл · Готовность ${formatFixedNumber(comparison.weeklyAverage.readinessScore, 1)}
       </p>
       <p class="dashboard-note">Базовая точка сравнения: ${formatDate(comparison.previousDate)}</p>
     </article>

@@ -84,6 +84,10 @@ function toPostgresSql(sql) {
   });
 }
 
+function quotePostgresAliases(sql) {
+  return sql.replace(/\bAS\s+([A-Za-z_][A-Za-z0-9_]*[A-Z][A-Za-z0-9_]*)\b/g, 'AS "$1"');
+}
+
 function preparePostgresQuery(sql, args, mode) {
   const normalized = normalizeStatementInput(sql, args);
   let text = rewriteInsertOrIgnore(normalized.sql);
@@ -91,6 +95,8 @@ function preparePostgresQuery(sql, args, mode) {
   if (mode === "run") {
     text = appendReturningId(text);
   }
+
+  text = quotePostgresAliases(text);
 
   return {
     text: toPostgresSql(text),
@@ -291,5 +297,6 @@ const db = {
 module.exports = {
   closeDatabase,
   pingDatabase,
+  quotePostgresAliases,
   db
 };

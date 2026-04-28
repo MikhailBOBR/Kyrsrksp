@@ -11,6 +11,7 @@
     "migrate": "node server/src/cli.js migrate",
     "create-admin": "node server/src/cli.js create-admin",
     "release": "npm run pre-release",
+    "seed:demo": "node scripts/seed-readable-demo.js",
     "seed:large": "node server/src/db/seed-large-data.js",
     "check:client": "node scripts/check-client.js",
     "pre-release": "node scripts/pre-release.js",

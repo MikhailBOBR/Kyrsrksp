@@ -12,6 +12,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --omit=optional && npm cache clean --force
 
 COPY client ./client
+COPY scripts ./scripts
 COPY server ./server
 
 RUN mkdir -p /data && chown -R node:node /app /data

@@ -49,6 +49,11 @@ function createApp() {
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: false, limit: "2mb" }));
   app.use(requestContext);
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Pragma", "no-cache");
+    next();
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json(runtimeStatus());

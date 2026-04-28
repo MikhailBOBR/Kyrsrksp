@@ -5,6 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createConfig } = require("../src/config/env");
+const { quotePostgresAliases } = require("../src/db/connection");
 const { createLogEntry } = require("../src/lib/logger");
 
 function withEnvironment(overrides, callback) {
@@ -141,4 +142,18 @@ test("structured logger serializes error payloads", () => {
   assert.equal(entry.requestId, "req-123");
   assert.equal(entry.error.message, "boom");
   assert.match(entry.timestamp, /\d{4}-\d{2}-\d{2}T/);
+});
+
+test("postgres query adapter preserves mixed-case response aliases", () => {
+  const sql = quotePostgresAliases(`
+    SELECT
+      amount_ml AS amountMl,
+      logged_at AS loggedAt,
+      COUNT(*) AS count
+    FROM hydration_logs
+  `);
+
+  assert.match(sql, /amount_ml AS "amountMl"/);
+  assert.match(sql, /logged_at AS "loggedAt"/);
+  assert.match(sql, /COUNT\(\*\) AS count/);
 });
