@@ -86,7 +86,6 @@ const workspaceSidebar = document.querySelector("#workspace-sidebar");
 const refreshButton = document.querySelector("#refresh-button");
 const themeToggle = document.querySelector("#theme-toggle");
 const exportJsonButton = document.querySelector("#export-json-button");
-const exportCsvButton = document.querySelector("#export-csv-button");
 const exportPdfButton = document.querySelector("#export-pdf-button");
 const panelExportButtons = [...document.querySelectorAll("[data-export-format]")];
 const globalMessage = document.querySelector("#global-message");
@@ -498,7 +497,6 @@ function showAuth(message = "После входа откроется рабоч
   sessionBadge.classList.add("hidden");
   logoutButton.classList.add("hidden");
   exportJsonButton.classList.add("hidden");
-  exportCsvButton.classList.add("hidden");
   exportPdfButton.classList.add("hidden");
   clearImportPreview();
   setDrawerOpen(false, { skipFocus: true });
@@ -513,7 +511,6 @@ function showApp() {
   sessionBadge.classList.remove("hidden");
   logoutButton.classList.remove("hidden");
   exportJsonButton.classList.remove("hidden");
-  exportCsvButton.classList.remove("hidden");
   exportPdfButton.classList.remove("hidden");
   syncLayoutMetrics();
   syncDrawerMode();
@@ -3127,22 +3124,7 @@ async function exportReport(format) {
     return;
   }
 
-  const response = await fetch(
-    `/api/exports/daily-report?format=${format}&date=${encodeURIComponent(state.selectedDate)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${state.token}`
-      }
-    }
-  );
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || "Не удалось выполнить экспорт");
-  }
-
-  const content = await response.text();
-  downloadTextFile(`ration-report-${state.selectedDate}.csv`, content, "text/csv;charset=utf-8");
+  throw new Error("Формат экспорта не поддерживается");
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -3222,15 +3204,6 @@ exportJsonButton.addEventListener("click", async () => {
   try {
     await exportReport("json");
     showFlash("JSON-отчет выгружен", "success");
-  } catch (error) {
-    showFlash(error.message, "error");
-  }
-});
-
-exportCsvButton.addEventListener("click", async () => {
-  try {
-    await exportReport("csv");
-    showFlash("CSV-отчет выгружен", "success");
   } catch (error) {
     showFlash(error.message, "error");
   }

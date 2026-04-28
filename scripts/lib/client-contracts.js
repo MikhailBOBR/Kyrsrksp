@@ -17,7 +17,6 @@ function assertClientContracts({ appJs, assert, indexHtml, stylesCss }) {
     /id="sidebar-toggle"/,
     /id="sidebar-backdrop"/,
     /id="export-json-button"/,
-    /id="export-csv-button"/,
     /id="export-pdf-button"/,
     /class="sidebar-card sidebar-nav"/,
     /data-view="overview"/,

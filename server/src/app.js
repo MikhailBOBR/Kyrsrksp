@@ -54,6 +54,14 @@ function createApp() {
     res.setHeader("Pragma", "no-cache");
     next();
   });
+  app.use((req, res, next) => {
+    if (req.path === "/" || req.path === "/index.html" || req.path === "/app.js") {
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Pragma", "no-cache");
+    }
+
+    next();
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json(runtimeStatus());

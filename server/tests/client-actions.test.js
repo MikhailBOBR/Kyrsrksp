@@ -36,7 +36,6 @@ test.describe("frontend interaction coverage", () => {
       /navigationLinks\.forEach/,
       /quickViewButtons\.forEach/,
       /exportJsonButton\.addEventListener/,
-      /exportCsvButton\.addEventListener/,
       /exportPdfButton\.addEventListener/,
       /downloadImportTemplateButton\?\.addEventListener/,
       /importForm\?\.addEventListener/,
