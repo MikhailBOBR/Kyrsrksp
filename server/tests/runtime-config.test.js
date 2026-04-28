@@ -69,6 +69,67 @@ test("config prefers environment variables over yaml file values", () => {
   );
 });
 
+test("config accepts standard platform host and port aliases", () => {
+  withEnvironment(
+    {
+      APP_ENV: "test",
+      CONFIG_FILE: undefined,
+      HOST: "127.0.0.1",
+      PORT: "7070",
+      SERVER_HOST: undefined,
+      SERVER_PORT: undefined,
+      JWT_SECRET: "alias-secret"
+    },
+    () => {
+      const config = createConfig();
+
+      assert.equal(config.host, "127.0.0.1");
+      assert.equal(config.port, 7070);
+    }
+  );
+});
+
+test("config exposes runtime and backing service tuning from the environment", () => {
+  withEnvironment(
+    {
+      APP_ENV: "test",
+      CONFIG_FILE: undefined,
+      DB_POOL_MAX: "24",
+      DB_IDLE_TIMEOUT_MS: "45000",
+      DB_CONNECTION_TIMEOUT_MS: "7000",
+      SERVER_REQUEST_TIMEOUT_MS: "250000",
+      SERVER_HEADERS_TIMEOUT_MS: "55000",
+      SERVER_KEEP_ALIVE_TIMEOUT_MS: "6000",
+      TRUST_PROXY: "true",
+      JWT_SECRET: "runtime-secret"
+    },
+    () => {
+      const config = createConfig();
+
+      assert.equal(config.dbPoolMax, 24);
+      assert.equal(config.dbIdleTimeoutMs, 45000);
+      assert.equal(config.dbConnectionTimeoutMs, 7000);
+      assert.equal(config.serverRequestTimeoutMs, 250000);
+      assert.equal(config.serverHeadersTimeoutMs, 55000);
+      assert.equal(config.serverKeepAliveTimeoutMs, 6000);
+      assert.equal(config.trustProxy, true);
+    }
+  );
+});
+
+test("production config rejects default JWT secrets", () => {
+  withEnvironment(
+    {
+      APP_ENV: "production",
+      CONFIG_FILE: undefined,
+      JWT_SECRET: undefined
+    },
+    () => {
+      assert.throws(() => createConfig(), /JWT_SECRET/);
+    }
+  );
+});
+
 test("structured logger serializes error payloads", () => {
   const entry = createLogEntry("error", "runtime.failed", {
     requestId: "req-123",

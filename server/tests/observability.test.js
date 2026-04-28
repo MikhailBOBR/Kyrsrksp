@@ -25,6 +25,20 @@ test.describe("observability and runtime metadata", () => {
     assert.match(String(response.headers.get("x-request-id")), /.+/);
   });
 
+  test("liveness and readiness endpoints separate process and backing-service checks", async () => {
+    const live = await api("/api/live");
+    const ready = await api("/api/ready");
+
+    assert.equal(live.status, 200);
+    assert.equal(live.payload.alive, true);
+    assert.equal(live.payload.status, "ok");
+
+    assert.equal(ready.status, 200);
+    assert.equal(ready.payload.ready, true);
+    assert.equal(ready.payload.checks.database.provider, "sqlite");
+    assert.equal(ready.payload.checks.database.status, "ok");
+  });
+
   test("echoes incoming request id and returns it on 404", async () => {
     const response = await api("/api/unknown-route", {
       headers: {
@@ -46,6 +60,11 @@ test.describe("observability and runtime metadata", () => {
     assert.equal(health.status, 200);
     assert.equal(health.payload.status, "draining");
     assert.equal(health.payload.ready, false);
+
+    const ready = await api("/api/ready");
+    assert.equal(ready.status, 503);
+    assert.equal(ready.payload.status, "draining");
+    assert.equal(ready.payload.ready, false);
 
     assert.equal(blocked.status, 503);
     assert.equal(blocked.payload.error, "Service is shutting down");

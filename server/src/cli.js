@@ -3,6 +3,7 @@ const {
   appEnv,
   autoMigrateOnBoot,
   dbProvider,
+  getConfig,
   host,
   port,
   releaseVersion,
@@ -14,6 +15,51 @@ const { ensureAdminUser } = require("./db/admin-user");
 const { initializeDatabase, runMigrations } = require("./db/init-schema");
 const { logger } = require("./lib/logger");
 const { createHttpServer } = require("./index");
+
+function summarizeRuntimeConfig() {
+  const config = getConfig();
+
+  return {
+    environment: config.appEnv,
+    release: config.releaseVersion,
+    service: config.serviceName,
+    host: config.host,
+    port: config.port,
+    dbProvider: config.dbProvider,
+    dbPoolMax: config.dbProvider === "postgres" ? config.dbPoolMax : undefined,
+    autoMigrateOnBoot: config.autoMigrateOnBoot,
+    seedDemoData: config.seedDemoData,
+    logLevel: config.logLevel,
+    trustProxy: config.trustProxy,
+    shutdownTimeoutMs: config.shutdownTimeoutMs
+  };
+}
+
+function installProcessFailureHandlers(server) {
+  let handled = false;
+
+  function fail(event, error) {
+    if (handled) {
+      return;
+    }
+
+    handled = true;
+    logger.error("runtime.process.failed", { event, error });
+
+    Promise.resolve(server.shutdown ? server.shutdown(event) : closeDatabase()).finally(() => {
+      process.exit(1);
+    });
+  }
+
+  process.on("uncaughtException", (error) => {
+    fail("uncaughtException", error);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    fail("unhandledRejection", error);
+  });
+}
 
 function parseCliArgs(argv = process.argv.slice(2)) {
   const [command = "server", ...rest] = argv;
@@ -51,6 +97,7 @@ async function runServerCommand() {
 
   const app = createApp();
   const server = createHttpServer(app);
+  installProcessFailureHandlers(server);
 
   return server;
 }
@@ -80,6 +127,13 @@ async function runCreateAdminCommand(options) {
   return result;
 }
 
+async function runConfigCommand() {
+  const summary = summarizeRuntimeConfig();
+  logger.info("runtime.config", summary);
+  await closeDatabase();
+  return summary;
+}
+
 async function runCommand(argv = process.argv.slice(2)) {
   const { command, options } = parseCliArgs(argv);
 
@@ -104,6 +158,10 @@ async function runCommand(argv = process.argv.slice(2)) {
     return runCreateAdminCommand(options);
   }
 
+  if (command === "config") {
+    return runConfigCommand();
+  }
+
   throw new Error(`Unknown command: ${command}`);
 }
 
@@ -117,6 +175,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  installProcessFailureHandlers,
   parseCliArgs,
-  runCommand
+  runCommand,
+  summarizeRuntimeConfig
 };

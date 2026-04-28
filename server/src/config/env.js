@@ -17,8 +17,52 @@ function parseBoolean(value, fallback) {
 }
 
 function parseNumber(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function readValue(fileConfig, key, aliases, fallback) {
+  const keys = [key, ...aliases];
+
+  for (const candidate of keys) {
+    if (process.env[candidate] !== undefined && process.env[candidate] !== "") {
+      return process.env[candidate];
+    }
+  }
+
+  for (const candidate of keys) {
+    if (fileConfig[candidate] !== undefined && fileConfig[candidate] !== "") {
+      return fileConfig[candidate];
+    }
+  }
+
+  return fallback;
+}
+
+function assertFiniteNumber(name, value) {
+  if (!Number.isFinite(value)) {
+    throw new Error(`Invalid numeric config ${name}`);
+  }
+}
+
+function assertIntegerRange(name, value, min, max) {
+  assertFiniteNumber(name, value);
+
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new Error(`Invalid ${name}: expected integer from ${min} to ${max}`);
+  }
+}
+
+function assertPositiveInteger(name, value) {
+  assertFiniteNumber(name, value);
+
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`Invalid ${name}: expected positive integer`);
+  }
 }
 
 function parseYamlValue(rawValue) {
@@ -105,6 +149,37 @@ function buildDatabaseUrl(raw) {
   return `postgres://${encodeURIComponent(raw.DB_USER)}:${encodeURIComponent(raw.DB_PASSWORD)}@${raw.DB_HOST}:${raw.DB_PORT}/${raw.DB_NAME}`;
 }
 
+function isProductionEnvironment(appEnv) {
+  return ["production", "prod"].includes(String(appEnv).trim().toLowerCase());
+}
+
+function isPlaceholderSecret(secret) {
+  return new Set(["", "change_me", "super-secret-dev-key"]).has(String(secret || "").trim());
+}
+
+function validateConfig(config) {
+  assertIntegerRange("SERVER_PORT", config.port, 0, 65535);
+  assertPositiveInteger("SHUTDOWN_TIMEOUT_MS", config.shutdownTimeoutMs);
+  assertPositiveInteger("SERVER_REQUEST_TIMEOUT_MS", config.serverRequestTimeoutMs);
+  assertPositiveInteger("SERVER_HEADERS_TIMEOUT_MS", config.serverHeadersTimeoutMs);
+  assertPositiveInteger("SERVER_KEEP_ALIVE_TIMEOUT_MS", config.serverKeepAliveTimeoutMs);
+  assertPositiveInteger("DB_POOL_MAX", config.dbPoolMax);
+  assertPositiveInteger("DB_IDLE_TIMEOUT_MS", config.dbIdleTimeoutMs);
+  assertPositiveInteger("DB_CONNECTION_TIMEOUT_MS", config.dbConnectionTimeoutMs);
+
+  if (!["sqlite", "postgres"].includes(config.dbProvider)) {
+    throw new Error(`Unsupported DB_PROVIDER: ${config.dbProvider}`);
+  }
+
+  if (config.dbProvider === "postgres" && !config.databaseUrl) {
+    throw new Error("DATABASE_URL or DB_* values are required for postgres");
+  }
+
+  if (isProductionEnvironment(config.appEnv) && isPlaceholderSecret(config.jwtSecret)) {
+    throw new Error("JWT_SECRET must be set to a non-default value in production");
+  }
+}
+
 function createConfig() {
   const configFile = resolveConfigFile();
   const fileConfig = parseSimpleYaml(configFile);
@@ -129,7 +204,14 @@ function createConfig() {
     CLIENT_ROOT: path.join(rootDir, "client"),
     LOG_LEVEL: defaultAppEnv === "test" ? "error" : "info",
     LOG_PRETTY: false,
+    TRUST_PROXY: false,
     SHUTDOWN_TIMEOUT_MS: 10000,
+    SERVER_REQUEST_TIMEOUT_MS: 300000,
+    SERVER_HEADERS_TIMEOUT_MS: 60000,
+    SERVER_KEEP_ALIVE_TIMEOUT_MS: 5000,
+    DB_POOL_MAX: 12,
+    DB_IDLE_TIMEOUT_MS: 30000,
+    DB_CONNECTION_TIMEOUT_MS: 5000,
     REQUEST_ID_HEADER: "X-Request-ID",
     AUTO_MIGRATE_ON_BOOT: defaultAppEnv !== "production",
     SEED_DEMO_DATA: defaultAppEnv !== "production",
@@ -143,20 +225,23 @@ function createConfig() {
 
   const merged = { ...defaults, ...fileConfig, ...process.env };
   const dbProvider = String(merged.DB_PROVIDER || "sqlite").trim().toLowerCase();
+  const appEnv = String(readValue(fileConfig, "APP_ENV", ["NODE_ENV"], defaults.APP_ENV));
+  const dbPort = parseNumber(readValue(fileConfig, "DB_PORT", [], defaults.DB_PORT), defaults.DB_PORT);
+  const port = parseNumber(readValue(fileConfig, "SERVER_PORT", ["PORT"], defaults.SERVER_PORT), defaults.SERVER_PORT);
 
-  return {
+  const config = {
     rootDir,
     configFile,
-    appEnv: String(merged.APP_ENV || defaults.APP_ENV),
+    appEnv,
     serviceName: String(merged.SERVICE_NAME || defaults.SERVICE_NAME),
     releaseVersion: String(merged.RELEASE_VERSION || defaults.RELEASE_VERSION),
-    host: String(merged.SERVER_HOST || defaults.SERVER_HOST),
-    port: parseNumber(merged.SERVER_PORT, defaults.SERVER_PORT),
+    host: String(readValue(fileConfig, "SERVER_HOST", ["HOST"], defaults.SERVER_HOST)),
+    port,
     jwtSecret: String(merged.JWT_SECRET || defaults.JWT_SECRET),
     dbProvider,
     dbPath: String(merged.DB_PATH || defaults.DB_PATH),
     dbHost: String(merged.DB_HOST || defaults.DB_HOST),
-    dbPort: parseNumber(merged.DB_PORT, defaults.DB_PORT),
+    dbPort,
     dbName: String(merged.DB_NAME || defaults.DB_NAME),
     dbUser: String(merged.DB_USER || defaults.DB_USER),
     dbPassword: String(merged.DB_PASSWORD || defaults.DB_PASSWORD),
@@ -166,14 +251,21 @@ function createConfig() {
       DB_USER: String(merged.DB_USER || defaults.DB_USER),
       DB_PASSWORD: String(merged.DB_PASSWORD || defaults.DB_PASSWORD),
       DB_HOST: String(merged.DB_HOST || defaults.DB_HOST),
-      DB_PORT: parseNumber(merged.DB_PORT, defaults.DB_PORT),
+      DB_PORT: dbPort,
       DB_NAME: String(merged.DB_NAME || defaults.DB_NAME)
     }),
     redisUrl: String(merged.REDIS_URL || defaults.REDIS_URL),
     clientRoot: String(merged.CLIENT_ROOT || defaults.CLIENT_ROOT),
     logLevel: String(merged.LOG_LEVEL || defaults.LOG_LEVEL).toLowerCase(),
     logPretty: parseBoolean(merged.LOG_PRETTY, defaults.LOG_PRETTY),
+    trustProxy: parseBoolean(merged.TRUST_PROXY, defaults.TRUST_PROXY),
     shutdownTimeoutMs: parseNumber(merged.SHUTDOWN_TIMEOUT_MS, defaults.SHUTDOWN_TIMEOUT_MS),
+    serverRequestTimeoutMs: parseNumber(merged.SERVER_REQUEST_TIMEOUT_MS, defaults.SERVER_REQUEST_TIMEOUT_MS),
+    serverHeadersTimeoutMs: parseNumber(merged.SERVER_HEADERS_TIMEOUT_MS, defaults.SERVER_HEADERS_TIMEOUT_MS),
+    serverKeepAliveTimeoutMs: parseNumber(merged.SERVER_KEEP_ALIVE_TIMEOUT_MS, defaults.SERVER_KEEP_ALIVE_TIMEOUT_MS),
+    dbPoolMax: parseNumber(merged.DB_POOL_MAX, defaults.DB_POOL_MAX),
+    dbIdleTimeoutMs: parseNumber(merged.DB_IDLE_TIMEOUT_MS, defaults.DB_IDLE_TIMEOUT_MS),
+    dbConnectionTimeoutMs: parseNumber(merged.DB_CONNECTION_TIMEOUT_MS, defaults.DB_CONNECTION_TIMEOUT_MS),
     requestIdHeader: String(merged.REQUEST_ID_HEADER || defaults.REQUEST_ID_HEADER),
     autoMigrateOnBoot: parseBoolean(merged.AUTO_MIGRATE_ON_BOOT, defaults.AUTO_MIGRATE_ON_BOOT),
     seedDemoData: parseBoolean(merged.SEED_DEMO_DATA, defaults.SEED_DEMO_DATA),
@@ -188,6 +280,9 @@ function createConfig() {
       name: String(merged.ADMIN_USER_NAME || defaults.ADMIN_USER_NAME)
     }
   };
+
+  validateConfig(config);
+  return config;
 }
 
 const config = createConfig();

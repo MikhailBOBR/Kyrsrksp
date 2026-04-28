@@ -1,4 +1,11 @@
-const { host, port, shutdownTimeoutMs } = require("./config/env");
+const {
+  host,
+  port,
+  serverHeadersTimeoutMs,
+  serverKeepAliveTimeoutMs,
+  serverRequestTimeoutMs,
+  shutdownTimeoutMs
+} = require("./config/env");
 const { closeDatabase } = require("./db/connection");
 const { logger } = require("./lib/logger");
 const { setDraining } = require("./runtime/state");
@@ -10,6 +17,10 @@ function createHttpServer(app) {
       port
     });
   });
+
+  server.requestTimeout = serverRequestTimeoutMs;
+  server.headersTimeout = serverHeadersTimeoutMs;
+  server.keepAliveTimeout = serverKeepAliveTimeoutMs;
 
   const sockets = new Set();
 
@@ -36,12 +47,26 @@ function createHttpServer(app) {
     forceCloseTimer.unref();
 
     return new Promise((resolve) => {
-      server.close(async () => {
+      server.close(async (error) => {
         clearTimeout(forceCloseTimer);
-        await closeDatabase();
+
+        if (error) {
+          logger.error("runtime.shutdown.server-close-failed", { error });
+        }
+
+        try {
+          await closeDatabase();
+        } catch (dbError) {
+          logger.error("runtime.shutdown.database-close-failed", { error: dbError });
+        }
+
         logger.info("runtime.shutdown.completed", { signal });
         resolve();
       });
+
+      if (typeof server.closeIdleConnections === "function") {
+        server.closeIdleConnections();
+      }
     });
   }
 
@@ -52,6 +77,8 @@ function createHttpServer(app) {
   process.on("SIGTERM", () => {
     shutdown("SIGTERM").finally(() => process.exit(0));
   });
+
+  server.shutdown = shutdown;
 
   return server;
 }

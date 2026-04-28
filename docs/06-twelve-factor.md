@@ -15,8 +15,12 @@
 Настройки передаются через переменные окружения:
 
 - `SERVER_PORT`
+- `PORT` / `HOST` для cloud-платформ
 - `JWT_SECRET`
 - `DB_PATH`
+- `DATABASE_URL` и `DB_*` для подключаемой PostgreSQL
+- `DB_POOL_MAX`, `DB_IDLE_TIMEOUT_MS`, `DB_CONNECTION_TIMEOUT_MS`
+- `SERVER_REQUEST_TIMEOUT_MS`, `SERVER_HEADERS_TIMEOUT_MS`, `SERVER_KEEP_ALIVE_TIMEOUT_MS`
 
 Шаблон переменных окружения задан в [.env.example](../.env.example).
 
@@ -38,7 +42,7 @@
 
 ## 7. Port Binding
 
-HTTP-сервис публикуется через порт `SERVER_PORT`, по умолчанию `8080`.
+HTTP-сервис публикуется через порт `SERVER_PORT` или стандартный для платформ `PORT`, по умолчанию `8080`.
 
 ## 8. Concurrency
 
@@ -47,6 +51,7 @@ HTTP-сервис публикуется через порт `SERVER_PORT`, по
 ## 9. Disposability
 
 Сервис стартует быстро, база инициализируется автоматически, завершение процесса не требует ручных действий пользователя.
+Для оркестраторов добавлены отдельные endpoints: `GET /api/live` для liveness и `GET /api/ready` для readiness с проверкой базы данных.
 
 ## 10. Dev/Prod Parity
 
@@ -61,6 +66,9 @@ HTTP-сервис публикуется через порт `SERVER_PORT`, по
 Административные и одноразовые операции вынесены в отдельные команды:
 
 - `npm run seed:large`
+- `npm run migrate`
+- `npm run create-admin`
+- `npm run config:check`
 - `npm run test:fuzz`
 
 ## Вывод

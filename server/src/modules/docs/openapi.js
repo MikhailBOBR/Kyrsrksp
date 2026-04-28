@@ -84,10 +84,23 @@ function applyOpenApiPolish(document) {
       properties: {
         status: { type: "string", enum: ["ok", "draining"], example: "ok" },
         ready: { type: "boolean", example: true },
+        alive: { type: "boolean", example: true },
         service: { type: "string", example: "food-diary-app" },
         version: { type: "string", example: "0.2.0-rc.1" },
         environment: { type: "string", example: "production" },
-        stack: { type: "string", example: "express + postgres + swagger" }
+        stack: { type: "string", example: "express + postgres + swagger" },
+        checks: {
+          type: "object",
+          properties: {
+            database: {
+              type: "object",
+              properties: {
+                provider: { type: "string", example: "postgres" },
+                status: { type: "string", enum: ["ok", "failed", "skipped"], example: "ok" }
+              }
+            }
+          }
+        }
       },
       required: ["status", "ready", "service", "version", "environment", "stack"]
     },
@@ -234,6 +247,17 @@ function applyOpenApiPolish(document) {
     "/api/health": {
       get: {
         200: jsonResponse("Сервис доступен.", ref("HealthResponse"))
+      }
+    },
+    "/api/live": {
+      get: {
+        200: jsonResponse("Runtime process is alive.", ref("HealthResponse"))
+      }
+    },
+    "/api/ready": {
+      get: {
+        200: jsonResponse("Runtime and backing services are ready.", ref("HealthResponse")),
+        503: jsonResponse("Runtime is not ready.", ref("HealthResponse"))
       }
     },
     "/api/goals/presets": {
@@ -742,6 +766,27 @@ const openApiDocument = {
             },
             required: ["status", "service", "stack"]
           })
+        }
+      }
+    },
+    "/api/live": {
+      get: {
+        tags: ["Health"],
+        summary: "Liveness check",
+        description: "Проверяет, что HTTP-процесс запущен и отвечает.",
+        responses: {
+          200: jsonResponse("Процесс отвечает.", ref("HealthResponse"))
+        }
+      }
+    },
+    "/api/ready": {
+      get: {
+        tags: ["Health"],
+        summary: "Readiness check",
+        description: "Проверяет готовность процесса и подключаемых ресурсов.",
+        responses: {
+          200: jsonResponse("Сервис готов принимать трафик.", ref("HealthResponse")),
+          503: jsonResponse("Сервис временно не готов.", ref("HealthResponse"))
         }
       }
     },

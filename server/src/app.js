@@ -1,7 +1,8 @@
 const path = require("node:path");
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
-const { appEnv, clientRoot, dbProvider, releaseVersion, serviceName } = require("./config/env");
+const { appEnv, clientRoot, dbProvider, releaseVersion, serviceName, trustProxy } = require("./config/env");
+const { pingDatabase } = require("./db/connection");
 const { errorHandler } = require("./middlewares/error-handler");
 const { rejectWhenDraining, requestContext } = require("./middlewares/request-context");
 const { isDraining } = require("./runtime/state");
@@ -24,22 +25,84 @@ const importsRoutes = require("./modules/imports/imports.routes");
 const { openApiDocument } = require("./modules/docs/openapi");
 const { swaggerUiOptions } = require("./modules/docs/swagger-ui");
 
+function runtimeStatus(overrides = {}) {
+  const draining = isDraining();
+
+  return {
+    status: draining ? "draining" : "ok",
+    ready: !draining,
+    service: serviceName,
+    version: releaseVersion,
+    environment: appEnv,
+    stack: `express + ${dbProvider} + swagger`,
+    ...overrides
+  };
+}
+
 function createApp() {
   const app = express();
+
+  if (trustProxy) {
+    app.set("trust proxy", true);
+  }
 
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: false, limit: "2mb" }));
   app.use(requestContext);
 
   app.get("/api/health", (_req, res) => {
-    res.json({
-      status: isDraining() ? "draining" : "ok",
-      ready: !isDraining(),
-      service: serviceName,
-      version: releaseVersion,
-      environment: appEnv,
-      stack: `express + ${dbProvider} + swagger`
-    });
+    res.json(runtimeStatus());
+  });
+
+  app.get("/api/live", (_req, res) => {
+    res.json(runtimeStatus({ alive: true }));
+  });
+
+  app.get("/api/ready", async (req, res) => {
+    if (isDraining()) {
+      res.status(503).json(
+        runtimeStatus({
+          ready: false,
+          checks: {
+            database: {
+              provider: dbProvider,
+              status: "skipped"
+            }
+          }
+        })
+      );
+      return;
+    }
+
+    try {
+      const database = await pingDatabase();
+      const ready = Boolean(database.ok);
+
+      res.status(ready ? 200 : 503).json(
+        runtimeStatus({
+          ready,
+          checks: {
+            database: {
+              provider: database.provider,
+              status: ready ? "ok" : "failed"
+            }
+          }
+        })
+      );
+    } catch (error) {
+      req.log.error("runtime.readiness.failed", { error });
+      res.status(503).json(
+        runtimeStatus({
+          ready: false,
+          checks: {
+            database: {
+              provider: dbProvider,
+              status: "failed"
+            }
+          }
+        })
+      );
+    }
   });
 
   app.use(rejectWhenDraining);

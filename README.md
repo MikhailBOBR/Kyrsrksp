@@ -168,11 +168,14 @@ http://localhost:8080/api/docs
 
 ```bash
 npm run dev
+npm run config:check
+npm run build
 npm run migrate
 npm run create-admin -- --email=admin@example.com --password=Admin123! --name="Admin User"
 npm run seed:large
 npm run check:client
 npm run pre-release
+npm run release
 npm test
 npm run test:coverage
 npm run test:fuzz
@@ -196,6 +199,7 @@ docker compose up --build
 
 - OpenAPI JSON: `GET /api/openapi.json`
 - Swagger UI: `GET /api/docs`
+- Health: `GET /api/health`, `GET /api/live`, `GET /api/ready`
 - Import template: `GET /api/imports/template`
 - Import preview/apply: `POST /api/imports/preview`, `POST /api/imports/apply`
 

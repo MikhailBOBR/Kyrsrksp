@@ -1,7 +1,14 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { AsyncLocalStorage } = require("node:async_hooks");
-const { databaseUrl, dbPath, dbProvider } = require("../config/env");
+const {
+  databaseUrl,
+  dbConnectionTimeoutMs,
+  dbIdleTimeoutMs,
+  dbPath,
+  dbPoolMax,
+  dbProvider
+} = require("../config/env");
 
 const transactionScope = new AsyncLocalStorage();
 
@@ -104,9 +111,9 @@ async function getPostgresExecutor() {
 
     postgresPool = new Pool({
       connectionString: databaseUrl,
-      max: 12,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000
+      max: dbPoolMax,
+      idleTimeoutMillis: dbIdleTimeoutMs,
+      connectionTimeoutMillis: dbConnectionTimeoutMs
     });
   }
 
@@ -263,15 +270,26 @@ async function closeDatabase() {
   }
 }
 
+async function pingDatabase() {
+  const row = await prepare("SELECT 1 AS ok").get();
+
+  return {
+    provider: dbProvider,
+    ok: Number(row?.ok) === 1
+  };
+}
+
 const db = {
   provider: dbProvider,
   close: closeDatabase,
   exec,
   prepare,
+  ping: pingDatabase,
   transaction
 };
 
 module.exports = {
   closeDatabase,
+  pingDatabase,
   db
 };

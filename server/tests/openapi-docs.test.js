@@ -8,6 +8,8 @@ const { swaggerUiOptions } = require("../src/modules/docs/swagger-ui");
 
 const PUBLIC_OPERATIONS = new Set([
   "get /api/health",
+  "get /api/live",
+  "get /api/ready",
   "post /api/auth/register",
   "post /api/auth/login",
   "get /api/products"

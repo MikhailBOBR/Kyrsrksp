@@ -4,10 +4,13 @@
   "private": true,
   "description": "Client-server food diary application with KБЖУ analytics.",
   "scripts": {
+    "build": "npm run check:client",
     "start": "node server/src/cli.js server",
     "dev": "node --watch server/src/cli.js server",
+    "config:check": "node server/src/cli.js config",
     "migrate": "node server/src/cli.js migrate",
     "create-admin": "node server/src/cli.js create-admin",
+    "release": "npm run pre-release",
     "seed:large": "node server/src/db/seed-large-data.js",
     "check:client": "node scripts/check-client.js",
     "pre-release": "node scripts/pre-release.js",
