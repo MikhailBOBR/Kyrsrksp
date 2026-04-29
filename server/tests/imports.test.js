@@ -9,12 +9,12 @@ const { api, text, login } = createHttpTestContext(test, {
 });
 
 test.describe("imports module", () => {
-  test("previews and applies meal import from csv", async () => {
+  test("previews and applies meal import from tsv", async () => {
     const token = await login("demo@nutritrack.local", "Demo123!");
     const content = [
-      "title,meal_type,date,eaten_at,grams,calories,protein,fat,carbs,notes",
-      '"Импортированный завтрак","Завтрак","2026-04-23","08:10","240","410","18","12","52","CSV импорт"',
-      '"Импортированный ужин","Ужин","2026-04-23","19:20","330","560","36","16","49","CSV импорт"'
+      "title\tmeal_type\tdate\teaten_at\tgrams\tcalories\tprotein\tfat\tcarbs\tnotes",
+      "Импортированный завтрак\tЗавтрак\t2026-04-23\t08:10\t240\t410\t18\t12\t52\tTSV импорт",
+      "Импортированный ужин\tУжин\t2026-04-23\t19:20\t330\t560\t36\t16\t49\tTSV импорт"
     ].join("\n");
 
     const preview = await api("/api/imports/preview", {
@@ -25,7 +25,7 @@ test.describe("imports module", () => {
       },
       body: JSON.stringify({
         dataset: "meals",
-        format: "csv",
+        format: "tsv",
         content
       })
     });
@@ -44,7 +44,7 @@ test.describe("imports module", () => {
       },
       body: JSON.stringify({
         dataset: "meals",
-        format: "csv",
+        format: "tsv",
         content
       })
     });

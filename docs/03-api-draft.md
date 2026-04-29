@@ -94,7 +94,6 @@
 ## Exports
 
 - `GET /api/exports/daily-report?format=json` - выгрузка дневного отчёта в JSON.
-- `GET /api/exports/daily-report?format=csv` - выгрузка дневного отчёта в CSV.
 
 ## Imports
 
@@ -102,7 +101,7 @@
 - `POST /api/imports/preview` - проверить структуру импортируемого файла и получить предпросмотр.
 - `POST /api/imports/apply` - загрузить валидные строки в систему.
   Поддерживаемые наборы: `meals`, `templates`, `hydration`, `products`.
-  Поддерживаемые форматы: `json`, `csv`, `tsv`.
+  Поддерживаемые форматы: `json`, `tsv`.
   Для `products` требуется роль `admin`.
 
 ## Docs

@@ -777,6 +777,11 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function truncateText(value, maxLength) {
+  const text = String(value ?? "");
+  return text.length > maxLength ? `${text.slice(0, Math.max(maxLength - 1, 0))}…` : text;
+}
+
 function downloadTextFile(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -953,9 +958,9 @@ function renderTrendCombo(extendedTrend) {
     return;
   }
 
-  const width = 860;
-  const height = 280;
-  const padding = { top: 20, right: 20, bottom: 44, left: 44 };
+  const width = 900;
+  const height = 300;
+  const padding = { top: 38, right: 34, bottom: 52, left: 58 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const maxCalories = Math.max(...extendedTrend.map((item) => item.calories), 100);
@@ -983,7 +988,7 @@ function renderTrendCombo(extendedTrend) {
       return `
         <g>
           <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="10" fill="rgba(111, 157, 155, 0.28)"></rect>
-          <text x="${(x + barWidth / 2).toFixed(1)}" y="${(padding.top + chartHeight + 20).toFixed(1)}" text-anchor="middle" class="chart-axis-label">
+          <text x="${(x + barWidth / 2).toFixed(1)}" y="${(padding.top + chartHeight + 26).toFixed(1)}" text-anchor="middle" class="chart-axis-label">
             ${escapeHtml(formatShortDate(item.date))}
           </text>
         </g>
@@ -1016,8 +1021,8 @@ function renderTrendCombo(extendedTrend) {
             `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4.5" fill="#5f7d92" stroke="var(--surface-strong)" stroke-width="2"></circle>`
         )
         .join("")}
-      <text x="${padding.left}" y="${padding.top - 4}" class="chart-caption">Калории</text>
-      <text x="${width - padding.right}" y="${padding.top - 4}" text-anchor="end" class="chart-caption">Линия — среднее настроение и энергия</text>
+      <text x="${padding.left}" y="18" class="chart-caption chart-top-caption">Калории</text>
+      <text x="${width - padding.right}" y="18" text-anchor="end" class="chart-caption chart-top-caption">Линия — среднее настроение и энергия</text>
     </svg>
   `;
 
@@ -1063,19 +1068,26 @@ function renderWellbeingRadar(wellbeing) {
     { label: "Аппетит", value: wellbeing.entry.hunger / 5 },
     { label: "Сон", value: Math.min(wellbeing.entry.sleepHours / 8, 1) }
   ];
-  const center = 120;
-  const radius = 78;
+  const centerX = 150;
+  const centerY = 130;
+  const radius = 72;
+  const labelRadius = 104;
   const polygonPoints = metrics.map((metric, index) => {
     const angle = (360 / metrics.length) * index;
-    return polarToCartesian(center, center, radius * metric.value, angle);
+    return polarToCartesian(centerX, centerY, radius * metric.value, angle);
   });
   const axisMarks = metrics
     .map((metric, index) => {
-      const outer = polarToCartesian(center, center, radius, (360 / metrics.length) * index);
+      const angle = (360 / metrics.length) * index;
+      const outer = polarToCartesian(centerX, centerY, radius, angle);
+      const labelPoint = polarToCartesian(centerX, centerY, labelRadius, angle);
+      const labelAnchor =
+        Math.abs(labelPoint.x - centerX) < 12 ? "middle" : labelPoint.x > centerX ? "start" : "end";
+      const labelDy = labelPoint.y < centerY - 60 ? "-4" : labelPoint.y > centerY + 60 ? "9" : "4";
       return `
         <g>
-          <line x1="${center}" y1="${center}" x2="${outer.x.toFixed(1)}" y2="${outer.y.toFixed(1)}" class="chart-grid-line"></line>
-          <text x="${outer.x.toFixed(1)}" y="${outer.y.toFixed(1)}" class="chart-axis-label chart-radar-label">
+          <line x1="${centerX}" y1="${centerY}" x2="${outer.x.toFixed(1)}" y2="${outer.y.toFixed(1)}" class="chart-grid-line"></line>
+          <text x="${labelPoint.x.toFixed(1)}" y="${labelPoint.y.toFixed(1)}" dy="${labelDy}" text-anchor="${labelAnchor}" class="chart-axis-label chart-radar-label">
             ${escapeHtml(metric.label)}
           </text>
         </g>
@@ -1085,14 +1097,14 @@ function renderWellbeingRadar(wellbeing) {
   const rings = [0.25, 0.5, 0.75, 1]
     .map((step) => {
       const points = metrics.map((_metric, index) =>
-        polarToCartesian(center, center, radius * step, (360 / metrics.length) * index)
+        polarToCartesian(centerX, centerY, radius * step, (360 / metrics.length) * index)
       );
       return `<path d="${buildClosedPath(points)}" class="chart-radar-ring"></path>`;
     })
     .join("");
 
   wellbeingRadarChart.innerHTML = `
-    <svg class="chart-svg chart-svg-radar" viewBox="0 0 240 240" role="img" aria-label="Радар самочувствия">
+    <svg class="chart-svg chart-svg-radar" viewBox="0 0 300 260" role="img" aria-label="Радар самочувствия">
       ${rings}
       ${axisMarks}
       <path d="${buildClosedPath(polygonPoints)}" class="chart-radar-area"></path>
@@ -1121,13 +1133,15 @@ function renderMealTimeline(meals) {
     return;
   }
 
-  const width = 860;
-  const height = 220;
-  const padding = { left: 42, right: 34, top: 28, bottom: 32 };
+  const width = 920;
+  const height = 260;
+  const padding = { left: 54, right: 54, top: 34, bottom: 44 };
+  const cardWidth = 194;
+  const cardHeight = 52;
   const startMinutes = 5 * 60;
   const endMinutes = 23 * 60;
   const span = endMinutes - startMinutes;
-  const lineY = height - 74;
+  const lineY = 142;
   const axisLabels = [6, 9, 12, 15, 18, 21]
     .map((hour) => {
       const x = padding.left + (((hour * 60 - startMinutes) / span) * (width - padding.left - padding.right));
@@ -1148,8 +1162,9 @@ function renderMealTimeline(meals) {
       const currentMinutes = Math.min(Math.max(hours * 60 + minutes, startMinutes), endMinutes);
       const x =
         padding.left + (((currentMinutes - startMinutes) / span) * (width - padding.left - padding.right));
-      const y = index % 2 === 0 ? lineY - 44 : lineY + 44;
-      return { meal, x, y };
+      const labelX = Math.min(Math.max(x, padding.left + cardWidth / 2), width - padding.right - cardWidth / 2);
+      const y = index % 2 === 0 ? lineY - 68 : lineY + 68;
+      return { meal, x, labelX, y };
     });
 
   mealTimelineChart.innerHTML = `
@@ -1158,13 +1173,13 @@ function renderMealTimeline(meals) {
       ${axisLabels}
       ${points
         .map(
-          ({ meal, x, y }) => `
+          ({ meal, x, labelX, y }) => `
             <g>
-              <line x1="${x.toFixed(1)}" y1="${lineY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(95, 125, 146, 0.36)" stroke-width="2"></line>
+              <path d="M ${x.toFixed(1)} ${lineY} L ${x.toFixed(1)} ${((lineY + y) / 2).toFixed(1)} L ${labelX.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="rgba(95, 125, 146, 0.32)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
               <circle cx="${x.toFixed(1)}" cy="${lineY}" r="6" fill="#6f9d9b"></circle>
-              <rect x="${(x - 66).toFixed(1)}" y="${(y - 22).toFixed(1)}" width="132" height="44" rx="14" fill="var(--surface-strong)" stroke="var(--line)"></rect>
-              <text x="${x.toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" class="chart-axis-label">${escapeHtml(meal.mealType)} · ${escapeHtml(formatTime(meal.eatenAt))}</text>
-              <text x="${x.toFixed(1)}" y="${(y + 14).toFixed(1)}" text-anchor="middle" class="chart-caption">${escapeHtml(meal.title)} · ${formatCompactNumber(meal.calories, 0)} ккал</text>
+              <rect x="${(labelX - cardWidth / 2).toFixed(1)}" y="${(y - cardHeight / 2).toFixed(1)}" width="${cardWidth}" height="${cardHeight}" rx="12" fill="var(--surface-strong)" stroke="var(--line)"></rect>
+              <text x="${labelX.toFixed(1)}" y="${(y - 7).toFixed(1)}" text-anchor="middle" class="chart-axis-label chart-timeline-meta">${escapeHtml(meal.mealType)} · ${escapeHtml(formatTime(meal.eatenAt))}</text>
+              <text x="${labelX.toFixed(1)}" y="${(y + 13).toFixed(1)}" text-anchor="middle" class="chart-caption chart-timeline-title">${escapeHtml(truncateText(meal.title, 25))} · ${formatCompactNumber(meal.calories, 0)} ккал</text>
             </g>
           `
         )
@@ -3238,7 +3253,7 @@ if (importFileInput) {
     const file = importFileInput.files?.[0];
     importFileMeta.textContent = file
       ? `Файл: ${file.name} · ${(file.size / 1024).toFixed(1)} КБ`
-      : "Поддерживаются JSON, CSV и TSV.";
+      : "Поддерживаются JSON и TSV.";
     clearImportPreview();
   });
 }
@@ -3305,7 +3320,7 @@ importApplyButton?.addEventListener("click", async () => {
     if (importFileInput) {
       importFileInput.value = "";
     }
-    importFileMeta.textContent = "Поддерживаются JSON, CSV и TSV.";
+    importFileMeta.textContent = "Поддерживаются JSON и TSV.";
     showFlash(
       `Импорт завершен: ${result.imported} строк загружено, ${result.skipped} пропущено.`,
       "success"

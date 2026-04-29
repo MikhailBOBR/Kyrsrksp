@@ -1094,7 +1094,7 @@
                   <p class="section-label">Обмен данными</p>
                   <h2>Импорт, шаблоны файлов и выгрузка отчета</h2>
                 </div>
-                <p id="import-file-meta" class="muted-text">Поддерживаются JSON, CSV и TSV.</p>
+                <p id="import-file-meta" class="muted-text">Поддерживаются JSON и TSV.</p>
               </div>
 
               <div class="split-grid">
@@ -1121,7 +1121,6 @@
                       Формат
                       <select name="format" id="import-format-select" required>
                         <option value="json">JSON</option>
-                        <option value="csv">CSV</option>
                         <option value="tsv">TSV</option>
                       </select>
                     </label>
@@ -1132,7 +1131,7 @@
                         id="import-file-input"
                         name="file"
                         type="file"
-                        accept=".json,.csv,.tsv,.txt,application/json,text/csv,text/tab-separated-values,text/plain"
+                        accept=".json,.tsv,.txt,application/json,text/tab-separated-values,text/plain"
                       />
                     </label>
 
@@ -1142,7 +1141,7 @@
                         id="import-raw-input"
                         name="content"
                         rows="8"
-                        placeholder="Вставьте JSON-массив, CSV или TSV."
+                        placeholder="Вставьте JSON-массив или TSV."
                       ></textarea>
                     </label>
 
@@ -1163,10 +1162,6 @@
                     <article class="stack-card">
                       <strong>JSON</strong>
                       <p class="dashboard-note">Подходит для структурированных пакетов и резервных копий.</p>
-                    </article>
-                    <article class="stack-card">
-                      <strong>CSV</strong>
-                      <p class="dashboard-note">Удобен для Excel и ручной подготовки таблиц.</p>
                     </article>
                     <article class="stack-card">
                       <strong>TSV</strong>
@@ -1269,6 +1264,6 @@
       </article>
     </template>
 
-    <script src="/app.js?v=csv-utf8-blob" defer></script>
+    <script src="/app.js?v=exports-json-pdf" defer></script>
   </body>
 </html>

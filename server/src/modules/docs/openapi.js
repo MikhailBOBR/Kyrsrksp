@@ -487,8 +487,8 @@ const openApiDocument = {
     { name: "Hydration", description: "Трекер воды и агрегированная гидратация." },
     { name: "Templates", description: "Шаблоны приёмов пищи для ускоренного повторного ввода." },
     { name: "Recipes", description: "Составные рецепты и сценарии применения в журнале и плане." },
-    { name: "Exports", description: "Экспорт ежедневного отчёта в JSON и CSV." },
-    { name: "Imports", description: "Предпросмотр, шаблоны и импорт данных из JSON, CSV и TSV." },
+    { name: "Exports", description: "Экспорт ежедневного отчёта в JSON." },
+    { name: "Imports", description: "Предпросмотр, шаблоны и импорт данных из JSON и TSV." },
     { name: "Checkins", description: "Самочувствие, readiness score и дневные check-in записи." },
     { name: "Metrics", description: "Замеры тела и прогресс физических показателей." },
     { name: "Planner", description: "Планировщик питания, ручные и автоматические недельные планы." },
@@ -621,12 +621,12 @@ const openApiDocument = {
           },
           format: {
             type: "string",
-            enum: ["json", "csv", "tsv"],
-            example: "csv"
+            enum: ["json", "tsv"],
+            example: "tsv"
           },
           content: {
             type: "string",
-            example: "title,meal_type,date,eaten_at,grams,calories,protein,fat,carbs\nОвсянка,Завтрак,2026-04-23,08:15,240,390,15,10,58"
+            example: "title\tmeal_type\tdate\teaten_at\tgrams\tcalories\tprotein\tfat\tcarbs\nОвсянка\tЗавтрак\t2026-04-23\t08:15\t240\t390\t15\t10\t58"
           }
         },
         required: ["dataset", "format", "content"]
@@ -644,7 +644,7 @@ const openApiDocument = {
         properties: {
           dataset: { type: "string", example: "meals" },
           datasetLabel: { type: "string", example: "Приемы пищи" },
-          format: { type: "string", example: "csv" },
+          format: { type: "string", example: "tsv" },
           columns: {
             type: "array",
             items: { type: "string" }
@@ -678,7 +678,7 @@ const openApiDocument = {
         properties: {
           dataset: { type: "string", example: "meals" },
           datasetLabel: { type: "string", example: "Приемы пищи" },
-          format: { type: "string", example: "csv" },
+          format: { type: "string", example: "tsv" },
           imported: { type: "integer", example: 10 },
           skipped: { type: "integer", example: 2 },
           issues: {
@@ -1014,8 +1014,8 @@ const openApiDocument = {
       delete: secured("Delete recipe", ["Recipes"])
     },
     "/api/exports/daily-report": {
-      get: secured("Export daily report as JSON or CSV", ["Exports"], {
-        description: "Формирует ежедневный отчёт по питанию, воде и целям в JSON или CSV.",
+      get: secured("Export daily report as JSON", ["Exports"], {
+        description: "Формирует ежедневный отчёт по питанию, воде и целям в JSON.",
         parameters: [
           {
             $ref: "#/components/parameters/DateParameter"
@@ -1025,7 +1025,7 @@ const openApiDocument = {
             name: "format",
             schema: {
               type: "string",
-              enum: ["json", "csv"],
+              enum: ["json"],
               default: "json"
             },
             description: "Формат результата."
@@ -1033,17 +1033,11 @@ const openApiDocument = {
         ],
         responses: {
           200: {
-            description: "Ежедневный отчёт в выбранном формате.",
+            description: "Ежедневный отчёт в JSON.",
             content: {
               "application/json": {
                 schema: {
                   $ref: "#/components/schemas/DailyReport"
-                }
-              },
-              "text/csv": {
-                schema: {
-                  type: "string",
-                  example: "nutrition_report,..."
                 }
               }
             }
@@ -1056,7 +1050,7 @@ const openApiDocument = {
     },
     "/api/imports/template": {
       get: secured("Download import template", ["Imports"], {
-        description: "Возвращает шаблон файла для импорта выбранного набора данных в JSON, CSV или TSV.",
+        description: "Возвращает шаблон файла для импорта выбранного набора данных в JSON или TSV.",
         parameters: [
           {
             in: "query",
@@ -1073,7 +1067,7 @@ const openApiDocument = {
             required: true,
             schema: {
               type: "string",
-              enum: ["json", "csv", "tsv"]
+              enum: ["json", "tsv"]
             }
           }
         ],
@@ -1085,12 +1079,6 @@ const openApiDocument = {
                 schema: {
                   type: "string",
                   example: "{\"dataset\":\"meals\",\"items\":[...]}"
-                }
-              },
-              "text/csv": {
-                schema: {
-                  type: "string",
-                  example: "title,meal_type,date,eaten_at,..."
                 }
               },
               "text/tab-separated-values": {

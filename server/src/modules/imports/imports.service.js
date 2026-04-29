@@ -14,7 +14,7 @@ const { createMeal } = require("../meals/meals.service");
 const { createProduct } = require("../products/products.service");
 const { createTemplate } = require("../templates/templates.service");
 
-const supportedFormats = ["json", "csv", "tsv"];
+const supportedFormats = ["json", "tsv"];
 const supportedDatasets = ["meals", "templates", "hydration", "products"];
 
 const datasetConfigs = {
@@ -433,7 +433,7 @@ function getParsedRows(dataset, format, content) {
     return parseJsonRecords(dataset, rawContent);
   }
 
-  return parseDelimitedRecords(rawContent, normalizedFormat === "tsv" ? "\t" : ",");
+  return parseDelimitedRecords(rawContent, "\t");
 }
 
 function ensureDatasetPermissions(user, dataset) {
@@ -542,17 +542,10 @@ function buildTemplateFile(dataset, format) {
     headers,
     ...sampleRows.map((row) => headers.map((header) => row[header] ?? ""))
   ];
-  const delimiter = normalizedFormat === "tsv" ? "\t" : ",";
-  const extension = normalizedFormat === "tsv" ? "tsv" : "csv";
-  const contentType =
-    normalizedFormat === "tsv"
-      ? "text/tab-separated-values; charset=utf-8"
-      : "text/csv; charset=utf-8";
-
   return {
-    filename: `${filenameBase}.${extension}`,
-    contentType,
-    content: `\uFEFF${serializeDelimited(table, delimiter)}`
+    filename: `${filenameBase}.tsv`,
+    contentType: "text/tab-separated-values; charset=utf-8",
+    content: `\uFEFF${serializeDelimited(table, "\t")}`
   };
 }
 

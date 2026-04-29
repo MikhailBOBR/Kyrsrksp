@@ -20,7 +20,7 @@
 
 - [server/tests/openapi-docs.test.js](../server/tests/openapi-docs.test.js) — качество Swagger/OpenAPI, operationId, схемы, path-параметры и ссылки документации;
 - [server/tests/contracts.test.js](../server/tests/contracts.test.js) — негативные API-контракты;
-- [server/tests/imports.test.js](../server/tests/imports.test.js) — импорт `JSON/CSV/TSV`;
+- [server/tests/imports.test.js](../server/tests/imports.test.js) — импорт `JSON/TSV`;
 - [server/tests/observability.test.js](../server/tests/observability.test.js) — health check, request id и runtime-состояние;
 - [server/tests/client-static.test.js](../server/tests/client-static.test.js) — статические контракты клиентского интерфейса.
 
