@@ -1155,6 +1155,10 @@ body[data-theme="dark"] #session-badge {
     var(--surface-strong);
 }
 
+#meal-timeline-chart {
+  min-height: 330px;
+}
+
 .chart-svg {
   width: 100%;
   height: auto;
@@ -2001,6 +2005,10 @@ button:disabled {
   .chart-surface {
     min-height: 190px;
     padding: 8px;
+  }
+
+  #meal-timeline-chart {
+    min-height: 300px;
   }
 
   .brand-button {

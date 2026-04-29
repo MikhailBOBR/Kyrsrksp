@@ -782,6 +782,31 @@ function truncateText(value, maxLength) {
   return text.length > maxLength ? `${text.slice(0, Math.max(maxLength - 1, 0))}…` : text;
 }
 
+function splitTextLines(value, maxLength, maxLines = 2) {
+  const words = String(value ?? "").trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+
+  words.forEach((word) => {
+    const current = lines[lines.length - 1] || "";
+    const next = current ? `${current} ${word}` : word;
+
+    if (!current || next.length <= maxLength) {
+      lines[lines.length - 1] = next;
+      return;
+    }
+
+    if (lines.length < maxLines) {
+      lines.push(word);
+    } else {
+      lines[lines.length - 1] = `${lines[lines.length - 1]} ${word}`;
+    }
+  });
+
+  return lines.slice(0, maxLines).map((line, index) =>
+    index === maxLines - 1 && line.length > maxLength ? truncateText(line, maxLength) : line
+  );
+}
+
 function downloadTextFile(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -1134,21 +1159,21 @@ function renderMealTimeline(meals) {
   }
 
   const width = 920;
-  const height = 260;
-  const padding = { left: 54, right: 54, top: 34, bottom: 44 };
-  const cardWidth = 194;
-  const cardHeight = 52;
+  const height = 340;
+  const padding = { left: 54, right: 54, top: 38, bottom: 54 };
+  const cardWidth = 248;
+  const cardHeight = 72;
   const startMinutes = 5 * 60;
   const endMinutes = 23 * 60;
   const span = endMinutes - startMinutes;
-  const lineY = 142;
+  const lineY = 158;
   const axisLabels = [6, 9, 12, 15, 18, 21]
     .map((hour) => {
       const x = padding.left + (((hour * 60 - startMinutes) / span) * (width - padding.left - padding.right));
       return `
         <g>
           <line x1="${x.toFixed(1)}" y1="${(lineY - 14).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(lineY + 14).toFixed(1)}" class="chart-grid-line"></line>
-          <text x="${x.toFixed(1)}" y="${(height - 24).toFixed(1)}" text-anchor="middle" class="chart-axis-label">${hour}:00</text>
+          <text x="${x.toFixed(1)}" y="${(height - 26).toFixed(1)}" text-anchor="middle" class="chart-axis-label">${hour}:00</text>
         </g>
       `;
     })
@@ -1163,8 +1188,9 @@ function renderMealTimeline(meals) {
       const x =
         padding.left + (((currentMinutes - startMinutes) / span) * (width - padding.left - padding.right));
       const labelX = Math.min(Math.max(x, padding.left + cardWidth / 2), width - padding.right - cardWidth / 2);
-      const y = index % 2 === 0 ? lineY - 68 : lineY + 68;
-      return { meal, x, labelX, y };
+      const y = index % 2 === 0 ? lineY - 84 : lineY + 94;
+      const titleLines = splitTextLines(meal.title, 31, 2);
+      return { meal, x, labelX, y, titleLines };
     });
 
   mealTimelineChart.innerHTML = `
@@ -1173,13 +1199,21 @@ function renderMealTimeline(meals) {
       ${axisLabels}
       ${points
         .map(
-          ({ meal, x, labelX, y }) => `
+          ({ meal, x, labelX, y, titleLines }) => `
             <g>
               <path d="M ${x.toFixed(1)} ${lineY} L ${x.toFixed(1)} ${((lineY + y) / 2).toFixed(1)} L ${labelX.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="rgba(95, 125, 146, 0.32)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
               <circle cx="${x.toFixed(1)}" cy="${lineY}" r="6" fill="#6f9d9b"></circle>
               <rect x="${(labelX - cardWidth / 2).toFixed(1)}" y="${(y - cardHeight / 2).toFixed(1)}" width="${cardWidth}" height="${cardHeight}" rx="12" fill="var(--surface-strong)" stroke="var(--line)"></rect>
-              <text x="${labelX.toFixed(1)}" y="${(y - 7).toFixed(1)}" text-anchor="middle" class="chart-axis-label chart-timeline-meta">${escapeHtml(meal.mealType)} · ${escapeHtml(formatTime(meal.eatenAt))}</text>
-              <text x="${labelX.toFixed(1)}" y="${(y + 13).toFixed(1)}" text-anchor="middle" class="chart-caption chart-timeline-title">${escapeHtml(truncateText(meal.title, 25))} · ${formatCompactNumber(meal.calories, 0)} ккал</text>
+              <text x="${labelX.toFixed(1)}" y="${(y - 16).toFixed(1)}" text-anchor="middle" class="chart-axis-label chart-timeline-meta">${escapeHtml(meal.mealType)} · ${escapeHtml(formatTime(meal.eatenAt))}</text>
+              <text x="${labelX.toFixed(1)}" y="${(y + 5).toFixed(1)}" text-anchor="middle" class="chart-caption chart-timeline-title">
+                ${titleLines
+                  .map(
+                    (line, lineIndex) =>
+                      `<tspan x="${labelX.toFixed(1)}" dy="${lineIndex === 0 ? 0 : 15}">${escapeHtml(line)}</tspan>`
+                  )
+                  .join("")}
+                <tspan x="${labelX.toFixed(1)}" dy="15">${formatCompactNumber(meal.calories, 0)} ккал</tspan>
+              </text>
             </g>
           `
         )
