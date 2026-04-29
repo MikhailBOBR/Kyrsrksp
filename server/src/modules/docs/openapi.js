@@ -487,7 +487,7 @@ const openApiDocument = {
     { name: "Hydration", description: "Трекер воды и агрегированная гидратация." },
     { name: "Templates", description: "Шаблоны приёмов пищи для ускоренного повторного ввода." },
     { name: "Recipes", description: "Составные рецепты и сценарии применения в журнале и плане." },
-    { name: "Exports", description: "Экспорт ежедневного отчёта в JSON." },
+    { name: "Exports", description: "Экспорт ежедневного отчёта в JSON и CSV." },
     { name: "Imports", description: "Предпросмотр, шаблоны и импорт данных из JSON, CSV и TSV." },
     { name: "Checkins", description: "Самочувствие, readiness score и дневные check-in записи." },
     { name: "Metrics", description: "Замеры тела и прогресс физических показателей." },
@@ -1014,8 +1014,8 @@ const openApiDocument = {
       delete: secured("Delete recipe", ["Recipes"])
     },
     "/api/exports/daily-report": {
-      get: secured("Export daily report as JSON", ["Exports"], {
-        description: "Формирует ежедневный отчёт по питанию, воде и целям в JSON.",
+      get: secured("Export daily report as JSON or CSV", ["Exports"], {
+        description: "Формирует ежедневный отчёт по питанию, воде и целям в JSON или CSV.",
         parameters: [
           {
             $ref: "#/components/parameters/DateParameter"
@@ -1025,7 +1025,7 @@ const openApiDocument = {
             name: "format",
             schema: {
               type: "string",
-              enum: ["json"],
+              enum: ["json", "csv"],
               default: "json"
             },
             description: "Формат результата."
@@ -1033,11 +1033,17 @@ const openApiDocument = {
         ],
         responses: {
           200: {
-            description: "Ежедневный отчёт в JSON.",
+            description: "Ежедневный отчёт в выбранном формате.",
             content: {
               "application/json": {
                 schema: {
                   $ref: "#/components/schemas/DailyReport"
+                }
+              },
+              "text/csv": {
+                schema: {
+                  type: "string",
+                  example: "nutrition_report,..."
                 }
               }
             }

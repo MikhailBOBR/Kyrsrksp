@@ -85,6 +85,17 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
     };
   }
 
+  async function bytes(pathname, options = {}) {
+    const response = await fetch(`${baseUrl}${pathname}`, options);
+    const payload = Buffer.from(await response.arrayBuffer());
+
+    return {
+      status: response.status,
+      payload,
+      headers: response.headers
+    };
+  }
+
   async function login(email, password) {
     const response = await api("/api/auth/login", {
       method: "POST",
@@ -100,6 +111,7 @@ function createHttpTestContext(test, { dbFileName, jwtSecret = "test-secret" }) 
 
   return {
     api,
+    bytes,
     text,
     login
   };

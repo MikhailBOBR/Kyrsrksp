@@ -690,17 +690,22 @@ test("adds favorites for product and template", async () => {
   assert.ok(favorites.payload.templates.length >= 1);
 });
 
-test("rejects removed csv daily report export", async () => {
+test("exports daily report in csv format", async () => {
   const token = await login("demo@nutritrack.local", "Demo123!");
 
-  const response = await api("/api/exports/daily-report?format=csv", {
+  const response = await fetch(`${baseUrl}/api/exports/daily-report?format=csv`, {
     headers: {
       Authorization: `Bearer ${token}`
     }
   });
 
-  assert.equal(response.status, 400);
-  assert.equal(response.payload.error, "Export format is not supported");
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const content = bytes.subarray(2).toString("utf16le");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual([...bytes.subarray(0, 2)], [0xff, 0xfe]);
+  assert.match(content, /goal_calories/);
+  assert.match(content, /meal_id/);
 });
 
 test("exposes extended OpenAPI document", async () => {
