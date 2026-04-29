@@ -919,7 +919,7 @@ function renderMacroDonut(summary) {
       ${circles}
       <text x="90" y="84" text-anchor="middle" class="chart-center-label">КБЖУ</text>
       <text x="90" y="108" text-anchor="middle" class="chart-center-value">${formatCompactNumber(total, 0)}</text>
-      <text x="90" y="126" text-anchor="middle" class="chart-center-note">ккал из макросов</text>
+      <text x="90" y="126" text-anchor="middle" class="chart-center-note">ккал</text>
     </svg>
   `;
 
