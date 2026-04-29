@@ -4,6 +4,15 @@
 
 > «Персональный дневник питания с анализом КБЖУ»
 
+## Исходные данные
+
+| Исходное требование | Статус | Где отражено |
+| --- | --- | --- |
+| Методология Twelve-Factor App | Учтено | [06-twelve-factor.md](./06-twelve-factor.md), [09-ops-and-runtime-checklist.md](./09-ops-and-runtime-checklist.md) |
+| Git и система контроля версий | Учтено | `.git`, [README.md](../README.md), [.github/workflows](../.github/workflows) |
+| Нормативный документ `СМКО МИРЭА 7.5.1/04.И.05-18` | Учтено как рамка оформления курсового проекта | этот чек-лист, структура README, docs/wiki и pre-release материалы |
+| Основная реляционная БД | `PostgreSQL` | [docker-compose.yml](../docker-compose.yml), [render.yaml](../render.yaml), [09-ops-and-runtime-checklist.md](./09-ops-and-runtime-checklist.md) |
+
 ## Сводный статус
 
 | Пункт задания | Статус | Подтверждающие материалы |

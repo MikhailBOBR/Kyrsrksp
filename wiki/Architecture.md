@@ -6,7 +6,8 @@
 
 - frontend на `HTML + CSS + JavaScript`;
 - backend на `Node.js + Express`;
-- база данных `SQLite`;
+- база данных `PostgreSQL` в Docker/runtime/deploy-контуре;
+- `SQLite` используется только как изолированный fallback для локальных тестов;
 - взаимодействие по `REST API`;
 - аутентификация через `JWT`;
 - ролевая модель `user/admin`.

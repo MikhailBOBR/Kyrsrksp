@@ -41,11 +41,17 @@ http://localhost:8080/api/docs
 - `SERVER_PORT`
 - `JWT_SECRET`
 - `DB_PROVIDER`
-- `DB_PATH`
+- `DATABASE_URL`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_PATH` только для локального SQLite fallback
 
 ### Постоянное хранилище
 
-Основной production-friendly режим рассчитан на PostgreSQL. SQLite оставлен как легкий fallback для локальных тестов и изолированных запусков.
+Основной production-friendly режим рассчитан на PostgreSQL. В `render.yaml` web service получает `DATABASE_URL` из managed PostgreSQL database `nutritrack-db`. SQLite оставлен как легкий fallback для локальных тестов и изолированных запусков.
 
 ## Что важно для production
 

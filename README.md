@@ -8,6 +8,14 @@
 
 Текущий pre-release кандидат: `1.0.0-rc.1`
 
+## Исходные данные проекта
+
+- тема: «Персональный дневник питания с анализом КБЖУ»;
+- методология: Twelve-Factor App, описание соответствия в [docs/06-twelve-factor.md](./docs/06-twelve-factor.md);
+- система контроля версий: `Git`, репозиторий содержит `.git`, GitHub Actions, Dockerfile и README;
+- нормативная база оформления: инструкция по организации и проведению курсового проектирования `СМКО МИРЭА 7.5.1/04.И.05-18`;
+- основная БД runtime/deploy-контура: `PostgreSQL`.
+
 ## Технологический стек
 
 - frontend: `HTML + CSS + JavaScript`
@@ -123,7 +131,10 @@ UML-материалы:
 |   |-- 05-testing-and-quality.md
 |   |-- 06-twelve-factor.md
 |   |-- 07-course-checklist.md
-|   `-- 08-pre-release-checklist.md
+|   |-- 08-pre-release-checklist.md
+|   |-- 09-ops-and-runtime-checklist.md
+|   |-- 10-swagger-and-api-quality.md
+|   `-- 11-test-coverage-report.md
 |-- deploy/
 |   |-- docker/
 |   `-- README.md
