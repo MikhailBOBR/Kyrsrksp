@@ -22,6 +22,11 @@ const steps = [
     title: "Test suite",
     command: nodeCommand,
     args: ["--test", "--test-reporter=spec", ...testFiles]
+  },
+  {
+    title: "Surface coverage report",
+    command: nodeCommand,
+    args: [path.join("scripts", "generate-test-coverage-report.js"), "--check"]
   }
 ];
 

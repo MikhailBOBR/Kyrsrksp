@@ -4,7 +4,7 @@
 
 ## Что проверить перед выкладкой
 
-1. Прогнать `npm run pre-release`.
+1. Прогнать `npm run test:full`.
 2. Убедиться, что `Swagger` открывается по `/api/docs`.
 3. Проверить вход под `demo` и `admin`.
 4. Проверить импорт `JSON/TSV` и экспорт `JSON/PDF`.
@@ -15,6 +15,6 @@
 ## Что уже подготовлено
 
 - `CHANGELOG.md` для релизной заметки;
-- `npm run pre-release` для локального контрольного прогона;
+- `npm run test:full` для локального контрольного прогона тестов, V8 coverage и surface coverage;
 - `render.yaml` и Docker-конфигурация для deploy-сценария;
 - автоматические тесты, включая frontend contracts и fuzzing.

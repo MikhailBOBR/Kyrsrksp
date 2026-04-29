@@ -20,9 +20,11 @@
 
 - [server/tests/openapi-docs.test.js](../server/tests/openapi-docs.test.js) — качество Swagger/OpenAPI, operationId, схемы, path-параметры и ссылки документации;
 - [server/tests/contracts.test.js](../server/tests/contracts.test.js) — негативные API-контракты;
+- [server/tests/api-crud-coverage.test.js](../server/tests/api-crud-coverage.test.js) — расширенное CRUD-покрытие update/delete/manual-create веток;
 - [server/tests/imports.test.js](../server/tests/imports.test.js) — импорт `JSON/TSV`;
 - [server/tests/observability.test.js](../server/tests/observability.test.js) — health check, request id и runtime-состояние;
-- [server/tests/client-static.test.js](../server/tests/client-static.test.js) — статические контракты клиентского интерфейса.
+- [server/tests/client-static.test.js](../server/tests/client-static.test.js) — статические контракты клиентского интерфейса;
+- [server/tests/surface-coverage.test.js](../server/tests/surface-coverage.test.js) — gate на 100% покрытия OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев.
 
 ### Фаззинг-тестирование
 
@@ -46,7 +48,11 @@
 npm test
 npm run test:fuzz
 npm run test:coverage
+npm run test:surface
+npm run test:full
 ```
+
+Команда `npm run test:surface` генерирует отчет [11-test-coverage-report.md](./11-test-coverage-report.md) и показывает 100% покрытие функциональной поверхности проекта.
 
 ## Качество структуры проекта
 

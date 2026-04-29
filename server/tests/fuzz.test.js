@@ -7,6 +7,9 @@ process.env.DB_PATH = path.resolve(__dirname, "../data/fuzz.db");
 process.env.DB_PROVIDER = "sqlite";
 process.env.DATABASE_URL = "";
 process.env.JWT_SECRET = "fuzz-secret";
+process.env.APP_ENV = "test";
+process.env.NODE_ENV = "test";
+process.env.LOG_LEVEL = "error";
 
 const dbFiles = [
   process.env.DB_PATH,
@@ -174,6 +177,73 @@ function buildRandomProductPayload() {
   };
 }
 
+function buildRandomHydrationPayload() {
+  return {
+    amountMl: weirdNumber(),
+    loggedAt: pick(["07:10", "12:20", "22:40", weirdScalar()]),
+    date: pick(["2026-04-22", weirdScalar()])
+  };
+}
+
+function buildRandomCheckinPayload() {
+  return {
+    mood: weirdNumber(),
+    energy: weirdNumber(),
+    stress: weirdNumber(),
+    hunger: weirdNumber(),
+    sleepHours: weirdNumber(),
+    date: pick(["2026-04-22", weirdScalar()]),
+    notes: weirdScalar()
+  };
+}
+
+function buildRandomMetricPayload() {
+  return {
+    weightKg: weirdNumber(),
+    bodyFat: weirdNumber(),
+    waistCm: weirdNumber(),
+    chestCm: weirdNumber(),
+    date: pick(["2026-04-22", weirdScalar()]),
+    notes: weirdScalar()
+  };
+}
+
+function buildRandomShoppingPayload() {
+  return {
+    title: weirdScalar(),
+    category: weirdScalar(),
+    quantity: weirdNumber(),
+    unit: pick(["шт", "уп", "кг", "г", "л", "мл", weirdScalar()]),
+    plannedFor: pick(["2026-04-22", weirdScalar()]),
+    source: weirdScalar(),
+    notes: weirdScalar()
+  };
+}
+
+function buildRandomDayNotePayload() {
+  return {
+    date: pick(["2026-04-22", weirdScalar()]),
+    title: weirdScalar(),
+    focus: weirdScalar(),
+    wins: weirdScalar(),
+    improvements: weirdScalar(),
+    notes: weirdScalar()
+  };
+}
+
+function buildRandomImportPayload() {
+  return {
+    dataset: pick(["meals", "templates", "hydration", "products", weirdScalar()]),
+    format: pick(["json", "tsv", weirdScalar()]),
+    content: pick([
+      "[]",
+      "[{}]",
+      "title\tmealType\teatenAt\tgrams\tcalories\tprotein\tfat\tcarbs\nBad\tОбед\t12:00\t100\t200\t20\t5\t25",
+      weirdScalar()
+    ])
+  };
+}
+
 test("fuzzes auth registration with random invalid payloads without 500 errors", async () => {
   const allowedStatuses = new Set([201, 400]);
 
@@ -193,6 +263,43 @@ test("fuzzes auth registration with random invalid payloads without 500 errors",
     assert.ok(
       allowedStatuses.has(response.status),
       `Unexpected status ${response.status} on register fuzz iteration ${index}`
+    );
+  }
+});
+
+test("fuzzes malformed json bodies across mutating endpoints without 500 errors", async () => {
+  const userToken = await login("demo@nutritrack.local", "Demo123!");
+  const adminToken = await login("admin@nutritrack.local", "Admin123!");
+  const allowedStatuses = new Set([400, 401, 403, 404]);
+  const endpoints = [
+    { method: "PUT", pathname: "/api/goals", token: userToken },
+    { method: "POST", pathname: "/api/meals", token: userToken },
+    { method: "POST", pathname: "/api/templates", token: userToken },
+    { method: "POST", pathname: "/api/recipes", token: userToken },
+    { method: "POST", pathname: "/api/planner", token: userToken },
+    { method: "POST", pathname: "/api/hydration", token: userToken },
+    { method: "PUT", pathname: "/api/checkins", token: userToken },
+    { method: "POST", pathname: "/api/metrics", token: userToken },
+    { method: "PUT", pathname: "/api/day-notes", token: userToken },
+    { method: "POST", pathname: "/api/shopping", token: userToken },
+    { method: "POST", pathname: "/api/imports/preview", token: userToken },
+    { method: "POST", pathname: "/api/imports/apply", token: userToken },
+    { method: "POST", pathname: "/api/products", token: adminToken }
+  ];
+
+  for (const endpoint of endpoints) {
+    const response = await api(endpoint.pathname, {
+      method: endpoint.method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${endpoint.token}`
+      },
+      body: "{\"broken\":"
+    });
+
+    assert.ok(
+      allowedStatuses.has(response.status),
+      `Unexpected status ${response.status} for malformed JSON ${endpoint.method} ${endpoint.pathname}`
     );
   }
 });
@@ -258,5 +365,66 @@ test("fuzzes protected business endpoints without server crashes", async () => {
       allowedStatuses.has(productResponse.status),
       `Unexpected status ${productResponse.status} on product fuzz iteration ${index}`
     );
+  }
+});
+
+test("fuzzes daily, import and shopping endpoints without server crashes", async () => {
+  const userToken = await login("demo@nutritrack.local", "Demo123!");
+  const adminToken = await login("admin@nutritrack.local", "Admin123!");
+  const allowedStatuses = new Set([200, 201, 400, 401, 403, 404]);
+
+  for (let index = 0; index < 20; index += 1) {
+    const queryDate = encodeURIComponent(String(pick(["2026-04-22", weirdScalar()])));
+    const queryRoutes = [
+      `/api/dashboard?date=${queryDate}`,
+      `/api/hydration?date=${queryDate}`,
+      `/api/checkins?date=${queryDate}`,
+      `/api/planner?date=${queryDate}`,
+      `/api/day-notes?date=${queryDate}`,
+      `/api/day-notes/recent?limit=${encodeURIComponent(String(weirdNumber()))}`,
+      `/api/products?search=${encodeURIComponent(String(weirdScalar()))}&category=${encodeURIComponent(String(weirdScalar()))}`
+    ];
+
+    for (const pathname of queryRoutes) {
+      const response = await api(pathname, {
+        headers: pathname.startsWith("/api/products")
+          ? {}
+          : {
+              Authorization: `Bearer ${userToken}`
+            }
+      });
+
+      assert.ok(
+        allowedStatuses.has(response.status),
+        `Unexpected status ${response.status} on query fuzz route ${pathname}`
+      );
+    }
+
+    const mutationCases = [
+      { pathname: "/api/hydration", method: "POST", token: userToken, body: buildRandomHydrationPayload() },
+      { pathname: "/api/checkins", method: "PUT", token: userToken, body: buildRandomCheckinPayload() },
+      { pathname: "/api/metrics", method: "POST", token: userToken, body: buildRandomMetricPayload() },
+      { pathname: "/api/day-notes", method: "PUT", token: userToken, body: buildRandomDayNotePayload() },
+      { pathname: "/api/shopping", method: "POST", token: userToken, body: buildRandomShoppingPayload() },
+      { pathname: "/api/imports/preview", method: "POST", token: userToken, body: buildRandomImportPayload() },
+      { pathname: "/api/imports/apply", method: "POST", token: userToken, body: buildRandomImportPayload() },
+      { pathname: "/api/products", method: "POST", token: adminToken, body: buildRandomProductPayload() }
+    ];
+
+    for (const item of mutationCases) {
+      const response = await api(item.pathname, {
+        method: item.method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${item.token}`
+        },
+        body: JSON.stringify(item.body)
+      });
+
+      assert.ok(
+        allowedStatuses.has(response.status),
+        `Unexpected status ${response.status} on mutation fuzz route ${item.method} ${item.pathname}`
+      );
+    }
   }
 });

@@ -179,9 +179,13 @@ npm run release
 npm test
 npm run test:coverage
 npm run test:fuzz
+npm run test:surface
+npm run test:full
 docker compose up --build
 docker compose --profile ops run --rm migrate
 ```
+
+Отчет 100% по функциональной поверхности генерируется командой `npm run test:surface` и сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md).
 
 ## Docker и deploy
 

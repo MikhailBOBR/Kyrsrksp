@@ -21,8 +21,13 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/recent", async (req, res) => {
-  const limit = req.query.limit ? Number(req.query.limit) : 5;
-  res.json(await listRecentDayNotes(req.user.id, Number.isNaN(limit) ? 5 : limit));
+  const requestedLimit = req.query.limit ? Number(req.query.limit) : 5;
+  const safeLimit =
+    Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(Math.trunc(requestedLimit), 30)
+      : 5;
+
+  res.json(await listRecentDayNotes(req.user.id, safeLimit));
 });
 
 router.put("/", async (req, res) => {

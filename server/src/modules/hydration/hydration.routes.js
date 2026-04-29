@@ -23,15 +23,17 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const { amountMl, loggedAt, date } = req.body;
+  const safeLoggedAt = loggedAt || "00:00";
+  const safeDate = date || undefined;
 
   assertNumber(amountMl, "amountMl");
-  assertTime(loggedAt || "00:00", "loggedAt");
+  assertTime(safeLoggedAt, "loggedAt");
 
-  if (date) {
-    assertDate(date);
+  if (safeDate) {
+    assertDate(safeDate);
   }
 
-  res.status(201).json(await addHydrationEntry(req.user.id, amountMl, loggedAt, date));
+  res.status(201).json(await addHydrationEntry(req.user.id, amountMl, safeLoggedAt, safeDate));
 });
 
 router.delete("/:id", async (req, res) => {
