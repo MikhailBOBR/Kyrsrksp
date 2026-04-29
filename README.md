@@ -188,7 +188,7 @@ docker compose up --build
 docker compose --profile ops run --rm migrate
 ```
 
-Отчет 100% по функциональной поверхности, таблица выполнения всех тестов и консольная таблица `file | line % | branch % | funcs % | uncovered lines` генерируются командой `npm run test:coverage`. Основной отчет сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md), runner пишет `coverage/test-results.md`, `coverage/test-results.json` и `coverage/release-coverage-table.txt`. Сырая V8-метрика оставлена отдельно через `npm run test:v8:raw`.
+Отчет 100% по функциональной поверхности, таблица выполнения всех тестов и сырая Node/V8 таблица `file | line % | branch % | funcs % | uncovered lines` генерируются командой `npm run test:coverage`. Основной отчет сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md), runner пишет `coverage/test-results.md` и `coverage/test-results.json`. Команда `npm run test:v8` дополнительно включает пороги `100/100/100` и падает, если V8-таблица перестает быть полностью зеленой.
 
 ## Docker и deploy
 

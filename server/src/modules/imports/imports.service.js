@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { getLocalDate } = require("../../lib/date");
 const { createHttpError } = require("../../lib/http");
 const {

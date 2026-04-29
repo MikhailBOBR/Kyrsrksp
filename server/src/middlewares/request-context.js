@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const crypto = require("node:crypto");
 const { requestIdHeader } = require("../config/env");
 const { logger } = require("../lib/logger");

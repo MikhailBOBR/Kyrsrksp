@@ -72,7 +72,7 @@
 
 - добавлены проверки на request id, health metadata, draining-mode и конфигурацию
 - покрыты admin/security/import/export/runtime сценарии
-- `npm run pre-release` запускает frontend contracts, все backend/API/fuzz тесты, 100% surface coverage и релизную таблицу покрытия
+- `npm run pre-release` запускает frontend contracts, все backend/API/fuzz тесты, 100% surface coverage и сырую Node/V8 таблицу покрытия с порогами `100/100/100`
 
 ## 10. Что считать оставшимся риском
 

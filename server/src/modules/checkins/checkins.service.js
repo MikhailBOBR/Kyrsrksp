@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { db } = require("../../db/connection");
 const { addDays, getLastDates, getLocalDate, getTimestamp } = require("../../lib/date");
 

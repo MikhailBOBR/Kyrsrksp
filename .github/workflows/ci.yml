@@ -81,7 +81,6 @@ jobs:
           name: coverage-summary
           path: |
             artifacts/test-coverage.txt
-            coverage/release-coverage-table.txt
             coverage/test-results.md
             coverage/test-results.json
             coverage/test-surface-coverage.json

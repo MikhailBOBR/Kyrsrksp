@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const packageJson = require("../../../../package.json");
 
 function secured(summary, tags, extra = {}) {

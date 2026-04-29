@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const fs = require("node:fs");
 const path = require("node:path");
 

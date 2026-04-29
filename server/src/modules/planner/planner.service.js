@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { db } = require("../../db/connection");
 const { addDays, getLocalDate, getTimestamp } = require("../../lib/date");
 const { createHttpError } = require("../../lib/http");

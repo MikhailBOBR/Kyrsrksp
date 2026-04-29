@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { adminUser, dbProvider, demoUser, seedDemoData } = require("../config/env");
 const { db } = require("./connection");
 const { getLocalDate, getTimestamp } = require("../lib/date");

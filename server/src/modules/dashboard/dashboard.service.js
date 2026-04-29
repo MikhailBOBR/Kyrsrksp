@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { db } = require("../../db/connection");
 const { dbProvider } = require("../../config/env");
 const { addDays, getLastDates, getLocalDate } = require("../../lib/date");

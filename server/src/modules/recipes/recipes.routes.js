@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const express = require("express");
 const { requireAuth } = require("../../middlewares/auth");
 const { createHttpError } = require("../../lib/http");

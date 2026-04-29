@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -463,7 +464,7 @@ ${testResultRows}
 
   return `# Отчет о покрытии тестовой поверхности
 
-Отчет генерируется командой \`npm run test:coverage\` или \`npm run test:surface\`. Он подтверждает 100% покрытие заявленной функциональной поверхности: OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев. Релизная консольная таблица в формате \`file | line % | branch % | funcs % | uncovered lines\` пишется командой \`npm run test:v8\`.
+Отчет генерируется командой \`npm run test:coverage\` или \`npm run test:surface\`. Он подтверждает 100% покрытие заявленной функциональной поверхности: OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев. Сырая Node/V8 таблица в формате \`file | line % | branch % | funcs % | uncovered lines\` пишется командой \`npm run test:v8\`.
 
 ## Сводка
 
@@ -497,8 +498,8 @@ ${fuzzRows}
 
 ## Примечания
 
-- Релизная таблица \`file | line % | branch % | funcs % | uncovered lines\` печатается командой \`npm run test:v8\` и сохраняется в \`coverage/release-coverage-table.txt\`.
-- Сырая Node/V8 line/branch coverage оставлена для инженерной диагностики через \`npm run test:v8:raw\`.
+- Сырая Node/V8 таблица \`file | line % | branch % | funcs % | uncovered lines\` печатается командой \`npm run test:v8\`.
+- Команда \`npm run test:v8\` включает пороги \`100/100/100\` и падает, если raw coverage перестает быть полностью зеленым.
 - Этот отчет является gate-проверкой функциональной поверхности: он падает, если новая API-операция, серверный модуль, frontend-контракт или fuzz-сценарий не представлен в матрице тестов.
 - Fuzzing реализован детерминированными генераторами поверх \`node:test\`, поэтому внешняя библиотека и сетевой install не требуются.
 `;

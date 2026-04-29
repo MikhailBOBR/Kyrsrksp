@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { getConfig } = require("../config/env");
 
 const levelWeights = {

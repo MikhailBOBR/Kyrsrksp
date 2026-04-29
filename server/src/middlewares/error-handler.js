@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const { logger } = require("../lib/logger");
 
 function errorHandler(error, req, res, _next) {

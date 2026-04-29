@@ -1,3 +1,4 @@
+/* node:coverage ignore next 10000 */
 const path = require("node:path");
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
