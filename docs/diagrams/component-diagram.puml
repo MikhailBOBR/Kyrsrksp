@@ -27,7 +27,7 @@ package "Backend" {
   [Swagger / OpenAPI]
 }
 
-database "SQLite" as DB
+database "PostgreSQL" as DB
 
 [HTML UI] --> [app.js state and API calls]
 [CSS Theme] --> [HTML UI]

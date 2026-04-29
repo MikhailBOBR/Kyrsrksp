@@ -15,7 +15,7 @@ node "Cloud platform" {
     artifact "Node.js + Express app"
     artifact "Static client assets"
   }
-  database "Persistent SQLite volume\nor managed DB" as CloudDB
+  database "Managed PostgreSQL\nbacking service" as CloudDB
 }
 
 "Git repository" --> "CI workflow"

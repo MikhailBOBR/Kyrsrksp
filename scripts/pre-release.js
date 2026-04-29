@@ -1,16 +1,10 @@
 const { spawn } = require("node:child_process");
-const fs = require("node:fs");
 const path = require("node:path");
 
 const packageJson = require("../package.json");
 
 const rootDir = path.resolve(__dirname, "..");
 const nodeCommand = process.execPath;
-const testFiles = fs
-  .readdirSync(path.join(rootDir, "server", "tests"))
-  .filter((filename) => filename.endsWith(".test.js"))
-  .sort()
-  .map((filename) => path.join("server", "tests", filename));
 
 const steps = [
   {
@@ -21,12 +15,17 @@ const steps = [
   {
     title: "Test suite",
     command: nodeCommand,
-    args: ["--test", "--test-reporter=spec", ...testFiles]
+    args: [path.join("scripts", "run-tests-with-table.js")]
   },
   {
     title: "Surface coverage report",
     command: nodeCommand,
     args: [path.join("scripts", "generate-test-coverage-report.js"), "--check"]
+  },
+  {
+    title: "Release coverage table",
+    command: nodeCommand,
+    args: [path.join("scripts", "print-coverage-table.js")]
   }
 ];
 

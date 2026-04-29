@@ -31,13 +31,15 @@
 - [docker-compose.yml](../docker-compose.yml) теперь описывает `app`, `postgres`, `redis` и одноразовый сервис `migrate`
 - авторизация stateless: используется JWT, серверных sticky-сессий нет
 - состояние приложения хранится в БД, а не в памяти процесса
-- для текущего release candidate рабочий runtime по умолчанию использует `SQLite`
-- параметры `PostgreSQL/Redis` уже вынесены в конфигурацию и compose, что закрывает инфраструктурную подготовку
+- для текущего release candidate рабочий Docker/CI/runtime-контур использует `PostgreSQL`
+- `SQLite` остается только локальным fallback для изолированных тестов без внешнего сервиса
+- параметры `PostgreSQL/Redis` вынесены в конфигурацию и compose, что закрывает инфраструктурную подготовку
 
 ## 5. Build, release, run
 
 - CI публикует и проверяет проект в [ci.yml](../.github/workflows/ci.yml)
 - CD публикует multi-platform image в `GHCR` в [cd.yml](../.github/workflows/cd.yml)
+- GitHub Packages получает контейнерный пакет `ghcr.io/<owner>/<repo>/food-diary-app` после успешного CD workflow
 - образ получает уникальные теги, включая commit-based tag
 - релиз отделен от конфигурации: настройки передаются через переменные среды
 - release metadata выводится в `health` и structured logs
@@ -70,11 +72,11 @@
 
 - добавлены проверки на request id, health metadata, draining-mode и конфигурацию
 - покрыты admin/security/import/export/runtime сценарии
-- `npm test` и `npm run check:client` остаются основными контрольными командами
+- `npm run pre-release` запускает frontend contracts, все backend/API/fuzz тесты, 100% surface coverage и релизную таблицу покрытия
 
 ## 10. Что считать оставшимся риском
 
-- основной прикладной runtime в этой версии по умолчанию работает на `SQLite`, а не на живом `PostgreSQL`
-- инфраструктурная обвязка под `PostgreSQL` уже подготовлена, но полное переключение всего CRUD-слоя на postgres-провайдер потребует отдельной миграции data access слоя
+- CI Docker validation и CD migration smoke test работают против живого `PostgreSQL`, а не против файлового SQLite
+- локальные unit/integration-тесты могут использовать `SQLite` fallback для скорости и изоляции; это не production backing service
 
-Для текущей курсовой это означает следующее: контейнеризация, конфигурация, логирование, CI/CD, одноразовые команды, graceful shutdown и stateless-auth уже приведены в порядок; самый тяжелый следующий шаг на будущее — полноценный runtime adapter под PostgreSQL.
+Для текущей курсовой это означает следующее: контейнеризация, конфигурация, логирование, CI/CD, одноразовые команды, graceful shutdown, stateless-auth и PostgreSQL runtime-путь уже приведены в порядок; оставшийся риск — расширять именно PostgreSQL-интеграционные тесты по мере роста проекта.

@@ -3,7 +3,7 @@ actor User
 participant "Browser UI" as UI
 participant "Express API" as API
 participant "Auth Service" as Auth
-database "SQLite" as DB
+database "PostgreSQL" as DB
 
 User -> UI : submit login form
 UI -> API : POST /api/auth/login

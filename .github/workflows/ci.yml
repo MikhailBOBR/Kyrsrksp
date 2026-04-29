@@ -79,7 +79,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-summary
-          path: artifacts/test-coverage.txt
+          path: |
+            artifacts/test-coverage.txt
+            coverage/release-coverage-table.txt
+            coverage/test-results.md
+            coverage/test-results.json
+            coverage/test-surface-coverage.json
           if-no-files-found: error
           retention-days: 14
 
@@ -102,13 +107,40 @@ jobs:
       - name: Build Docker image
         run: docker build -t food-diary-app:ci -f Dockerfile .
 
+      - name: Start PostgreSQL backing service
+        run: |
+          docker network create food-diary-ci
+          docker run -d \
+            --name food-diary-ci-postgres \
+            --network food-diary-ci \
+            -e POSTGRES_DB=nutritrack_ci \
+            -e POSTGRES_USER=nutritrack \
+            -e POSTGRES_PASSWORD=nutritrack \
+            postgres:16-alpine
+
+          for attempt in {1..30}; do
+            if docker exec food-diary-ci-postgres pg_isready -U nutritrack -d nutritrack_ci; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker logs food-diary-ci-postgres
+          exit 1
+
       - name: Run migration container smoke test
         run: >
           docker run --rm
+          --network food-diary-ci
           -e APP_ENV=ci
           -e RELEASE_VERSION=ci-${{ github.sha }}
           -e JWT_SECRET=ci-secret
-          -e DB_PATH=/tmp/app.db
+          -e DB_PROVIDER=postgres
+          -e DB_HOST=food-diary-ci-postgres
+          -e DB_PORT=5432
+          -e DB_NAME=nutritrack_ci
+          -e DB_USER=nutritrack
+          -e DB_PASSWORD=nutritrack
           -e AUTO_MIGRATE_ON_BOOT=false
           -e SEED_DEMO_DATA=false
           food-diary-app:ci
@@ -117,11 +149,23 @@ jobs:
       - name: Run admin task container smoke test
         run: >
           docker run --rm
+          --network food-diary-ci
           -e APP_ENV=ci
           -e RELEASE_VERSION=ci-${{ github.sha }}
           -e JWT_SECRET=ci-secret
-          -e DB_PATH=/tmp/app.db
+          -e DB_PROVIDER=postgres
+          -e DB_HOST=food-diary-ci-postgres
+          -e DB_PORT=5432
+          -e DB_NAME=nutritrack_ci
+          -e DB_USER=nutritrack
+          -e DB_PASSWORD=nutritrack
           -e AUTO_MIGRATE_ON_BOOT=false
           -e SEED_DEMO_DATA=false
           food-diary-app:ci
           node server/src/cli.js create-admin --email=ops@example.local --password=Admin123! --name="Ops Admin"
+
+      - name: Cleanup PostgreSQL backing service
+        if: always()
+        run: |
+          docker rm -f food-diary-ci-postgres || true
+          docker network rm food-diary-ci || true

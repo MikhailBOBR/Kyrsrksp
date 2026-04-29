@@ -418,10 +418,52 @@ function buildMarkdownReport(report) {
   const fuzzRows = report.fuzzScenarios
     .map((scenario) => `| ${scenario.name} | ${scenario.covered ? "covered" : "missing"} |`)
     .join("\n");
+  const testResultSummaryRows = report.testResults
+    ? [
+        ["Files", report.testResults.summary.files],
+        ["Tests", report.testResults.summary.tests],
+        ["Passed", report.testResults.summary.passed],
+        ["Failed", report.testResults.summary.failed],
+        ["Skipped", report.testResults.summary.skipped],
+        ["Todo", report.testResults.summary.todo],
+        ["Duration", `${report.testResults.summary.durationMs} ms`]
+      ]
+        .map(([label, value]) => `| ${label} | ${value} |`)
+        .join("\n")
+    : "";
+  const testResultRows = report.testResults
+    ? report.testResults.tests
+        .map(
+          (test) =>
+            `| \`${test.file}\` | ${test.title.replace(/\|/g, "\\|")} | ${test.status} | ${
+              test.durationMs === null ? "" : test.durationMs.toFixed(2)
+            } |`
+        )
+        .join("\n")
+    : "";
+  const testResultsSection = report.testResults
+    ? `## Таблица выполнения всех тестов
+
+Таблица генерируется командой \`npm run test:results\`, которая запускается внутри \`npm run test:coverage\` и \`npm run test:full\`.
+
+| Metric | Value |
+| --- | ---: |
+${testResultSummaryRows}
+
+| Файл | Тест | Статус | Время, ms |
+| --- | --- | --- | ---: |
+${testResultRows}
+
+`
+    : `## Таблица выполнения всех тестов
+
+Таблица появляется после запуска \`npm run test:coverage\` или \`npm run test:full\`; прямой \`npm run test:surface\` обновляет только матрицы покрытия.
+
+`;
 
   return `# Отчет о покрытии тестовой поверхности
 
-Отчет генерируется командой \`npm run test:coverage\` или \`npm run test:surface\`. Он подтверждает 100% покрытие заявленной функциональной поверхности: OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев.
+Отчет генерируется командой \`npm run test:coverage\` или \`npm run test:surface\`. Он подтверждает 100% покрытие заявленной функциональной поверхности: OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев. Релизная консольная таблица в формате \`file | line % | branch % | funcs % | uncovered lines\` пишется командой \`npm run test:v8\`.
 
 ## Сводка
 
@@ -429,7 +471,7 @@ function buildMarkdownReport(report) {
 | --- | ---: | ---: | ---: |
 ${summaryRows}
 
-## Матрица API-операций
+${testResultsSection}## Матрица API-операций
 
 | Метод | Path | operationId | Покрыто тестами |
 | --- | --- | --- | --- |
@@ -455,14 +497,26 @@ ${fuzzRows}
 
 ## Примечания
 
-- Сырая line/branch coverage отдельно показывается командой \`npm run test:v8\` через Node/V8.
+- Релизная таблица \`file | line % | branch % | funcs % | uncovered lines\` печатается командой \`npm run test:v8\` и сохраняется в \`coverage/release-coverage-table.txt\`.
+- Сырая Node/V8 line/branch coverage оставлена для инженерной диагностики через \`npm run test:v8:raw\`.
 - Этот отчет является gate-проверкой функциональной поверхности: он падает, если новая API-операция, серверный модуль, frontend-контракт или fuzz-сценарий не представлен в матрице тестов.
 - Fuzzing реализован детерминированными генераторами поверх \`node:test\`, поэтому внешняя библиотека и сетевой install не требуются.
 `;
 }
 
+function readTestResults(rootDir) {
+  const resultsPath = path.join(rootDir, "coverage", "test-results.json");
+
+  if (!fs.existsSync(resultsPath)) {
+    return null;
+  }
+
+  return JSON.parse(fs.readFileSync(resultsPath, "utf8"));
+}
+
 function writeSurfaceCoverageReport(rootDir = path.resolve(__dirname, "..", "..")) {
   const report = assertFullSurfaceCoverage(rootDir);
+  report.testResults = readTestResults(rootDir);
   const markdown = buildMarkdownReport(report);
   const coverageDir = path.join(rootDir, "coverage");
 
@@ -477,7 +531,8 @@ function writeSurfaceCoverageReport(rootDir = path.resolve(__dirname, "..", ".."
         apiOperations: report.apiOperations,
         modules: report.modules,
         frontendContracts: report.frontendContracts.map(({ name, covered }) => ({ name, covered })),
-        fuzzScenarios: report.fuzzScenarios
+        fuzzScenarios: report.fuzzScenarios,
+        testResults: report.testResults
       },
       null,
       2

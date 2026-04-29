@@ -87,17 +87,50 @@ jobs:
       - name: Pull published image
         run: docker pull ${{ needs.docker-publish.outputs.image-ref }}
 
+      - name: Start PostgreSQL backing service
+        run: |
+          docker network create food-diary-release
+          docker run -d \
+            --name food-diary-release-postgres \
+            --network food-diary-release \
+            -e POSTGRES_DB=nutritrack_release \
+            -e POSTGRES_USER=nutritrack \
+            -e POSTGRES_PASSWORD=nutritrack \
+            postgres:16-alpine
+
+          for attempt in {1..30}; do
+            if docker exec food-diary-release-postgres pg_isready -U nutritrack -d nutritrack_release; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker logs food-diary-release-postgres
+          exit 1
+
       - name: Run migration from published image
         run: >
           docker run --rm
+          --network food-diary-release
           -e APP_ENV=release
           -e RELEASE_VERSION=${{ github.sha }}
           -e JWT_SECRET=release-secret
-          -e DB_PATH=/tmp/app.db
+          -e DB_PROVIDER=postgres
+          -e DB_HOST=food-diary-release-postgres
+          -e DB_PORT=5432
+          -e DB_NAME=nutritrack_release
+          -e DB_USER=nutritrack
+          -e DB_PASSWORD=nutritrack
           -e AUTO_MIGRATE_ON_BOOT=false
           -e SEED_DEMO_DATA=false
           ${{ needs.docker-publish.outputs.image-ref }}
           node server/src/cli.js migrate
+
+      - name: Cleanup PostgreSQL backing service
+        if: always()
+        run: |
+          docker rm -f food-diary-release-postgres || true
+          docker network rm food-diary-release || true
 
   deploy-render:
     name: Trigger Render deploy

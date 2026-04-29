@@ -14,7 +14,7 @@
 
 - frontend: `HTML + CSS + JavaScript`
 - backend: `Node.js 22 + Express`
-- database: `SQLite`
+- database: `PostgreSQL` в Docker/runtime-контуре, `SQLite` только как изолированный fallback для локальных тестов
 - auth: `JWT`
 - docs: `OpenAPI + Swagger UI`
 - tests: `node:test`
@@ -55,7 +55,7 @@
 
 ### Слой данных
 
-В [server/src/db](../server/src/db) находятся инициализация схемы, подключение к БД и seed-данные. База данных используется как прикрепленный ресурс и настраивается через путь `DB_PATH`.
+В [server/src/db](../server/src/db) находятся инициализация схемы, подключение к БД и seed-данные. В Docker, CI и release-проверках база данных подключается как PostgreSQL backing service через `DB_PROVIDER=postgres` и `DB_*`/`DATABASE_URL`; SQLite остается только локальным fallback для быстрых изолированных тестов.
 
 ## Обоснование клиент-серверной схемы
 

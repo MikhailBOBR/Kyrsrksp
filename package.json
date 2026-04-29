@@ -16,20 +16,24 @@
     "check:client": "node scripts/check-client.js",
     "pre-release": "node scripts/pre-release.js",
     "test": "node --test --test-concurrency=1 --test-reporter=spec server/tests/*.test.js",
-    "test:v8": "node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=spec server/tests/*.test.js",
-    "test:coverage": "npm test && npm run test:surface",
+    "test:results": "node scripts/run-tests-with-table.js",
+    "test:v8": "node scripts/print-coverage-table.js",
+    "test:v8:raw": "node --test --test-concurrency=1 --experimental-test-coverage --test-reporter=spec server/tests/*.test.js",
+    "test:coverage": "npm run test:results && npm run test:surface && npm run test:v8",
     "test:fuzz": "node --test --test-concurrency=1 --test-reporter=spec server/tests/fuzz.test.js",
     "test:surface": "node scripts/generate-test-coverage-report.js --check",
-    "test:full": "npm run check:client && npm run test:v8 && npm run test:surface",
+    "test:full": "npm run check:client && npm run test:coverage",
     "test:tap": "node --test --test-concurrency=1 server/tests/*.test.js",
     "test:watch": "node --test --test-concurrency=1 --watch --test-reporter=spec server/tests/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.9.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.16.3",
     "swagger-ui-express": "^5.0.1"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.9.0"
   }
 }

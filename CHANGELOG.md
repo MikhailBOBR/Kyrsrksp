@@ -5,7 +5,7 @@
 - aligned package, README, release checklist and OpenAPI metadata with the 1.0 pre-release candidate;
 - added a deterministic surface-coverage gate for OpenAPI operations, server modules, frontend contracts and fuzz scenarios;
 - kept raw Node/V8 coverage available as a separate diagnostic command;
-- fixed Docker image dependency installation so SQLite admin and migration one-off processes work in CI containers.
+- moved Docker validation and release migration smoke checks to PostgreSQL-backed one-off containers.
 
 ## 0.2.0-rc.1 - 2026-04-23
 

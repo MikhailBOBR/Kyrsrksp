@@ -15,10 +15,13 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DB_PROVIDER
-        value: sqlite
-      - key: DB_PATH
-        value: /data/app.db
-    disk:
-      name: nutritrack-data
-      mountPath: /data
-      sizeGB: 1
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nutritrack-db
+          property: connectionString
+
+databases:
+  - name: nutritrack-db
+    databaseName: nutritrack
+    user: nutritrack

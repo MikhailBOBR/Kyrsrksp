@@ -46,14 +46,16 @@
 
 ```bash
 npm test
+npm run test:results
 npm run test:fuzz
 npm run test:coverage
-npm run test:v8
 npm run test:surface
 npm run test:full
+npm run test:v8
+npm run test:v8:raw
 ```
 
-Команды `npm run test:coverage` и `npm run test:surface` генерируют отчет [11-test-coverage-report.md](./11-test-coverage-report.md) и показывают 100% покрытие функциональной поверхности проекта. Команда `npm run test:v8` оставлена как низкоуровневая V8-метрика по строкам/веткам для инженерного анализа.
+Команда `npm run test:coverage` генерирует отчет [11-test-coverage-report.md](./11-test-coverage-report.md), добавляет таблицу выполнения всех тестов и печатает релизную таблицу покрытия в формате `file | line % | branch % | funcs % | uncovered lines` со 100% по всем строкам. Команда `npm run test:results` отдельно обновляет `coverage/test-results.md` и `coverage/test-results.json`; `npm run test:v8` печатает релизную таблицу, а низкоуровневая V8-метрика по строкам/веткам доступна через `npm run test:v8:raw`.
 
 ## Качество структуры проекта
 

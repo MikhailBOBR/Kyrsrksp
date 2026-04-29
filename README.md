@@ -177,16 +177,18 @@ npm run check:client
 npm run pre-release
 npm run release
 npm test
+npm run test:results
 npm run test:coverage
-npm run test:v8
 npm run test:fuzz
 npm run test:surface
 npm run test:full
+npm run test:v8
+npm run test:v8:raw
 docker compose up --build
 docker compose --profile ops run --rm migrate
 ```
 
-Отчет 100% по функциональной поверхности генерируется командой `npm run test:coverage` или `npm run test:surface` и сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md). Сырая V8-метрика доступна отдельно через `npm run test:v8`.
+Отчет 100% по функциональной поверхности, таблица выполнения всех тестов и консольная таблица `file | line % | branch % | funcs % | uncovered lines` генерируются командой `npm run test:coverage`. Основной отчет сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md), runner пишет `coverage/test-results.md`, `coverage/test-results.json` и `coverage/release-coverage-table.txt`. Сырая V8-метрика оставлена отдельно через `npm run test:v8:raw`.
 
 ## Docker и deploy
 
@@ -225,8 +227,9 @@ docker compose up --build
 - методология Twelve-Factor: [docs/06-twelve-factor.md](./docs/06-twelve-factor.md)
 
 ## CI/CD
-- актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary, docker validation и smoke-проверка одноразовых команд контейнера
-- актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance`, отдельный шаг `migrate` из опубликованного образа и опциональный deploy hook для Render
+- актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary, docker validation и smoke-проверка одноразовых команд контейнера на PostgreSQL
+- актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance`, отдельный шаг `migrate` из опубликованного образа на PostgreSQL и опциональный deploy hook для Render
+- GitHub Packages заполняется контейнерным пакетом `ghcr.io/<owner>/<repo>/food-diary-app` после push в `main`, тега вида `v1.0.0-rc.1` или ручного запуска workflow `CD`
 
 - [ci.yml](./.github/workflows/ci.yml) — матричный CI, coverage и docker validation
 - [cd.yml](./.github/workflows/cd.yml) — multi-platform publish в `GHCR` и deploy hook для Render
