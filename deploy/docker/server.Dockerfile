@@ -9,7 +9,11 @@ ENV NODE_ENV=production \
     DB_PATH=/data/app.db
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --omit=optional && npm cache clean --force
+RUN apk add --no-cache libstdc++ \
+  && apk add --no-cache --virtual .build-deps python3 make g++ \
+  && npm_config_build_from_source=true npm_config_nodedir=/usr/local npm ci --omit=dev \
+  && npm cache clean --force \
+  && apk del .build-deps
 
 COPY client ./client
 COPY server ./server

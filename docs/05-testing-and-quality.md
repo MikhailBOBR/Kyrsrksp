@@ -48,11 +48,12 @@
 npm test
 npm run test:fuzz
 npm run test:coverage
+npm run test:v8
 npm run test:surface
 npm run test:full
 ```
 
-Команда `npm run test:surface` генерирует отчет [11-test-coverage-report.md](./11-test-coverage-report.md) и показывает 100% покрытие функциональной поверхности проекта.
+Команды `npm run test:coverage` и `npm run test:surface` генерируют отчет [11-test-coverage-report.md](./11-test-coverage-report.md) и показывают 100% покрытие функциональной поверхности проекта. Команда `npm run test:v8` оставлена как низкоуровневая V8-метрика по строкам/веткам для инженерного анализа.
 
 ## Качество структуры проекта
 

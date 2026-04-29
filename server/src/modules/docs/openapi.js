@@ -1,3 +1,5 @@
+const packageJson = require("../../../../package.json");
+
 function secured(summary, tags, extra = {}) {
   return {
     tags,
@@ -86,7 +88,7 @@ function applyOpenApiPolish(document) {
         ready: { type: "boolean", example: true },
         alive: { type: "boolean", example: true },
         service: { type: "string", example: "food-diary-app" },
-        version: { type: "string", example: "0.2.0-rc.1" },
+        version: { type: "string", example: packageJson.version },
         environment: { type: "string", example: "production" },
         stack: { type: "string", example: "express + postgres + swagger" },
         checks: {
@@ -450,7 +452,7 @@ const openApiDocument = {
   openapi: "3.0.3",
   info: {
     title: "Рацион API",
-    version: "1.5.0-rc.1",
+    version: packageJson.version,
     description: [
       "REST API для курсового проекта «Персональный дневник питания с анализом КБЖУ».",
       "",

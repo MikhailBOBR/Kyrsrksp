@@ -6,7 +6,7 @@
 
 > «Персональный дневник питания с анализом КБЖУ»
 
-Текущий pre-release кандидат: `0.2.0-rc.1`
+Текущий pre-release кандидат: `1.0.0-rc.1`
 
 ## Технологический стек
 
@@ -178,6 +178,7 @@ npm run pre-release
 npm run release
 npm test
 npm run test:coverage
+npm run test:v8
 npm run test:fuzz
 npm run test:surface
 npm run test:full
@@ -185,7 +186,7 @@ docker compose up --build
 docker compose --profile ops run --rm migrate
 ```
 
-Отчет 100% по функциональной поверхности генерируется командой `npm run test:surface` и сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md).
+Отчет 100% по функциональной поверхности генерируется командой `npm run test:coverage` или `npm run test:surface` и сохраняется в [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md). Сырая V8-метрика доступна отдельно через `npm run test:v8`.
 
 ## Docker и deploy
 

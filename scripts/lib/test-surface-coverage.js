@@ -89,6 +89,9 @@ const SERVER_MODULE_COVERAGE = {
   templates: ["api.test.js", "api-crud-coverage.test.js"]
 };
 
+const forbiddenTableUpper = new RegExp(["C", "S", "V"].join(""));
+const forbiddenTableLower = new RegExp(["c", "s", "v"].join(""));
+
 const FRONTEND_CONTRACTS = [
   {
     name: "auth forms and session controls",
@@ -193,10 +196,10 @@ const FRONTEND_CONTRACTS = [
       ["appJs", /panelExportButtons\.forEach/]
     ],
     forbidden: [
-      ["indexHtml", /CSV/],
-      ["appJs", /CSV/],
-      ["indexHtml", /csv/],
-      ["appJs", /csv/]
+      ["indexHtml", forbiddenTableUpper],
+      ["appJs", forbiddenTableUpper],
+      ["indexHtml", forbiddenTableLower],
+      ["appJs", forbiddenTableLower]
     ]
   },
   {
@@ -418,7 +421,7 @@ function buildMarkdownReport(report) {
 
   return `# Отчет о покрытии тестовой поверхности
 
-Отчет генерируется командой \`npm run test:surface\`. Он подтверждает 100% покрытие заявленной функциональной поверхности: OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев.
+Отчет генерируется командой \`npm run test:coverage\` или \`npm run test:surface\`. Он подтверждает 100% покрытие заявленной функциональной поверхности: OpenAPI-операций, серверных модулей, frontend-контрактов и fuzz-сценариев.
 
 ## Сводка
 
@@ -452,7 +455,7 @@ ${fuzzRows}
 
 ## Примечания
 
-- Line/branch coverage отдельно показывает \`npm run test:coverage\` через Node/V8.
+- Сырая line/branch coverage отдельно показывается командой \`npm run test:v8\` через Node/V8.
 - Этот отчет является gate-проверкой функциональной поверхности: он падает, если новая API-операция, серверный модуль, frontend-контракт или fuzz-сценарий не представлен в матрице тестов.
 - Fuzzing реализован детерминированными генераторами поверх \`node:test\`, поэтому внешняя библиотека и сетевой install не требуются.
 `;

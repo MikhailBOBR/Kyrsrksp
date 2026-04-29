@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { createHttpTestContext } = require("./helpers/test-context");
+const packageJson = require("../../package.json");
 
 const { api } = createHttpTestContext(test, {
   dbFileName: "observability.db",
@@ -21,7 +22,7 @@ test.describe("observability and runtime metadata", () => {
     assert.equal(response.payload.status, "ok");
     assert.equal(response.payload.ready, true);
     assert.equal(response.payload.service, "food-diary-app");
-    assert.match(String(response.payload.version), /0\.2\.0-rc\.1/);
+    assert.equal(response.payload.version, packageJson.version);
     assert.match(String(response.headers.get("x-request-id")), /.+/);
   });
 
