@@ -18,6 +18,9 @@ permissions:
   attestations: write
   id-token: write
 
+env:
+  IMAGE_NAME: ghcr.io/mikhailbobr/kyrsrksp/food-diary-app
+
 jobs:
   docker-publish:
     name: Publish multi-platform image
@@ -25,7 +28,7 @@ jobs:
     timeout-minutes: 30
     environment: production
     outputs:
-      image-ref: ghcr.io/${{ github.repository }}/food-diary-app:git-${{ github.sha }}
+      image-ref: ${{ env.IMAGE_NAME }}:git-${{ github.sha }}
 
     steps:
       - name: Checkout repository
@@ -48,7 +51,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/food-diary-app
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
