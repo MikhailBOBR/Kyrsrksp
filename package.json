@@ -1,6 +1,6 @@
 {
   "name": "food-diary-app",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.3",
   "private": true,
   "description": "Client-server food diary application with KБЖУ analytics.",
   "scripts": {

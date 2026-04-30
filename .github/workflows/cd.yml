@@ -113,22 +113,39 @@ jobs:
           exit 1
 
       - name: Run migration from published image
-        run: >
-          docker run --rm
-          --network food-diary-release
-          -e APP_ENV=release
-          -e RELEASE_VERSION=${{ github.sha }}
-          -e JWT_SECRET=release-secret
-          -e DB_PROVIDER=postgres
-          -e DB_HOST=food-diary-release-postgres
-          -e DB_PORT=5432
-          -e DB_NAME=nutritrack_release
-          -e DB_USER=nutritrack
-          -e DB_PASSWORD=nutritrack
-          -e AUTO_MIGRATE_ON_BOOT=false
-          -e SEED_DEMO_DATA=false
-          ${{ needs.docker-publish.outputs.image-ref }}
-          node server/src/cli.js migrate
+        run: |
+          set -e
+
+          for attempt in 1 2 3; do
+            echo "Running release migration attempt ${attempt}/3"
+
+            if docker run --rm \
+              --network food-diary-release \
+              -e APP_ENV=release \
+              -e RELEASE_VERSION=${{ github.sha }} \
+              -e JWT_SECRET=release-secret \
+              -e DB_PROVIDER=postgres \
+              -e DB_HOST=food-diary-release-postgres \
+              -e DB_PORT=5432 \
+              -e DB_NAME=nutritrack_release \
+              -e DB_USER=nutritrack \
+              -e DB_PASSWORD=nutritrack \
+              -e DB_CONNECTION_TIMEOUT_MS=15000 \
+              -e AUTO_MIGRATE_ON_BOOT=false \
+              -e SEED_DEMO_DATA=false \
+              ${{ needs.docker-publish.outputs.image-ref }} \
+              node server/src/cli.js migrate; then
+              exit 0
+            else
+              status=$?
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              exit "$status"
+            fi
+
+            sleep $((attempt * 5))
+          done
 
       - name: Cleanup PostgreSQL backing service
         if: always()

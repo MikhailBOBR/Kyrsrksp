@@ -6,7 +6,7 @@
 
 > «Персональный дневник питания с анализом КБЖУ»
 
-Текущий pre-release кандидат: `1.0.0-rc.1`
+Текущий pre-release кандидат: `1.0.0-rc.3`
 
 ## Исходные данные проекта
 
@@ -240,7 +240,7 @@ docker compose up --build
 ## CI/CD
 - актуальный CI: матричные прогоны на Node `20/22`, проверка фронтенд-контрактов, coverage summary, docker validation и smoke-проверка одноразовых команд контейнера на PostgreSQL
 - актуальный CD: multi-platform публикация Docker image в `GHCR`, `SBOM/provenance`, отдельный шаг `migrate` из опубликованного образа на PostgreSQL и опциональный deploy hook для Render
-- GitHub Packages заполняется контейнерным пакетом `ghcr.io/<owner>/<repo>/food-diary-app` после push в `main`/`master`, тега вида `v1.0.0-rc.1` или ручного запуска workflow `CD`
+- GitHub Packages заполняется контейнерным пакетом `ghcr.io/<owner>/<repo>/food-diary-app` после push в `main`/`master`, тега вида `v1.0.0-rc.3` или ручного запуска workflow `CD`
 
 - [ci.yml](./.github/workflows/ci.yml) — матричный CI, coverage и docker validation
 - [cd.yml](./.github/workflows/cd.yml) — multi-platform publish в `GHCR` и deploy hook для Render

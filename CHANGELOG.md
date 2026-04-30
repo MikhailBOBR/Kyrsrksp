@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0-rc.3 - 2026-04-30
+
+- fixed GHCR image references for lowercase repository names in CD;
+- enabled CD from the actual `master` branch in addition to `main` and release tags;
+- hardened the release migration smoke step with PostgreSQL connection retries.
+
 ## 1.0.0-rc.1 - 2026-04-29
 
 - aligned package, README, release checklist and OpenAPI metadata with the 1.0 pre-release candidate;
