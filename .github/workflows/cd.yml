@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - master
     tags:
       - "v*"
   workflow_dispatch:
@@ -141,7 +142,7 @@ jobs:
     needs:
       - docker-publish
       - migrate-release
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
     steps:
       - name: Trigger Render deploy hook

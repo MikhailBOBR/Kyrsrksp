@@ -18,5 +18,5 @@
 - `CHANGELOG.md` для релизной заметки;
 - `npm run pre-release` для локального контрольного прогона frontend contracts, API/fuzz tests, 100% surface coverage и сырой Node/V8 таблицы `file | line % | branch % | funcs % | uncovered lines`;
 - `render.yaml` и Docker-конфигурация для deploy-сценария;
-- CD workflow публикует Docker image в GitHub Packages / GHCR по push в `main`, тегу `v1.0.0-rc.1` или ручному запуску;
+- CD workflow публикует Docker image в GitHub Packages / GHCR по push в `main`/`master`, тегу `v1.0.0-rc.1` или ручному запуску;
 - автоматические тесты, включая frontend contracts и fuzzing.
