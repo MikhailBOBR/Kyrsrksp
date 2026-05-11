@@ -187,11 +187,11 @@ const mealLibrary = {
   ]
 };
 
-function getUserByEmail(email) {
+async function getUserByEmail(email) {
   return db.prepare(`SELECT id, email, role FROM users WHERE email = ?`).get(email);
 }
 
-function createSampleUsers() {
+async function createSampleUsers() {
   const insertUser = db.prepare(`
     INSERT OR IGNORE INTO users (name, email, password_hash, role, created_at)
     VALUES (?, ?, ?, 'user', ?)
@@ -206,10 +206,10 @@ function createSampleUsers() {
     const email = `sample.user${String(index).padStart(2, "0")}@nutritrack.local`;
     const name = `Sample User ${String(index).padStart(2, "0")}`;
 
-    insertUser.run(name, email, hashPassword(`Sample${index}Pass!`), now);
+    await insertUser.run(name, email, hashPassword(`Sample${index}Pass!`), now);
 
-    const user = getUserByEmail(email);
-    insertGoal.run(
+    const user = await getUserByEmail(email);
+    await insertGoal.run(
       user.id,
       1800 + index * 95,
       105 + index * 7,
@@ -220,11 +220,11 @@ function createSampleUsers() {
   }
 }
 
-function ensureProductCatalog() {
-  const adminId = getUserByEmail(adminUser.email)?.id;
+async function ensureProductCatalog() {
+  const adminId = (await getUserByEmail(adminUser.email))?.id;
   const now = getTimestamp();
   const existingNames = new Set(
-    db.prepare(`SELECT name FROM products`).all().map((product) => product.name)
+    (await db.prepare(`SELECT name FROM products`).all()).map((product) => product.name)
   );
   const insertProduct = db.prepare(`
     INSERT INTO products (
@@ -233,14 +233,14 @@ function ensureProductCatalog() {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  productBlueprints.forEach((blueprint, blueprintIndex) => {
-    blueprint.items.forEach(([name, calories, protein, fat, carbs], itemIndex) => {
+  for (const [blueprintIndex, blueprint] of productBlueprints.entries()) {
+    for (const [itemIndex, [name, calories, protein, fat, carbs]] of blueprint.items.entries()) {
       if (existingNames.has(name)) {
-        return;
+        continue;
       }
 
       const brand = `${blueprint.brand} ${String(((blueprintIndex + itemIndex) % 4) + 1)}`;
-      insertProduct.run(
+      await insertProduct.run(
         name,
         brand,
         blueprint.category,
@@ -253,8 +253,8 @@ function ensureProductCatalog() {
         now
       );
       existingNames.add(name);
-    });
-  });
+    }
+  }
 }
 
 function buildMealVariant(mealType, templateIndex, offsetSeed) {
@@ -274,7 +274,7 @@ function buildMealVariant(mealType, templateIndex, offsetSeed) {
   };
 }
 
-function ensureMealsForUser(userId, daysBack, dailyPlan, noteSuffix) {
+async function ensureMealsForUser(userId, daysBack, dailyPlan, noteSuffix) {
   const insertMeal = db.prepare(`
     INSERT INTO meals (
       user_id, title, meal_type, entry_date, eaten_at, grams,
@@ -287,15 +287,15 @@ function ensureMealsForUser(userId, daysBack, dailyPlan, noteSuffix) {
   for (let dayOffset = daysBack - 1; dayOffset >= 0; dayOffset -= 1) {
     const date = addDays(today, -dayOffset);
     const existingMealTypes = new Set(
-      db
+      (await db
         .prepare(`SELECT meal_type FROM meals WHERE user_id = ? AND entry_date = ?`)
-        .all(userId, date)
+        .all(userId, date))
         .map((item) => item.meal_type)
     );
 
-    dailyPlan.forEach((entry, planIndex) => {
+    for (const [planIndex, entry] of dailyPlan.entries()) {
       if (existingMealTypes.has(entry.mealType)) {
-        return;
+        continue;
       }
 
       const meal = buildMealVariant(
@@ -305,7 +305,7 @@ function ensureMealsForUser(userId, daysBack, dailyPlan, noteSuffix) {
       );
       const createdAt = `${date}T${entry.time}:00.000Z`;
 
-      insertMeal.run(
+      await insertMeal.run(
         userId,
         meal.title,
         entry.mealType,
@@ -320,11 +320,11 @@ function ensureMealsForUser(userId, daysBack, dailyPlan, noteSuffix) {
         createdAt,
         createdAt
       );
-    });
+    }
   }
 }
 
-function ensureHydrationForUser(userId, daysBack, plan) {
+async function ensureHydrationForUser(userId, daysBack, plan) {
   const insertHydration = db.prepare(`
     INSERT INTO hydration_logs (user_id, amount_ml, entry_date, logged_at, created_at)
     VALUES (?, ?, ?, ?, ?)
@@ -334,29 +334,29 @@ function ensureHydrationForUser(userId, daysBack, plan) {
   for (let dayOffset = daysBack - 1; dayOffset >= 0; dayOffset -= 1) {
     const date = addDays(today, -dayOffset);
     const existingTimes = new Set(
-      db
+      (await db
         .prepare(`SELECT logged_at FROM hydration_logs WHERE user_id = ? AND entry_date = ?`)
-        .all(userId, date)
+        .all(userId, date))
         .map((item) => item.logged_at)
     );
 
-    plan.forEach((entry, planIndex) => {
+    for (const [planIndex, entry] of plan.entries()) {
       if (existingTimes.has(entry.time)) {
-        return;
+        continue;
       }
 
       const createdAt = `${date}T${entry.time}:00.000Z`;
       const amountMl = entry.amountMl + ((dayOffset + planIndex) % 3) * 50;
-      insertHydration.run(userId, amountMl, date, entry.time, createdAt);
-    });
+      await insertHydration.run(userId, amountMl, date, entry.time, createdAt);
+    }
   }
 }
 
-function ensureTemplatesForUser(userId, targetCount) {
+async function ensureTemplatesForUser(userId, targetCount) {
   const existingNames = new Set(
-    db
+    (await db
       .prepare(`SELECT name FROM meal_templates WHERE user_id = ?`)
-      .all(userId)
+      .all(userId))
       .map((template) => template.name)
   );
   const insertTemplate = db.prepare(`
@@ -376,7 +376,7 @@ function ensureTemplatesForUser(userId, targetCount) {
     const name = `${meal.title} · plan ${String(cursor + 1).padStart(2, "0")}`;
 
     if (!existingNames.has(name)) {
-      insertTemplate.run(
+      await insertTemplate.run(
         userId,
         name,
         mealType,
@@ -427,11 +427,11 @@ function buildHydrationPlan(userIndex) {
   return plan;
 }
 
-function ensureBodyMetricsForUser(userId, daysBack, baseWeight) {
+async function ensureBodyMetricsForUser(userId, daysBack, baseWeight) {
   const existingDates = new Set(
-    db
+    (await db
       .prepare(`SELECT entry_date FROM body_metrics WHERE user_id = ?`)
-      .all(userId)
+      .all(userId))
       .map((entry) => entry.entry_date)
   );
   const insertMetric = db.prepare(`
@@ -453,7 +453,7 @@ function ensureBodyMetricsForUser(userId, daysBack, baseWeight) {
     const waistCm = Number((82 + ((userId + index) % 5) * 0.5).toFixed(1));
     const chestCm = Number((100 + ((userId + index) % 3) * 0.7).toFixed(1));
 
-    insertMetric.run(
+    await insertMetric.run(
       userId,
       date,
       weightKg,
@@ -466,7 +466,7 @@ function ensureBodyMetricsForUser(userId, daysBack, baseWeight) {
   }
 }
 
-function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
+async function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
   const insertPlan = db.prepare(`
     INSERT INTO meal_plans (
       user_id, entry_date, meal_type, title, target_calories, target_protein,
@@ -475,12 +475,12 @@ function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const existingKeys = new Set(
-    db
+    (await db
       .prepare(`SELECT entry_date, meal_type, planned_time FROM meal_plans WHERE user_id = ?`)
-      .all(userId)
+      .all(userId))
       .map((entry) => `${entry.entry_date}|${entry.meal_type}|${entry.planned_time}`)
   );
-  const templates = db
+  const templates = await db
     .prepare(`SELECT id, name, meal_type, calories, protein, fat, carbs FROM meal_templates WHERE user_id = ?`)
     .all(userId);
 
@@ -488,11 +488,11 @@ function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
     const date = addDays(startDate, index);
     const plan = buildMealPlan(userIndex + index);
 
-    plan.forEach((entry, planIndex) => {
+    for (const [planIndex, entry] of plan.entries()) {
       const key = `${date}|${entry.mealType}|${entry.time}`;
 
       if (existingKeys.has(key)) {
-        return;
+        continue;
       }
 
       const template = templates[(index + planIndex) % Math.max(templates.length, 1)] || null;
@@ -501,7 +501,7 @@ function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
       const fat = 9 + ((index + planIndex) % 4) * 3;
       const carbs = 24 + ((index + planIndex) % 4) * 11;
 
-      insertPlan.run(
+      await insertPlan.run(
         userId,
         date,
         entry.mealType,
@@ -516,15 +516,15 @@ function ensurePlannerForUser(userId, startDate, daysCount, userIndex) {
         `${date}T06:00:00.000Z`,
         `${date}T06:00:00.000Z`
       );
-    });
+    }
   }
 }
 
-function ensureShoppingForUser(userId, userIndex) {
+async function ensureShoppingForUser(userId, userIndex) {
   const existingTitles = new Set(
-    db
+    (await db
       .prepare(`SELECT title FROM shopping_items WHERE user_id = ?`)
-      .all(userId)
+      .all(userId))
       .map((entry) => entry.title)
   );
   const insertItem = db.prepare(`
@@ -542,14 +542,14 @@ function ensureShoppingForUser(userId, userIndex) {
     ["Кефир 1%", "Напитки", 2, "шт"]
   ];
 
-  suggestions.forEach((item, index) => {
+  for (const [index, item] of suggestions.entries()) {
     const title = `${item[0]} ${userIndex + 1}`;
 
     if (existingTitles.has(title)) {
-      return;
+      continue;
     }
 
-    insertItem.run(
+    await insertItem.run(
       userId,
       title,
       item[1],
@@ -562,10 +562,10 @@ function ensureShoppingForUser(userId, userIndex) {
       `${today}T09:00:00.000Z`,
       `${today}T09:00:00.000Z`
     );
-  });
+  }
 }
 
-function collectStats() {
+async function collectStats() {
   const tables = [
     "users",
     "goals",
@@ -578,59 +578,68 @@ function collectStats() {
     "meal_plans",
     "shopping_items"
   ];
-  const stats = Object.fromEntries(
-    tables.map((table) => [
-      table,
-      db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count
-    ])
-  );
+  const stats = {};
 
-  const demoUserId = getUserByEmail(demoUser.email)?.id;
-  const range = db
+  for (const table of tables) {
+    const row = await db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get();
+    stats[table] = row.count;
+  }
+
+  const demoUserId = (await getUserByEmail(demoUser.email))?.id;
+  const range = await db
     .prepare(`SELECT MIN(entry_date) AS firstDate, MAX(entry_date) AS lastDate FROM meals`)
     .get();
 
   stats.range = range;
   stats.demoUser = {
-    meals: db
+    meals: (await db
       .prepare(`SELECT COUNT(*) AS count FROM meals WHERE user_id = ?`)
-      .get(demoUserId).count,
-    hydration: db
+      .get(demoUserId)).count,
+    hydration: (await db
       .prepare(`SELECT COUNT(*) AS count FROM hydration_logs WHERE user_id = ?`)
-      .get(demoUserId).count,
-    templates: db
+      .get(demoUserId)).count,
+    templates: (await db
       .prepare(`SELECT COUNT(*) AS count FROM meal_templates WHERE user_id = ?`)
-      .get(demoUserId).count,
-    checkins: db
+      .get(demoUserId)).count,
+    checkins: (await db
       .prepare(`SELECT COUNT(*) AS count FROM daily_checkins WHERE user_id = ?`)
-      .get(demoUserId).count,
-    metrics: db
+      .get(demoUserId)).count,
+    metrics: (await db
       .prepare(`SELECT COUNT(*) AS count FROM body_metrics WHERE user_id = ?`)
-      .get(demoUserId).count,
-    plans: db
+      .get(demoUserId)).count,
+    plans: (await db
       .prepare(`SELECT COUNT(*) AS count FROM meal_plans WHERE user_id = ?`)
-      .get(demoUserId).count,
-    shopping: db
+      .get(demoUserId)).count,
+    shopping: (await db
       .prepare(`SELECT COUNT(*) AS count FROM shopping_items WHERE user_id = ?`)
-      .get(demoUserId).count
+      .get(demoUserId)).count
   };
 
   return stats;
 }
 
-function main() {
-  initializeDatabase();
-  createSampleUsers();
-  ensureProductCatalog();
+async function seedLargeData(options = {}) {
+  const { initialize = true } = options;
 
-  const users = db
+  if (initialize) {
+    await initializeDatabase();
+  }
+
+  await createSampleUsers();
+  await ensureProductCatalog();
+
+  const users = await db
     .prepare(`SELECT id, email FROM users WHERE role = 'user' ORDER BY id ASC`)
     .all();
   const demo = users.find((user) => user.email === demoUser.email);
   const others = users.filter((user) => user.email !== demoUser.email);
 
-  const seedTransaction = db.transaction(() => {
-    ensureMealsForUser(
+  if (!demo) {
+    throw new Error(`Demo user ${demoUser.email} was not created`);
+  }
+
+  const seedTransaction = db.transaction(async () => {
+    await ensureMealsForUser(
       demo.id,
       BULK_SEED_CONFIG.demoHistoryDays,
       [
@@ -641,58 +650,71 @@ function main() {
       ],
       "Demo history seed."
     );
-    ensureHydrationForUser(demo.id, BULK_SEED_CONFIG.demoHistoryDays, [
+    await ensureHydrationForUser(demo.id, BULK_SEED_CONFIG.demoHistoryDays, [
       { time: "07:45", amountMl: 300 },
       { time: "10:30", amountMl: 250 },
       { time: "11:20", amountMl: 400 },
       { time: "15:40", amountMl: 350 },
       { time: "20:15", amountMl: 450 }
     ]);
-    ensureTemplatesForUser(demo.id, BULK_SEED_CONFIG.demoTemplateCount);
-    seedWellbeingRange(demo.id, getLocalDate(), BULK_SEED_CONFIG.demoHistoryDays);
-    ensureBodyMetricsForUser(demo.id, BULK_SEED_CONFIG.demoMetricCount, 81.4);
-    ensurePlannerForUser(demo.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, 0);
-    ensureShoppingForUser(demo.id, 0);
+    await ensureTemplatesForUser(demo.id, BULK_SEED_CONFIG.demoTemplateCount);
+    await seedWellbeingRange(demo.id, getLocalDate(), BULK_SEED_CONFIG.demoHistoryDays);
+    await ensureBodyMetricsForUser(demo.id, BULK_SEED_CONFIG.demoMetricCount, 81.4);
+    await ensurePlannerForUser(demo.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, 0);
+    await ensureShoppingForUser(demo.id, 0);
 
-    others.forEach((user, index) => {
-      ensureMealsForUser(
+    for (const [index, user] of others.entries()) {
+      await ensureMealsForUser(
         user.id,
         BULK_SEED_CONFIG.sampleHistoryDays,
         buildMealPlan(index),
         "Sample history seed."
       );
-      ensureHydrationForUser(
+      await ensureHydrationForUser(
         user.id,
         BULK_SEED_CONFIG.sampleHistoryDays,
         buildHydrationPlan(index)
       );
-      ensureTemplatesForUser(user.id, BULK_SEED_CONFIG.sampleTemplateCount);
-      seedWellbeingRange(user.id, getLocalDate(), BULK_SEED_CONFIG.sampleHistoryDays);
-      ensureBodyMetricsForUser(
+      await ensureTemplatesForUser(user.id, BULK_SEED_CONFIG.sampleTemplateCount);
+      await seedWellbeingRange(user.id, getLocalDate(), BULK_SEED_CONFIG.sampleHistoryDays);
+      await ensureBodyMetricsForUser(
         user.id,
         BULK_SEED_CONFIG.sampleMetricCount,
         86 + index * 1.4
       );
-      ensurePlannerForUser(user.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, index + 1);
-      ensureShoppingForUser(user.id, index + 1);
-    });
+      await ensurePlannerForUser(user.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, index + 1);
+      await ensureShoppingForUser(user.id, index + 1);
+    }
   });
 
-  seedTransaction();
+  await seedTransaction();
 
-  console.log("Bulk seed completed.");
-  console.log(
-    JSON.stringify(
-      {
-        config: BULK_SEED_CONFIG,
-        stats: collectStats()
-      },
-      null,
-      2
-    )
-  );
-
-  db.close();
+  return {
+    config: BULK_SEED_CONFIG,
+    stats: await collectStats()
+  };
 }
 
-main();
+async function main() {
+  const summary = await seedLargeData();
+
+  console.log("Bulk seed completed.");
+  console.log(JSON.stringify(summary, null, 2));
+
+  await db.close();
+}
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error);
+    db.close().finally(() => {
+      process.exitCode = 1;
+    });
+  });
+}
+
+module.exports = {
+  BULK_SEED_CONFIG,
+  collectStats,
+  seedLargeData
+};

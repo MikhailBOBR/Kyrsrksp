@@ -216,6 +216,7 @@ function createConfig() {
     REQUEST_ID_HEADER: "X-Request-ID",
     AUTO_MIGRATE_ON_BOOT: defaultAppEnv !== "production",
     SEED_DEMO_DATA: defaultAppEnv !== "production",
+    SEED_LARGE_DATA: false,
     DEMO_USER_EMAIL: "demo@nutritrack.local",
     DEMO_USER_PASSWORD: "Demo123!",
     DEMO_USER_NAME: "Demo User",
@@ -270,6 +271,7 @@ function createConfig() {
     requestIdHeader: String(merged.REQUEST_ID_HEADER || defaults.REQUEST_ID_HEADER),
     autoMigrateOnBoot: parseBoolean(merged.AUTO_MIGRATE_ON_BOOT, defaults.AUTO_MIGRATE_ON_BOOT),
     seedDemoData: parseBoolean(merged.SEED_DEMO_DATA, defaults.SEED_DEMO_DATA),
+    seedLargeData: parseBoolean(merged.SEED_LARGE_DATA, defaults.SEED_LARGE_DATA),
     demoUser: {
       email: String(merged.DEMO_USER_EMAIL || defaults.DEMO_USER_EMAIL),
       password: String(merged.DEMO_USER_PASSWORD || defaults.DEMO_USER_PASSWORD),

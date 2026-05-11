@@ -12,7 +12,7 @@
     "create-admin": "node server/src/cli.js create-admin",
     "release": "npm run pre-release",
     "seed:demo": "node scripts/seed-readable-demo.js",
-    "seed:large": "node server/src/db/seed-large-data.js",
+    "seed:large": "node server/src/cli.js seed-large",
     "check:client": "node scripts/check-client.js",
     "pre-release": "node scripts/pre-release.js",
     "test": "node --test --test-concurrency=1 --test-reporter=spec server/tests/*.test.js",

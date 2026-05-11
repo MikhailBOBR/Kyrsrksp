@@ -14,7 +14,8 @@ ENV NODE_ENV=production \
     DB_PASSWORD=nutritrack \
     DB_PATH=/data/app.db \
     AUTO_MIGRATE_ON_BOOT=true \
-    SEED_DEMO_DATA=true
+    SEED_DEMO_DATA=true \
+    SEED_LARGE_DATA=false
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --omit=optional && npm cache clean --force

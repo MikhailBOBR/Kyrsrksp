@@ -102,6 +102,7 @@ test("config exposes runtime and backing service tuning from the environment", (
       SERVER_REQUEST_TIMEOUT_MS: "250000",
       SERVER_HEADERS_TIMEOUT_MS: "55000",
       SERVER_KEEP_ALIVE_TIMEOUT_MS: "6000",
+      SEED_LARGE_DATA: "true",
       TRUST_PROXY: "true",
       JWT_SECRET: "runtime-secret"
     },
@@ -114,6 +115,7 @@ test("config exposes runtime and backing service tuning from the environment", (
       assert.equal(config.serverRequestTimeoutMs, 250000);
       assert.equal(config.serverHeadersTimeoutMs, 55000);
       assert.equal(config.serverKeepAliveTimeoutMs, 6000);
+      assert.equal(config.seedLargeData, true);
       assert.equal(config.trustProxy, true);
     }
   );

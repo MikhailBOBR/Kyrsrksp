@@ -7,7 +7,8 @@ const {
   host,
   port,
   releaseVersion,
-  seedDemoData
+  seedDemoData,
+  seedLargeData: shouldSeedLargeData
 } = require("./config/env");
 const { createApp } = require("./app");
 const { closeDatabase } = require("./db/connection");
@@ -29,6 +30,7 @@ function summarizeRuntimeConfig() {
     dbPoolMax: config.dbProvider === "postgres" ? config.dbPoolMax : undefined,
     autoMigrateOnBoot: config.autoMigrateOnBoot,
     seedDemoData: config.seedDemoData,
+    seedLargeData: config.seedLargeData,
     logLevel: config.logLevel,
     trustProxy: config.trustProxy,
     shutdownTimeoutMs: config.shutdownTimeoutMs
@@ -89,6 +91,11 @@ function parseCliArgs(argv = process.argv.slice(2)) {
 async function runServerCommand() {
   if (autoMigrateOnBoot) {
     await initializeDatabase({ withSeedData: seedDemoData });
+
+    if (shouldSeedLargeData) {
+      const { seedLargeData } = require("./db/seed-large-data");
+      await seedLargeData({ initialize: false });
+    }
   } else {
     logger.info("database.bootstrap.skipped", {
       reason: "AUTO_MIGRATE_ON_BOOT=false"
@@ -100,6 +107,14 @@ async function runServerCommand() {
   installProcessFailureHandlers(server);
 
   return server;
+}
+
+async function runSeedLargeCommand() {
+  const { seedLargeData } = require("./db/seed-large-data");
+  const summary = await seedLargeData();
+  logger.info("database.seed-large.completed", summary);
+  await closeDatabase();
+  return summary;
 }
 
 async function runMigrateCommand() {
@@ -154,6 +169,10 @@ async function runCommand(argv = process.argv.slice(2)) {
     return runMigrateCommand();
   }
 
+  if (command === "seed-large") {
+    return runSeedLargeCommand();
+  }
+
   if (command === "create-admin") {
     return runCreateAdminCommand(options);
   }
@@ -178,5 +197,6 @@ module.exports = {
   installProcessFailureHandlers,
   parseCliArgs,
   runCommand,
+  runSeedLargeCommand,
   summarizeRuntimeConfig
 };
