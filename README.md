@@ -194,19 +194,20 @@ npm run dev
 
 Подробности находятся в [docs/05-testing-and-quality.md](./docs/05-testing-and-quality.md) и [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md).
 
-## CI/CD без случайного production deploy
+## CI/CD
 
-Настройка сделана так, чтобы обычный commit/push в GitHub запускал только CI, а CD и production deploy не стартовали сами.
+В проекте настроены два GitHub Actions workflow:
 
-- [ci.yml](./.github/workflows/ci.yml) запускается на каждый push, pull request, ручной запуск и nightly schedule.
-- CI выполняет матричные тесты на Node `20/22`, frontend-contract checks, coverage summary, Docker build validation и PostgreSQL-backed smoke checks.
-- [cd.yml](./.github/workflows/cd.yml) больше не запускается на branch push в `main` или `master`.
-- CD запускается только при push тега `v*` или вручную через `workflow_dispatch`.
-- Render deploy hook вызывается только при ручном запуске CD с ветки `main` или `master`.
-- В CD workflow нет `environment: production`, поэтому обычные documentation commits не создают запись `production` в блоке GitHub Deployments.
-- В [render.yaml](./render.yaml) установлен `autoDeploy: false`, чтобы подключенный Render-сервис не деплоил каждый commit напрямую мимо GitHub Actions.
+| Workflow | Запуск | Назначение |
+| --- | --- | --- |
+| [CI](./.github/workflows/ci.yml) | каждый push, pull request, ручной запуск, nightly schedule | проверка кода, тесты, coverage и Docker validation |
+| [CD](./.github/workflows/cd.yml) | release-теги `v*` или ручной запуск | публикация Docker image в GHCR и управляемый deploy |
 
-Практический результат: если закоммитить изменения README, на GitHub должен пройти только workflow `CI`. Workflow `CD` останется неактивным, а production deployment не появится как на скриншоте.
+CI проверяет проект на Node.js `20` и `22`, запускает frontend-контракты, основной набор тестов, coverage summary и Docker smoke checks с PostgreSQL.
+
+CD отделен от обычных коммитов: push в `main` или `master` не запускает production deploy автоматически. Релизный контур запускается только через тег версии или вручную из GitHub Actions.
+
+Для Render в [render.yaml](./render.yaml) отключен `autoDeploy`, поэтому облачный deploy выполняется осознанно, после успешного CI.
 
 ## Покрытие требований курсовой
 
