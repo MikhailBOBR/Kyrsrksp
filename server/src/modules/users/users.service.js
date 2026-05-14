@@ -24,8 +24,8 @@ async function listUsers() {
       FROM users
       ORDER BY
         CASE role WHEN 'admin' THEN 0 ELSE 1 END,
-        name COLLATE NOCASE ASC,
-        email COLLATE NOCASE ASC
+        LOWER(name) ASC,
+        LOWER(email) ASC
     `)
     .all();
 
