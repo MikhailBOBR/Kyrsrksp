@@ -6,8 +6,8 @@
 
 | Поверхность | Покрыто | Всего | Покрытие |
 | --- | ---: | ---: | ---: |
-| OpenAPI-операции | 63 | 63 | 100.00% |
-| Серверные модули | 17 | 17 | 100.00% |
+| OpenAPI-операции | 65 | 65 | 100.00% |
+| Серверные модули | 18 | 18 | 100.00% |
 | Frontend-контракты | 10 | 10 | 100.00% |
 | Fuzz-сценарии | 4 | 4 | 100.00% |
 
@@ -17,96 +17,99 @@
 
 | Metric | Value |
 | --- | ---: |
-| Files | 16 |
-| Tests | 80 |
-| Passed | 80 |
+| Files | 17 |
+| Tests | 83 |
+| Passed | 83 |
 | Failed | 0 |
 | Skipped | 0 |
 | Todo | 0 |
-| Duration | 11264 ms |
+| Duration | 23891 ms |
 
 | Файл | Тест | Статус | Время, ms |
 | --- | --- | --- | ---: |
-| `api-crud-coverage.test.js` | covers goals read and manual update flows | passed | 177.90 |
-| `api-crud-coverage.test.js` | covers product search, update, delete and not-found branches | passed | 88.85 |
-| `api-crud-coverage.test.js` | covers meals, templates, recipes and planner destructive flows | passed | 132.98 |
-| `api-crud-coverage.test.js` | covers daily controls, wellbeing, metrics and note deletion | passed | 96.35 |
-| `api-crud-coverage.test.js` | covers shopping and favorites create, filter, clear and remove flows | passed | 102.76 |
-| `api.test.js` | registers a new user and returns token | passed | 135.20 |
-| `api.test.js` | denies dashboard access without auth token | passed | 6.40 |
-| `api.test.js` | allows demo user to access extended dashboard | passed | 84.69 |
-| `api.test.js` | returns goal presets and applies selected preset | passed | 77.58 |
-| `api.test.js` | prevents regular user from creating products | passed | 75.70 |
-| `api.test.js` | allows admin to create product | passed | 73.59 |
-| `api.test.js` | prevents regular user from updating and deleting admin catalog entries | passed | 150.78 |
-| `api.test.js` | creates meal for user and returns it in filtered list | passed | 74.43 |
-| `api.test.js` | tracks hydration and returns updated summary | passed | 74.07 |
-| `api.test.js` | creates and applies meal template | passed | 74.97 |
-| `api.test.js` | creates recipe, applies it and sends it to planner | passed | 81.19 |
-| `api.test.js` | creates day note and returns it through dashboard | passed | 83.21 |
-| `api.test.js` | creates wellbeing checkin and returns readiness summary | passed | 84.34 |
-| `api.test.js` | creates body metric entry and exposes summary | passed | 74.28 |
-| `api.test.js` | creates meal plan from template and marks it completed | passed | 77.92 |
-| `api.test.js` | generates weekly plan from templates and recipes | passed | 84.27 |
-| `api.test.js` | adds product to shopping list and toggles checked state | passed | 80.04 |
-| `api.test.js` | adds favorites for product and template | passed | 79.58 |
-| `api.test.js` | rejects unsupported daily report export format | passed | 69.45 |
-| `api.test.js` | exposes extended OpenAPI document | passed | 6.16 |
-| `auth-session.test.js` | registers a user and exposes profile through /api/auth/me | passed | 133.97 |
-| `auth-session.test.js` | rejects duplicate registration for the same email | passed | 73.59 |
-| `auth-session.test.js` | returns admin role in the current session profile | passed | 74.79 |
-| `client-actions.test.js` | keeps drawer navigation views in markup | passed | 1.49 |
-| `client-actions.test.js` | wires static toolbar, drawer and import actions | passed | 0.49 |
-| `client-actions.test.js` | keeps dynamic card actions connected for key tabs | passed | 0.72 |
-| `client-actions.test.js` | keeps hidden drawer layers non-interactive | passed | 0.30 |
-| `client-static.test.js` | keeps critical app shell controls available | passed | 1.64 |
-| `client-static.test.js` | keeps navigation and theme style rules in place | passed | 0.29 |
-| `client-static.test.js` | keeps client javascript valid and export flow wired | passed | 3.61 |
-| `client-static.test.js` | passes the shared client contract suite | passed | 2.77 |
-| `contracts.test.js` | rejects invalid login and invalid registration payloads | passed | 134.02 |
-| `contracts.test.js` | rejects invalid meal payloads | passed | 80.92 |
-| `contracts.test.js` | rejects invalid recipe and planner payloads | passed | 79.57 |
-| `contracts.test.js` | rejects invalid goal updates and invalid authorization token | passed | 75.79 |
-| `exports.test.js` | returns json daily report with goals, meals and hydration summary | passed | 133.46 |
-| `exports.test.js` | rejects unsupported daily report formats | passed | 73.46 |
-| `exports.test.js` | rejects export requests with invalid dates | passed | 72.57 |
-| `fuzz.test.js` | fuzzes auth registration with random invalid payloads without 500 errors | passed | 188.53 |
-| `fuzz.test.js` | fuzzes malformed json bodies across mutating endpoints without 500 errors | passed | 158.70 |
-| `fuzz.test.js` | fuzzes protected business endpoints without server crashes | passed | 451.94 |
-| `fuzz.test.js` | fuzzes daily, import and shopping endpoints without server crashes | passed | 821.11 |
-| `imports.test.js` | previews and applies meal import from tsv | passed | 147.34 |
-| `imports.test.js` | downloads import template in tsv format | passed | 76.19 |
-| `imports.test.js` | prevents regular user from importing products | passed | 73.81 |
-| `imports.test.js` | allows admin to import products from json | passed | 76.30 |
-| `observability.test.js` | health endpoint returns release metadata and request id header | passed | 45.06 |
-| `observability.test.js` | liveness and readiness endpoints separate process and backing-service checks | passed | 8.58 |
-| `observability.test.js` | echoes incoming request id and returns it on 404 | passed | 6.77 |
-| `observability.test.js` | rejects new requests while runtime is draining | passed | 8.21 |
-| `openapi-docs.test.js` | keeps the branded Swagger document readable and complete | passed | 2.17 |
-| `openapi-docs.test.js` | documents every operation with tags, operationId, success and error responses | passed | 1.15 |
-| `openapi-docs.test.js` | keeps path parameters and protected routes explicit | passed | 2.11 |
-| `openapi-docs.test.js` | keeps Swagger UI styled for the project and useful for manual checks | passed | 0.15 |
-| `openapi-docs.test.js` | keeps README, API docs and wiki linked to the current project surface | passed | 0.65 |
-| `runtime-config.test.js` | config prefers environment variables over yaml file values | passed | 4.12 |
-| `runtime-config.test.js` | config accepts standard platform host and port aliases | passed | 0.94 |
-| `runtime-config.test.js` | config exposes runtime and backing service tuning from the environment | passed | 0.94 |
-| `runtime-config.test.js` | production config rejects default JWT secrets | passed | 1.08 |
-| `runtime-config.test.js` | structured logger serializes error payloads | passed | 1.25 |
-| `runtime-config.test.js` | postgres query adapter preserves mixed-case response aliases | passed | 0.22 |
-| `security.test.js` | hashes passwords and validates correct credentials | passed | 199.74 |
-| `security.test.js` | signs and verifies access tokens with role payload | passed | 3.92 |
-| `security.test.js` | rejects tampered access tokens | passed | 3.83 |
-| `smoke.test.js` | serves health endpoint | passed | 41.92 |
-| `smoke.test.js` | serves openapi and swagger ui | passed | 14.66 |
-| `smoke.test.js` | serves client html, styles and favicon | passed | 15.50 |
-| `smoke.test.js` | returns json 404 for unknown api route | passed | 3.44 |
-| `surface-coverage.test.js` | covers every API operation, server module, frontend contract and fuzz scenario | passed | 4.72 |
-| `validation.test.js` | accept valid dates and reject impossible calendar values | passed | 1.18 |
-| `validation.test.js` | accept valid times and reject impossible hour-minute combinations | passed | 0.27 |
-| `validation.test.js` | validates email and password rules | passed | 0.33 |
-| `validation.test.js` | validates numeric, meal type and category constraints | passed | 0.92 |
-| `validation.test.js` | shifts dates forward and backward | passed | 1.02 |
-| `validation.test.js` | builds ordered date windows | passed | 0.74 |
+| `api-crud-coverage.test.js` | covers goals read and manual update flows | passed | 280.82 |
+| `api-crud-coverage.test.js` | covers product search, update, delete and not-found branches | passed | 182.28 |
+| `api-crud-coverage.test.js` | covers meals, templates, recipes and planner destructive flows | passed | 232.88 |
+| `api-crud-coverage.test.js` | covers daily controls, wellbeing, metrics and note deletion | passed | 195.86 |
+| `api-crud-coverage.test.js` | covers shopping and favorites create, filter, clear and remove flows | passed | 204.76 |
+| `api.test.js` | registers a new user and returns token | passed | 276.40 |
+| `api.test.js` | denies dashboard access without auth token | passed | 13.63 |
+| `api.test.js` | allows demo user to access extended dashboard | passed | 188.04 |
+| `api.test.js` | returns goal presets and applies selected preset | passed | 158.83 |
+| `api.test.js` | prevents regular user from creating products | passed | 151.12 |
+| `api.test.js` | allows admin to create product | passed | 149.22 |
+| `api.test.js` | prevents regular user from updating and deleting admin catalog entries | passed | 310.19 |
+| `api.test.js` | creates meal for user and returns it in filtered list | passed | 152.35 |
+| `api.test.js` | tracks hydration and returns updated summary | passed | 151.86 |
+| `api.test.js` | creates and applies meal template | passed | 157.07 |
+| `api.test.js` | creates recipe, applies it and sends it to planner | passed | 166.80 |
+| `api.test.js` | creates day note and returns it through dashboard | passed | 166.52 |
+| `api.test.js` | creates wellbeing checkin and returns readiness summary | passed | 156.11 |
+| `api.test.js` | creates body metric entry and exposes summary | passed | 151.37 |
+| `api.test.js` | creates meal plan from template and marks it completed | passed | 160.35 |
+| `api.test.js` | generates weekly plan from templates and recipes | passed | 160.90 |
+| `api.test.js` | adds product to shopping list and toggles checked state | passed | 160.26 |
+| `api.test.js` | adds favorites for product and template | passed | 162.64 |
+| `api.test.js` | rejects unsupported daily report export format | passed | 143.06 |
+| `api.test.js` | exposes extended OpenAPI document | passed | 10.90 |
+| `auth-session.test.js` | registers a user and exposes profile through /api/auth/me | passed | 272.16 |
+| `auth-session.test.js` | rejects duplicate registration for the same email | passed | 151.71 |
+| `auth-session.test.js` | returns admin role in the current session profile | passed | 147.72 |
+| `client-actions.test.js` | keeps drawer navigation views in markup | passed | 3.02 |
+| `client-actions.test.js` | wires static toolbar, drawer and import actions | passed | 1.07 |
+| `client-actions.test.js` | keeps dynamic card actions connected for key tabs | passed | 1.73 |
+| `client-actions.test.js` | keeps hidden drawer layers non-interactive | passed | 0.64 |
+| `client-static.test.js` | keeps critical app shell controls available | passed | 2.68 |
+| `client-static.test.js` | keeps navigation and theme style rules in place | passed | 0.56 |
+| `client-static.test.js` | keeps client javascript valid and export flow wired | passed | 6.10 |
+| `client-static.test.js` | passes the shared client contract suite | passed | 5.83 |
+| `contracts.test.js` | rejects invalid login and invalid registration payloads | passed | 268.23 |
+| `contracts.test.js` | rejects invalid meal payloads | passed | 155.26 |
+| `contracts.test.js` | rejects invalid recipe and planner payloads | passed | 155.26 |
+| `contracts.test.js` | rejects invalid goal updates and invalid authorization token | passed | 158.63 |
+| `exports.test.js` | returns json daily report with goals, meals and hydration summary | passed | 277.06 |
+| `exports.test.js` | rejects unsupported daily report formats | passed | 152.40 |
+| `exports.test.js` | rejects export requests with invalid dates | passed | 149.16 |
+| `fuzz.test.js` | fuzzes auth registration with random invalid payloads without 500 errors | passed | 400.18 |
+| `fuzz.test.js` | fuzzes malformed json bodies across mutating endpoints without 500 errors | passed | 321.36 |
+| `fuzz.test.js` | fuzzes protected business endpoints without server crashes | passed | 931.54 |
+| `fuzz.test.js` | fuzzes daily, import and shopping endpoints without server crashes | passed | 1527.75 |
+| `imports.test.js` | previews and applies meal import from tsv | passed | 301.19 |
+| `imports.test.js` | downloads import template in tsv format | passed | 156.24 |
+| `imports.test.js` | prevents regular user from importing products | passed | 150.98 |
+| `imports.test.js` | allows admin to import products from json | passed | 157.63 |
+| `observability.test.js` | health endpoint returns release metadata and request id header | passed | 81.09 |
+| `observability.test.js` | liveness and readiness endpoints separate process and backing-service checks | passed | 14.64 |
+| `observability.test.js` | echoes incoming request id and returns it on 404 | passed | 11.76 |
+| `observability.test.js` | rejects new requests while runtime is draining | passed | 15.63 |
+| `openapi-docs.test.js` | keeps the branded Swagger document readable and complete | passed | 2.81 |
+| `openapi-docs.test.js` | documents every operation with tags, operationId, success and error responses | passed | 2.22 |
+| `openapi-docs.test.js` | keeps path parameters and protected routes explicit | passed | 2.90 |
+| `openapi-docs.test.js` | keeps Swagger UI styled for the project and useful for manual checks | passed | 0.32 |
+| `openapi-docs.test.js` | keeps README, API docs and wiki linked to the current project surface | passed | 1.47 |
+| `runtime-config.test.js` | config prefers environment variables over yaml file values | passed | 7.07 |
+| `runtime-config.test.js` | config accepts standard platform host and port aliases | passed | 1.93 |
+| `runtime-config.test.js` | config exposes runtime and backing service tuning from the environment | passed | 2.11 |
+| `runtime-config.test.js` | production config rejects default JWT secrets | passed | 2.14 |
+| `runtime-config.test.js` | structured logger serializes error payloads | passed | 2.38 |
+| `runtime-config.test.js` | postgres query adapter preserves mixed-case response aliases | passed | 0.43 |
+| `security.test.js` | hashes passwords and validates correct credentials | passed | 406.76 |
+| `security.test.js` | signs and verifies access tokens with role payload | passed | 8.44 |
+| `security.test.js` | rejects tampered access tokens | passed | 3.52 |
+| `smoke.test.js` | serves health endpoint | passed | 91.43 |
+| `smoke.test.js` | serves openapi and swagger ui | passed | 30.71 |
+| `smoke.test.js` | serves client html, styles and favicon | passed | 25.89 |
+| `smoke.test.js` | returns json 404 for unknown api route | passed | 5.39 |
+| `surface-coverage.test.js` | covers every API operation, server module, frontend contract and fuzz scenario | passed | 9.49 |
+| `users.test.js` | allows admin to list users and promote a regular user | passed | 432.06 |
+| `users.test.js` | prevents regular users from reading users or changing roles | passed | 157.01 |
+| `users.test.js` | validates role updates and protects the current admin role | passed | 180.53 |
+| `validation.test.js` | accept valid dates and reject impossible calendar values | passed | 2.46 |
+| `validation.test.js` | accept valid times and reject impossible hour-minute combinations | passed | 0.70 |
+| `validation.test.js` | validates email and password rules | passed | 0.70 |
+| `validation.test.js` | validates numeric, meal type and category constraints | passed | 1.75 |
+| `validation.test.js` | shifts dates forward and backward | passed | 1.89 |
+| `validation.test.js` | builds ordered date windows | passed | 1.57 |
 
 ## Матрица API-операций
 
@@ -118,6 +121,8 @@
 | POST | `/api/auth/register` | `postAuthRegister` | api.test.js, auth-session.test.js, fuzz.test.js |
 | POST | `/api/auth/login` | `postAuthLogin` | api.test.js, auth-session.test.js, contracts.test.js, fuzz.test.js |
 | GET | `/api/auth/me` | `getAuthMe` | auth-session.test.js |
+| GET | `/api/users` | `getUsers` | users.test.js |
+| PATCH | `/api/users/{id}/role` | `patchUsersIdRole` | users.test.js |
 | GET | `/api/goals` | `getGoals` | api-crud-coverage.test.js |
 | PUT | `/api/goals` | `putGoals` | api-crud-coverage.test.js, contracts.test.js, fuzz.test.js |
 | GET | `/api/goals/presets` | `getGoalsPresets` | api.test.js |
@@ -197,6 +202,7 @@
 | `recipes` | api.test.js, api-crud-coverage.test.js, contracts.test.js, fuzz.test.js |
 | `shopping` | api.test.js, api-crud-coverage.test.js, fuzz.test.js |
 | `templates` | api.test.js, api-crud-coverage.test.js |
+| `users` | users.test.js |
 
 ## Матрица frontend-контрактов
 

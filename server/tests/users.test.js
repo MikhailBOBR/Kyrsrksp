@@ -116,6 +116,20 @@ test.describe("admin user role management", () => {
 
     assert.equal(invalidRole.status, 400);
 
+    const sameRole = await api(`/api/users/${admin.id}/role`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        role: "admin"
+      })
+    });
+
+    assert.equal(sameRole.status, 200);
+    assert.equal(sameRole.payload.role, "admin");
+
     const selfDemotion = await api(`/api/users/${admin.id}/role`, {
       method: "PATCH",
       headers: {
@@ -128,6 +142,19 @@ test.describe("admin user role management", () => {
     });
 
     assert.equal(selfDemotion.status, 400);
+
+    const invalidId = await api("/api/users/not-a-number/role", {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        role: "admin"
+      })
+    });
+
+    assert.equal(invalidId.status, 400);
 
     const missingUser = await api("/api/users/999999/role", {
       method: "PATCH",

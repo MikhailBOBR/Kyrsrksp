@@ -7,7 +7,7 @@ function sanitizeUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
-    createdAt: user.created_at || user.createdAt
+    createdAt: user.created_at
   };
 }
 
