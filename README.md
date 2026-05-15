@@ -116,8 +116,9 @@ npm run dev
 - `SEED_DEMO_DATA=true` включает базовый демонстрационный набор данных.
 - `SEED_LARGE_DATA=true` включает массовый seed для полноценной демо-базы.
 - В [docker-compose.yml](./docker-compose.yml) массовый seed включен для локального PostgreSQL-стенда.
-- В [render.yaml](./render.yaml) массовый seed включен для облачного демо-стенда, но автоматический deploy выключен.
+- В [render.yaml](./render.yaml) массовый seed и `autoDeploy` включены для облачного демо-стенда.
 - `npm run seed:large` запускает массовое наполнение вручную. Команда идемпотентна и не должна создавать дубли при повторном запуске.
+- `starter-workspace` автоматически дозаполняет личные шаблоны, рецепты, избранное и свежую историю для нового или пустого пользователя при регистрации, входе, открытии рецептов/шаблонов и генерации недельного плана.
 
 ## Полезные команды
 
@@ -145,7 +146,7 @@ npm run dev
 - `client` - статический интерфейс, который обслуживается Express;
 - `server/src/app.js` - сборка Express-приложения, API routes, Swagger и static middleware;
 - `server/src/modules` - доменные модули формата `routes + service`;
-- `server/src/db` - подключение к БД, инициализация схемы и seed;
+- `server/src/db` - подключение к БД, инициализация схемы, seed и стартовое наполнение личного рабочего пространства;
 - `server/src/middlewares` - request context, auth/RBAC и обработка ошибок;
 - `server/tests` - API, smoke, security, contracts, observability, import/export и fuzz тесты.
 
@@ -177,7 +178,7 @@ npm run dev
 Качество проекта закрывается несколькими слоями:
 
 - `npm run check:client` проверяет статические frontend-контракты;
-- `npm test` запускает 80 автоматических тестов на `node:test`;
+- `npm test` запускает 83 автоматических теста на `node:test`;
 - `npm run test:coverage` генерирует таблицу результатов, surface coverage и raw Node/V8 coverage;
 - `npm run test:v8` включает пороги `100/100/100` по lines, branches и functions;
 - `npm run test:surface` подтверждает 100% покрытие заявленной функциональной поверхности;
@@ -205,9 +206,9 @@ npm run dev
 
 CI проверяет проект на Node.js `20` и `22`, запускает frontend-контракты, основной набор тестов, coverage summary и Docker smoke checks с PostgreSQL.
 
-CD отделен от обычных коммитов: push в `main` или `master` не запускает production deploy автоматически. Релизный контур запускается только через тег версии или вручную из GitHub Actions.
+CD отделен от обычных коммитов: релизный контур через GitHub Actions запускается только по тегу версии или вручную.
 
-Для Render в [render.yaml](./render.yaml) отключен `autoDeploy`, поэтому облачный deploy выполняется осознанно, после успешного CI.
+Для Render в [render.yaml](./render.yaml) включен `autoDeploy`, поэтому подключенный облачный демо-стенд может обновляться автоматически после изменения отслеживаемой ветки.
 
 ## Покрытие требований курсовой
 

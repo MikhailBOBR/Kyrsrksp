@@ -1,5 +1,6 @@
 /* node:coverage ignore next 10000 */
 const { db } = require("../../db/connection");
+const { ensureStarterWorkspace } = require("../../db/starter-workspace");
 const { getLocalDate, getTimestamp } = require("../../lib/date");
 const { createHttpError } = require("../../lib/http");
 const { getMealById } = require("../meals/meals.service");
@@ -22,6 +23,8 @@ function normalizeTemplate(template) {
 }
 
 async function listTemplates(userId) {
+  await ensureStarterWorkspace(userId);
+
   const rows = await db
     .prepare(`
       SELECT *

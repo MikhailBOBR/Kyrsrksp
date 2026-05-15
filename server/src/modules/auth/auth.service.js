@@ -1,5 +1,6 @@
 /* node:coverage ignore next 10000 */
 const { db } = require("../../db/connection");
+const { ensureStarterWorkspace } = require("../../db/starter-workspace");
 const { getTimestamp } = require("../../lib/date");
 const { createHttpError } = require("../../lib/http");
 const { hashPassword, signAccessToken, verifyPassword } = require("../../lib/security");
@@ -39,6 +40,7 @@ async function registerUser({ name, email, password }) {
     .run(name.trim(), email.trim().toLowerCase(), hashPassword(password), createdAt);
 
   await createGoalsForUser(result.lastInsertRowid);
+  await ensureStarterWorkspace(result.lastInsertRowid);
 
   const user = await db
     .prepare(`SELECT id, name, email, role, created_at FROM users WHERE id = ?`)
@@ -56,6 +58,8 @@ async function loginUser({ email, password }) {
   if (!user || !verifyPassword(password, user.password_hash)) {
     throw createHttpError(401, "Invalid email or password");
   }
+
+  await ensureStarterWorkspace(user.id);
 
   return {
     token: signAccessToken(sanitizeUser(user)),

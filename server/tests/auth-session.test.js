@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { createHttpTestContext } = require("./helpers/test-context");
+const { getLocalDate } = require("../src/lib/date");
 
 const { api } = createHttpTestContext(test, {
   dbFileName: "auth-session.db",
@@ -36,6 +37,37 @@ test.describe("auth session flows", () => {
     assert.equal(me.status, 200);
     assert.equal(me.payload.user.email, email);
     assert.equal(me.payload.user.name, "QA Session User");
+
+    const templates = await api("/api/templates", {
+      headers: {
+        Authorization: `Bearer ${registered.payload.token}`
+      }
+    });
+    const recipes = await api("/api/recipes", {
+      headers: {
+        Authorization: `Bearer ${registered.payload.token}`
+      }
+    });
+    const generated = await api("/api/planner/generate-week", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${registered.payload.token}`
+      },
+      body: JSON.stringify({
+        startDate: getLocalDate(),
+        days: 3,
+        includeSnack: true,
+        replaceExisting: true
+      })
+    });
+
+    assert.equal(templates.status, 200);
+    assert.ok(templates.payload.length >= 10);
+    assert.equal(recipes.status, 200);
+    assert.ok(recipes.payload.length >= 10);
+    assert.equal(generated.status, 201);
+    assert.equal(generated.payload.items.length, 12);
   });
 
   test("rejects duplicate registration for the same email", async () => {

@@ -4,6 +4,7 @@ const { hashPassword } = require("../lib/security");
 const { seedWellbeingRange } = require("../modules/checkins/checkins.service");
 const { db } = require("./connection");
 const { initializeDatabase } = require("./init-schema");
+const { ensureStarterWorkspace } = require("./starter-workspace");
 
 const mealTypes = {
   breakfast: "Завтрак",
@@ -576,7 +577,10 @@ async function collectStats() {
     "daily_checkins",
     "body_metrics",
     "meal_plans",
-    "shopping_items"
+    "shopping_items",
+    "daily_notes",
+    "recipes",
+    "recipe_items"
   ];
   const stats = {};
 
@@ -612,6 +616,9 @@ async function collectStats() {
       .get(demoUserId)).count,
     shopping: (await db
       .prepare(`SELECT COUNT(*) AS count FROM shopping_items WHERE user_id = ?`)
+      .get(demoUserId)).count,
+    recipes: (await db
+      .prepare(`SELECT COUNT(*) AS count FROM recipes WHERE user_id = ?`)
       .get(demoUserId)).count
   };
 
@@ -662,6 +669,7 @@ async function seedLargeData(options = {}) {
     await ensureBodyMetricsForUser(demo.id, BULK_SEED_CONFIG.demoMetricCount, 81.4);
     await ensurePlannerForUser(demo.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, 0);
     await ensureShoppingForUser(demo.id, 0);
+    await ensureStarterWorkspace(demo.id);
 
     for (const [index, user] of others.entries()) {
       await ensureMealsForUser(
@@ -684,6 +692,7 @@ async function seedLargeData(options = {}) {
       );
       await ensurePlannerForUser(user.id, getLocalDate(), BULK_SEED_CONFIG.plannerDays, index + 1);
       await ensureShoppingForUser(user.id, index + 1);
+      await ensureStarterWorkspace(user.id);
     }
   });
 
