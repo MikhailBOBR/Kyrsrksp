@@ -178,20 +178,20 @@ npm run dev
 Качество проекта закрывается несколькими слоями:
 
 - `npm run check:client` проверяет статические frontend-контракты;
-- `npm test` запускает 83 автоматических теста на `node:test`;
+- `npm test` запускает 184 автоматических теста на `node:test`;
 - `npm run test:coverage` генерирует таблицу результатов, surface coverage и raw Node/V8 coverage;
 - `npm run test:v8` включает пороги `100/100/100` по lines, branches и functions;
 - `npm run test:surface` подтверждает 100% покрытие заявленной функциональной поверхности;
-- `npm run test:fuzz` прогоняет детерминированные fuzz-сценарии для защиты от 500-ошибок на мусорных payload.
+- `npm run test:fuzz` прогоняет 105 детерминированных fuzz-проверок, включая 100 adversarial API shapes, для защиты от 500-ошибок на мусорных payload.
 
 Текущий отчет:
 
 | Поверхность | Покрыто | Всего | Покрытие |
 | --- | ---: | ---: | ---: |
-| OpenAPI-операции | 63 | 63 | 100% |
-| Серверные модули | 17 | 17 | 100% |
+| OpenAPI-операции | 65 | 65 | 100% |
+| Серверные модули | 18 | 18 | 100% |
 | Frontend-контракты | 10 | 10 | 100% |
-| Fuzz-сценарии | 4 | 4 | 100% |
+| Fuzz-сценарии | 5 | 5 | 100% |
 
 Подробности находятся в [docs/05-testing-and-quality.md](./docs/05-testing-and-quality.md) и [docs/11-test-coverage-report.md](./docs/11-test-coverage-report.md).
 

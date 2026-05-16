@@ -7,7 +7,7 @@
 - smoke-проверки приложения и Swagger;
 - unit-тесты validation/security;
 - static-contract tests для фронтенда;
-- fuzzing-сценарии.
+- fuzzing-сценарии, включая 100 adversarial API request shapes.
 
 ## Основные Команды
 

@@ -257,6 +257,10 @@ const FUZZ_SCENARIO_COVERAGE = [
   {
     name: "daily, import and shopping random payloads",
     pattern: /fuzzes daily, import and shopping endpoints without server crashes/
+  },
+  {
+    name: "100 adversarial API request shapes",
+    pattern: /fuzzes 100 adversarial API shapes without server crashes/
   }
 ];
 

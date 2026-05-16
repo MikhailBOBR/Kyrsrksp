@@ -245,6 +245,306 @@ function buildRandomImportPayload() {
   };
 }
 
+function encodeFuzzValue(value) {
+  return encodeURIComponent(String(value));
+}
+
+function applyId(pathname, id) {
+  return pathname.replace(":id", id);
+}
+
+function buildFuzzHeaders(item) {
+  const headers = { ...(item.headers || {}) };
+  const hasBody = Object.prototype.hasOwnProperty.call(item, "body");
+  const hasRawBody = Object.prototype.hasOwnProperty.call(item, "rawBody");
+
+  if ((hasBody || hasRawBody) && item.contentType !== null) {
+    headers["Content-Type"] = item.contentType || "application/json";
+  }
+
+  if (item.token) {
+    headers.Authorization = `Bearer ${item.token}`;
+  }
+
+  return headers;
+}
+
+function buildFuzzBody(item) {
+  if (Object.prototype.hasOwnProperty.call(item, "rawBody")) {
+    return item.rawBody;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(item, "body")) {
+    return JSON.stringify(item.body);
+  }
+
+  return undefined;
+}
+
+async function sendFuzzCase(item) {
+  const method = item.method || "GET";
+  const body = buildFuzzBody(item);
+  const options = {
+    method,
+    headers: buildFuzzHeaders(item)
+  };
+
+  if (body !== undefined && method !== "GET" && method !== "HEAD") {
+    options.body = body;
+  }
+
+  return api(item.pathname, options);
+}
+
+function buildAdversarialApiCases({ userToken, adminToken }) {
+  const cases = [];
+  const invalidToken = "invalid.jwt.token";
+  const queryValues = [
+    "",
+    " ",
+    "2026-02-30",
+    "2026-13-99",
+    "25:61",
+    "-1",
+    "0",
+    "1.5",
+    "NaN",
+    "Infinity",
+    "null",
+    "undefined",
+    "[]",
+    "{}",
+    "very-long-query-".repeat(18),
+    "../admin",
+    "%00",
+    "x&role=admin",
+    "DROP TABLE meals",
+    "999999999999"
+  ];
+  const queryRoutes = [
+    {
+      label: "dashboard date",
+      token: userToken,
+      pathname: (value) => `/api/dashboard?date=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "hydration date",
+      token: userToken,
+      pathname: (value) => `/api/hydration?date=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "meals filters",
+      token: userToken,
+      pathname: (value) =>
+        `/api/meals?date=${encodeFuzzValue(value)}&mealType=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "planner date",
+      token: userToken,
+      pathname: (value) => `/api/planner?date=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "day notes date",
+      token: userToken,
+      pathname: (value) => `/api/day-notes?date=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "recent day notes limit",
+      token: userToken,
+      pathname: (value) => `/api/day-notes/recent?limit=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "products filters",
+      pathname: (value) =>
+        `/api/products?search=${encodeFuzzValue(value)}&category=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "daily report query",
+      token: userToken,
+      pathname: (value) =>
+        `/api/exports/daily-report?date=${encodeFuzzValue(value)}&format=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "import template query",
+      token: userToken,
+      pathname: (value) =>
+        `/api/imports/template?dataset=${encodeFuzzValue(value)}&format=${encodeFuzzValue(value)}`
+    },
+    {
+      label: "admin users query",
+      token: adminToken,
+      pathname: (value) => `/api/users?search=${encodeFuzzValue(value)}`
+    }
+  ];
+
+  queryValues.forEach((value, index) => {
+    const route = queryRoutes[index % queryRoutes.length];
+    cases.push({
+      name: `query ${route.label} ${index + 1}`,
+      pathname: route.pathname(value),
+      token: route.token
+    });
+  });
+
+  cases.push(
+    { name: "auth me without token", pathname: "/api/auth/me" },
+    { name: "auth me invalid token", pathname: "/api/auth/me", token: invalidToken },
+    { name: "login empty object", method: "POST", pathname: "/api/auth/login", body: {} },
+    { name: "login null body", method: "POST", pathname: "/api/auth/login", body: null },
+    { name: "login array body", method: "POST", pathname: "/api/auth/login", body: [] },
+    { name: "login long fields", method: "POST", pathname: "/api/auth/login", body: { email: "x".repeat(512), password: "y".repeat(512) } },
+    { name: "register primitive body", method: "POST", pathname: "/api/auth/register", body: "text" },
+    { name: "register duplicate-like body", method: "POST", pathname: "/api/auth/register", body: { name: "", email: "demo@nutritrack.local", password: "" } },
+    { name: "admin route user token", pathname: "/api/users", token: userToken },
+    { name: "admin role invalid token", method: "PATCH", pathname: "/api/users/1/role", token: invalidToken, body: { role: "admin" } }
+  );
+
+  const bodyShapes = [
+    { label: "empty object", body: {} },
+    { label: "null", body: null },
+    { label: "array", body: [{}] },
+    { label: "string", body: "plain-string" },
+    { label: "number", body: 42 },
+    { label: "boolean", body: true },
+    {
+      label: "oversized fields",
+      body: {
+        title: "oversized-".repeat(512),
+        notes: "nested-notes-".repeat(512),
+        calories: "NaN"
+      }
+    },
+    {
+      label: "nested object",
+      body: {
+        title: { nested: true },
+        date: { year: 2026 },
+        quantity: { value: 1 },
+        ingredients: [{ productId: {}, grams: [] }]
+      }
+    }
+  ];
+  const mutationRoutes = [
+    { method: "PUT", pathname: "/api/goals", token: userToken },
+    { method: "POST", pathname: "/api/meals", token: userToken },
+    { method: "POST", pathname: "/api/templates", token: userToken },
+    { method: "POST", pathname: "/api/recipes", token: userToken },
+    { method: "POST", pathname: "/api/planner", token: userToken },
+    { method: "POST", pathname: "/api/planner/generate-week", token: userToken },
+    { method: "POST", pathname: "/api/hydration", token: userToken },
+    { method: "PUT", pathname: "/api/checkins", token: userToken },
+    { method: "POST", pathname: "/api/metrics", token: userToken },
+    { method: "PUT", pathname: "/api/day-notes", token: userToken },
+    { method: "POST", pathname: "/api/shopping", token: userToken },
+    { method: "POST", pathname: "/api/imports/preview", token: userToken },
+    { method: "POST", pathname: "/api/imports/apply", token: userToken },
+    { method: "POST", pathname: "/api/products", token: adminToken },
+    { method: "PATCH", pathname: "/api/users/1/role", token: adminToken }
+  ];
+
+  for (let index = 0; index < 30; index += 1) {
+    const route = mutationRoutes[index % mutationRoutes.length];
+    const shape = bodyShapes[index % bodyShapes.length];
+
+    cases.push({
+      name: `body shape ${shape.label} ${route.method} ${route.pathname}`,
+      ...route,
+      body: shape.body
+    });
+  }
+
+  const idValues = [
+    "0",
+    "-1",
+    "abc",
+    "1.5",
+    "999999",
+    "NaN",
+    "Infinity",
+    "..%2F1",
+    "%20",
+    "00000000000000000001"
+  ];
+  const idRoutes = [
+    { method: "PUT", pathname: "/api/meals/:id", token: userToken, body: buildRandomMealPayload() },
+    { method: "DELETE", pathname: "/api/meals/:id", token: userToken },
+    { method: "POST", pathname: "/api/templates/from-meal/:id", token: userToken, body: {} },
+    { method: "POST", pathname: "/api/templates/:id/apply", token: userToken, body: {} },
+    { method: "DELETE", pathname: "/api/templates/:id", token: userToken },
+    { method: "POST", pathname: "/api/recipes/:id/apply", token: userToken, body: {} },
+    { method: "POST", pathname: "/api/recipes/:id/plan", token: userToken, body: {} },
+    { method: "DELETE", pathname: "/api/recipes/:id", token: userToken },
+    { method: "POST", pathname: "/api/planner/from-template/:id", token: userToken, body: {} },
+    { method: "PATCH", pathname: "/api/planner/:id/completion", token: userToken, body: { completed: weirdScalar() } },
+    { method: "DELETE", pathname: "/api/planner/:id", token: userToken },
+    { method: "DELETE", pathname: "/api/hydration/:id", token: userToken },
+    { method: "DELETE", pathname: "/api/metrics/:id", token: userToken },
+    { method: "POST", pathname: "/api/shopping/from-product/:id", token: userToken, body: {} },
+    { method: "PATCH", pathname: "/api/shopping/:id/check", token: userToken, body: { checked: weirdScalar() } },
+    { method: "DELETE", pathname: "/api/shopping/:id", token: userToken },
+    { method: "POST", pathname: "/api/favorites/products/:id", token: userToken },
+    { method: "DELETE", pathname: "/api/favorites/products/:id", token: userToken },
+    { method: "POST", pathname: "/api/favorites/templates/:id", token: userToken },
+    { method: "DELETE", pathname: "/api/favorites/templates/:id", token: userToken },
+    { method: "PUT", pathname: "/api/products/:id", token: adminToken, body: buildRandomProductPayload() },
+    { method: "DELETE", pathname: "/api/products/:id", token: adminToken },
+    { method: "PATCH", pathname: "/api/users/:id/role", token: adminToken, body: { role: weirdScalar() } }
+  ];
+
+  for (let index = 0; index < 25; index += 1) {
+    const route = idRoutes[index % idRoutes.length];
+    const id = idValues[index % idValues.length];
+
+    cases.push({
+      name: `path id ${id} ${route.method} ${route.pathname}`,
+      ...route,
+      pathname: applyId(route.pathname, id)
+    });
+  }
+
+  const mediaBodies = [
+    { label: "text plain", contentType: "text/plain", rawBody: "plain body" },
+    { label: "json string", contentType: "application/json", rawBody: JSON.stringify("plain body") },
+    { label: "json null", contentType: "application/json", rawBody: "null" },
+    { label: "json array", contentType: "application/json", rawBody: "[{}]" },
+    { label: "urlencoded", contentType: "application/x-www-form-urlencoded", rawBody: "title=&calories=abc" },
+    { label: "missing content type", contentType: null, rawBody: "{\"title\":\"raw\"}" },
+    { label: "deep object", contentType: "application/json", rawBody: JSON.stringify({ a: { b: { c: { d: "x" } } } }) },
+    { label: "empty body json header", contentType: "application/json", rawBody: "" }
+  ];
+  const mediaRoutes = [
+    { method: "POST", pathname: "/api/meals", token: userToken },
+    { method: "POST", pathname: "/api/templates", token: userToken },
+    { method: "POST", pathname: "/api/recipes", token: userToken },
+    { method: "POST", pathname: "/api/planner", token: userToken },
+    { method: "POST", pathname: "/api/hydration", token: userToken },
+    { method: "PUT", pathname: "/api/checkins", token: userToken },
+    { method: "POST", pathname: "/api/metrics", token: userToken },
+    { method: "PUT", pathname: "/api/day-notes", token: userToken },
+    { method: "POST", pathname: "/api/shopping", token: userToken },
+    { method: "POST", pathname: "/api/imports/preview", token: userToken },
+    { method: "POST", pathname: "/api/products", token: adminToken },
+    { method: "PATCH", pathname: "/api/planner/999999/completion", token: userToken },
+    { method: "PATCH", pathname: "/api/shopping/999999/check", token: userToken },
+    { method: "PATCH", pathname: "/api/users/999999/role", token: adminToken },
+    { method: "DELETE", pathname: "/api/shopping/999999", token: userToken }
+  ];
+
+  for (let index = 0; index < 15; index += 1) {
+    const route = mediaRoutes[index % mediaRoutes.length];
+    const media = mediaBodies[index % mediaBodies.length];
+
+    cases.push({
+      name: `media ${media.label} ${route.method} ${route.pathname}`,
+      ...route,
+      contentType: media.contentType,
+      rawBody: media.rawBody
+    });
+  }
+
+  return cases;
+}
+
 test("fuzzes auth registration with random invalid payloads without 500 errors", async () => {
   const allowedStatuses = new Set([201, 400]);
 
@@ -427,5 +727,24 @@ test("fuzzes daily, import and shopping endpoints without server crashes", async
         `Unexpected status ${response.status} on mutation fuzz route ${item.method} ${item.pathname}`
       );
     }
+  }
+});
+
+test("fuzzes 100 adversarial API shapes without server crashes", async (t) => {
+  const userToken = await login("demo@nutritrack.local", "Demo123!");
+  const adminToken = await login("admin@nutritrack.local", "Admin123!");
+  const cases = buildAdversarialApiCases({ userToken, adminToken });
+
+  assert.equal(cases.length, 100, "expected exactly 100 adversarial fuzz cases");
+
+  for (const [index, item] of cases.entries()) {
+    await t.test(`${String(index + 1).padStart(3, "0")} ${item.name}`, async () => {
+      const response = await sendFuzzCase(item);
+
+      assert.ok(
+        response.status < 500,
+        `Unexpected ${response.status} on fuzz case ${index + 1}: ${item.method || "GET"} ${item.pathname}`
+      );
+    });
   }
 });

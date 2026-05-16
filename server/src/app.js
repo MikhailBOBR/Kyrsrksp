@@ -4,6 +4,7 @@ const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const { appEnv, clientRoot, dbProvider, releaseVersion, serviceName, trustProxy } = require("./config/env");
 const { pingDatabase } = require("./db/connection");
+const { createHttpError } = require("./lib/http");
 const { errorHandler } = require("./middlewares/error-handler");
 const { rejectWhenDraining, requestContext } = require("./middlewares/request-context");
 const { isDraining } = require("./runtime/state");
@@ -27,6 +28,8 @@ const usersRoutes = require("./modules/users/users.routes");
 const { openApiDocument } = require("./modules/docs/openapi");
 const { swaggerUiOptions } = require("./modules/docs/swagger-ui");
 
+const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 function runtimeStatus(overrides = {}) {
   const draining = isDraining();
 
@@ -41,6 +44,26 @@ function runtimeStatus(overrides = {}) {
   };
 }
 
+function enforceApiBodyObject(req, _res, next) {
+  if (!BODY_METHODS.has(req.method)) {
+    next();
+    return;
+  }
+
+  if (req.body === undefined) {
+    req.body = {};
+    next();
+    return;
+  }
+
+  if (req.body === null || Array.isArray(req.body) || typeof req.body !== "object") {
+    next(createHttpError(400, "Request body must be an object"));
+    return;
+  }
+
+  next();
+}
+
 function createApp() {
   const app = express();
 
@@ -51,6 +74,7 @@ function createApp() {
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: false, limit: "2mb" }));
   app.use(requestContext);
+  app.use("/api", enforceApiBodyObject);
   app.use("/api", (_req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("Pragma", "no-cache");
